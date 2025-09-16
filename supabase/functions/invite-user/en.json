@@ -1,0 +1,8 @@
+{
+  "subject": "Cognitive Leap: You've been invited by {{inviterName}}!",
+  "title": "Invitation to Cognitive Leap",
+  "greeting": "Hello!",
+  "body": "User {{inviterName}} has invited you to collaborate on Cognitive Leap.",
+  "callToAction": "Please click the button below to sign in to your profile and automatically confirm the connection.",
+  "buttonText": "Sign In & Confirm"
+}

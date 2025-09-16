@@ -1,0 +1,7 @@
+{
+  "subject": "Your account login link",
+  "title": "Sign in to your account",
+  "body": "Hello! To sign in to your account, please follow the link below. After signing in, don't forget to create a strong password in your profile.",
+  "buttonText": "Sign In",
+  "footer": "If you did not request this email, you can safely ignore it."
+}
