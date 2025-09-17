@@ -195,7 +195,7 @@ class ThreeApp {
     initScene() {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: this.canvas, alpha: true });
         this.renderer.setSize(this.wrapper.clientWidth, this.wrapper.clientHeight);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(75, this.wrapper.clientWidth / this.wrapper.clientHeight, 0.1, 1000);
         

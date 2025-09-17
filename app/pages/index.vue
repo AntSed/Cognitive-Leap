@@ -63,6 +63,16 @@ import Visualizer from '~/components/Visualizer.client.vue';
 import TheProfile from '~/components/TheProfile.client.vue';
 import LessonModal from '~/components/LessonModal.client.vue';
 import { useI18n } from 'vue-i18n';
+const setVh = () => {
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+onMounted(() => {
+  setVh();
+  window.addEventListener('resize', setVh);
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', setVh);
+});
 
 // --- КОМПОЗАБЛЫ ---
 const { locale, setLocale, t } = useI18n();
