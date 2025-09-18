@@ -173,6 +173,7 @@ class ThreeApp {
         this.dragOffset = new THREE.Vector3();
         this.touchMoved = false;
         this.initialPinchDistance = 0;
+        this.isProcessingClick = false;
     }
 
     init() {
@@ -208,6 +209,7 @@ class ThreeApp {
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
         directionalLight.position.set(10, 20, 30);
         this.scene.add(directionalLight);
+        this.renderer.shadowMap.enabled = false;
         
         this.mainGroup = new THREE.Group();
         this.scene.add(this.mainGroup);
@@ -277,6 +279,16 @@ class ThreeApp {
             }
             group.userData = item;
 
+            // --- 1. Создаем невидимый ХИТБОКС, который на 50% больше ---
+            const hitboxGeometry = new THREE.CircleGeometry(1.2 * 1.5, 32); // 1.2 - радиус яблока, * 1.5 = +50%
+            const hitboxMaterial = new THREE.MeshBasicMaterial({ visible: false }); // Делаем его невидимым
+            const hitboxMesh = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+            
+            // --- 2. Добавляем хитбокс в группу ---
+            // Он будет первым и главным объектом для raycaster'а
+            group.add(hitboxMesh);
+
+            // --- Все видимые части остаются без изменений ---
             const fruitColor = this.getColorForProgress(item.lesson.progress);
             const fruitMaterial = new THREE.MeshBasicMaterial({ color: fruitColor });
             const fruitGeometry = new THREE.CircleGeometry(1.2, 64);
@@ -307,8 +319,8 @@ class ThreeApp {
         if (this.currentHeadModel) {
             this.mainGroup.remove(this.currentHeadModel);
         }
-        const material = new THREE.MeshPhysicalMaterial({
-            color: 0x87ceeb, transparent: true, opacity: 0.3, roughness: 0.1, metalness: 0.2, transmission: 0.9, ior: 1.5, side: THREE.DoubleSide, depthWrite: false
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x87ceeb, transparent: true, opacity: 0.1, roughness: 0.1, metalness: 0.2, transmission: 0.9, ior: 1.5, side: THREE.DoubleSide, depthWrite: false
         });
         const onModelLoaded = (object) => {
             this.currentHeadModel = object;
@@ -335,31 +347,85 @@ class ThreeApp {
     }
 
     createHeadLessonNodes() {
-        const geometries = { 'Sphere': new THREE.SphereGeometry(0.5, 16, 16), 'Box': new THREE.BoxGeometry(0.8, 0.8, 0.8), 'Tetrahedron': new THREE.TetrahedronGeometry(0.7), 'Octahedron': new THREE.OctahedronGeometry(0.6), 'Dodecahedron': new THREE.DodecahedronGeometry(0.5), 'Icosahedron': new THREE.IcosahedronGeometry(0.5, 0), 'Torus': new THREE.TorusGeometry(0.4, 0.15, 16, 100), 'TorusKnot': new THREE.TorusKnotGeometry(0.4, 0.1, 100, 16), 'Cylinder': new THREE.CylinderGeometry(0.4, 0.4, 0.8, 32), 'Cone': new THREE.ConeGeometry(0.4, 0.8, 32), 'Capsule': new THREE.CapsuleGeometry(0.3, 0.5, 4, 8), 'Ring': new THREE.RingGeometry(0.3, 0.5, 32), 'default': new THREE.IcosahedronGeometry(0.5, 0) };
-        const lessonsByShape = this.skinData.reduce((acc, item) => { const shape = item.shape || 'default'; if (!acc[shape]) acc[shape] = []; acc[shape].push(item); return acc; }, {});
+        // Очищаем массивы перед новым созданием
+        this.instancedMeshes = [];
+        this.hitboxMeshes = []; // Массив для невидимых хитбоксов
+        this.textMeshes = [];
+
+        // Словарь с готовыми геометриями для разных форм
+        const geometries = { 
+            'Sphere': new THREE.SphereGeometry(0.5, 16, 16), 
+            'Box': new THREE.BoxGeometry(0.8, 0.8, 0.8), 
+            'Tetrahedron': new THREE.TetrahedronGeometry(0.7), 
+            'Octahedron': new THREE.OctahedronGeometry(0.6), 
+            'Dodecahedron': new THREE.DodecahedronGeometry(0.5), 
+            'Icosahedron': new THREE.IcosahedronGeometry(0.5, 0), 
+            'Torus': new THREE.TorusGeometry(0.4, 0.15, 16, 100), 
+            'TorusKnot': new THREE.TorusKnotGeometry(0.4, 0.1, 100, 16), 
+            'Cylinder': new THREE.CylinderGeometry(0.4, 0.4, 0.8, 32), 
+            'Cone': new THREE.ConeGeometry(0.4, 0.8, 32), 
+            'Capsule': new THREE.CapsuleGeometry(0.3, 0.5, 4, 8), 
+            'Ring': new THREE.RingGeometry(0.3, 0.5, 32), 
+            'default': new THREE.IcosahedronGeometry(0.5, 0) 
+        };
+
+        // Группируем уроки по форме для создания одного InstancedMesh на каждую форму
+        const lessonsByShape = this.skinData.reduce((acc, item) => { 
+            const shape = item.shape || 'default'; 
+            if (!acc[shape]) acc[shape] = []; 
+            acc[shape].push(item); 
+            return acc; 
+        }, {});
         
+        // Проходимся по каждой группе форм
         for (const shape in lessonsByShape) {
             const group = lessonsByShape[shape];
             const geometry = geometries[shape] || geometries['default'];
-            const material = new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0.1, vertexColors: true });
-            const mesh = new THREE.InstancedMesh(geometry, material, group.length);
+            
+            // 1. Создаем видимую сетку, которую будет видеть пользователь
+            const visibleMaterial = new THREE.MeshBasicMaterial({ vertexColors: true });
+            const visibleMesh = new THREE.InstancedMesh(geometry, visibleMaterial, group.length);
+            
+            // 2. Создаем невидимую сетку хитбоксов, которая будет на 100% больше
+            const hitboxGeometry = geometry.clone().scale(2, 2, 2);
+            const hitboxMaterial = new THREE.MeshBasicMaterial({ visible: false });
+            const hitboxMesh = new THREE.InstancedMesh(hitboxGeometry, hitboxMaterial, group.length);
+            
+            // Используем один объект-пустышку для установки позиций
             const dummy = new THREE.Object3D();
+            
             group.forEach((item, index) => {
                 dummy.position.set(item.coordinates.x, item.coordinates.y, item.coordinates.z);
                 dummy.scale.set(item.scale || 1, item.scale || 1, item.scale || 1);
                 dummy.updateMatrix();
-                mesh.setMatrixAt(index, dummy.matrix);
-                mesh.userData[index] = item;
+
+                // Применяем одинаковые трансформации и к видимой части, и к хитбоксу
+                visibleMesh.setMatrixAt(index, dummy.matrix);
+                hitboxMesh.setMatrixAt(index, dummy.matrix);
+
+                // Данные урока привязываем к хитбоксу, так как кликать будем по нему
+                hitboxMesh.userData[index] = item; 
+
+                // Цвет в зависимости от прогресса устанавливаем только для видимой части
                 const progress = item.lesson.progress || 0;
                 const instanceColor = this.getColorForProgress(progress);
-                mesh.setColorAt(index, instanceColor);
+                visibleMesh.setColorAt(index, instanceColor);
             });
-            mesh.instanceMatrix.needsUpdate = true;
-            mesh.instanceColor.needsUpdate = true;
-            this.mainGroup.add(mesh);
-            this.instancedMeshes.push(mesh);
-        }
+                
+                // Помечаем, что матрицы и цвета нужно обновить
+                visibleMesh.instanceMatrix.needsUpdate = true;
+                visibleMesh.instanceColor.needsUpdate = true;
+                hitboxMesh.instanceMatrix.needsUpdate = true;
+                
+                // Добавляем в сцену только видимую часть
+                this.mainGroup.add(visibleMesh);
+                
+                // Сохраняем обе сетки в соответствующие массивы
+                this.instancedMeshes.push(visibleMesh);
+                this.hitboxMeshes.push(hitboxMesh);
+            }
 
+        // Создание текстовых меток остается без изменений
         this.skinData.forEach(item => {
             const shapes = this.font.generateShapes(item.lesson.game_id.toString(), this.config.LESSON_NODE_TEXT_SIZE);
             const textGeometry = new THREE.ShapeGeometry(shapes);
@@ -449,6 +515,10 @@ class ThreeApp {
         e.preventDefault();
         this.touchMoved = false;
         const touches = e.touches;
+        if (touches.length > 0) {
+            this.touchStartPosition = { x: touches[0].clientX, y: touches[0].clientY };
+        }
+
         if (touches.length === 1) {
             this.previousMousePosition.x = touches[0].clientX;
             this.previousMousePosition.y = touches[0].clientY;
@@ -462,13 +532,23 @@ class ThreeApp {
 
     onTouchMove(e) {
         e.preventDefault();
-        this.touchMoved = true;
         const touches = e.touches;
+        if (!this.touchMoved && touches.length > 0) {
+            const touch = touches[0];
+            const dx = touch.clientX - this.touchStartPosition.x;
+            const dy = touch.clientY - this.touchStartPosition.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 5) {
+                this.touchMoved = true;
+            }
+        }
+        if (this.touchMoved) {
         if (this.isEditMode && this.draggedObject) {
             this.dragObject(touches[0]);
         } else if (touches.length === 1) {
+            // Движение одним пальцем (панорамирование/вращение)
             this.onMouseMove({ clientX: touches[0].clientX, clientY: touches[0].clientY });
         } else if (touches.length === 2) {
+            // Движение двумя пальцами (зум)
             const newPinchDistance = this.getTouchDistance(touches);
             const deltaDistance = newPinchDistance - this.initialPinchDistance;
             if (this.navigationMode === 1) {
@@ -480,6 +560,7 @@ class ThreeApp {
                 this.camera.position.setLength(newCamDistance);
             }
             this.initialPinchDistance = newPinchDistance;
+            }
         }
     }
 
@@ -501,11 +582,17 @@ class ThreeApp {
     }
 
     handleClick(e) {
+        if (this.isProcessingClick) return; 
+        this.isProcessingClick = true; 
+        setTimeout(() => { this.isProcessingClick = false; }, 200); 
         this.mouse.x = (e.clientX / this.wrapper.clientWidth) * 2 - 1;
         this.mouse.y = -((e.clientY - this.wrapper.getBoundingClientRect().top) / this.wrapper.clientHeight) * 2 + 1;
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
-        const targets = this.navigationMode === 1 ? this.clickableObjects : [...this.instancedMeshes, ...this.textMeshes];
+        const targets = this.navigationMode === 1 
+            ? this.clickableObjects 
+            : [...this.hitboxMeshes, ...this.textMeshes]; // <--- Используем hitboxMeshes
+    
         const intersects = this.raycaster.intersectObjects(targets, true);
 
         if (intersects.length > 0) {
@@ -646,6 +733,16 @@ class ThreeApp {
 
     animate() {
         this.animationFrameId = requestAnimationFrame(() => this.animate());
+        if (this.navigationMode === 2 && this.textMeshes.length > 0) {
+        this.textMeshes.forEach(textMesh => {
+            const targetPosition = new THREE.Vector3(
+                this.camera.position.x,
+                textMesh.position.y,
+                this.camera.position.z
+            );
+            textMesh.lookAt(targetPosition);
+        });
+    }
         this.renderer.render(this.scene, this.camera);
     }
 
