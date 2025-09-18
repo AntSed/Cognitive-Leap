@@ -174,6 +174,7 @@ class ThreeApp {
         this.touchMoved = false;
         this.initialPinchDistance = 0;
         this.isProcessingClick = false;
+        this.needsRender = true;
     }
 
     init() {
@@ -261,6 +262,7 @@ class ThreeApp {
     createTreePlane() {
         const textureLoader = new THREE.TextureLoader();
         textureLoader.load(this.config.TREE.IMAGE_URL, (texture) => {
+            this.needsRender = true; 
             const geometry = new THREE.PlaneGeometry(60, 60);
             const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
             const plane = new THREE.Mesh(geometry, material);
@@ -323,6 +325,7 @@ class ThreeApp {
             color: 0x87ceeb, transparent: true, opacity: 0.1, roughness: 0.1, metalness: 0.2, transmission: 0.9, ior: 1.5, side: THREE.DoubleSide, depthWrite: false
         });
         const onModelLoaded = (object) => {
+            this.needsRender = true; 
             this.currentHeadModel = object;
             this.currentHeadModel.scale.setScalar(modelInfo.scale);
             this.currentHeadModel.position.set(...modelInfo.position);
@@ -342,6 +345,7 @@ class ThreeApp {
     }
 
     switchModel() {
+        this.needsRender = true; 
         this.currentModelIndex = (this.currentModelIndex + 1) % this.config.HEAD.MODELS.length;
         this.loadHeadModel(this.config.HEAD.MODELS[this.currentModelIndex]);
     }
@@ -459,6 +463,7 @@ class ThreeApp {
     }
 
     onMouseMove(e) {
+        this.needsRender = true; 
         this.mouseMoved = true;
         const deltaX = e.clientX - this.previousMousePosition.x;
         const deltaY = e.clientY - this.previousMousePosition.y;
@@ -493,6 +498,7 @@ class ThreeApp {
     }
 
     onWheel(e) {
+        this.needsRender = true; 
         if (this.navigationMode === 1) { // Zoom for Tree
             const zoomAmount = e.deltaY * this.config.TREE.ZOOM_SENSITIVITY;
             const newScale = this.mainGroup.scale.x - zoomAmount * 0.1;
@@ -531,6 +537,7 @@ class ThreeApp {
     }
 
     onTouchMove(e) {
+        this.needsRender = true; 
         e.preventDefault();
         const touches = e.touches;
         if (!this.touchMoved && touches.length > 0) {
@@ -576,6 +583,7 @@ class ThreeApp {
     }
 
     onWindowResize() {
+        this.needsRender = true; 
         this.camera.aspect = this.wrapper.clientWidth / this.wrapper.clientHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.wrapper.clientWidth, this.wrapper.clientHeight);
@@ -676,6 +684,7 @@ class ThreeApp {
     }
 
     dragObject(e) {
+        this.needsRender = true; 
         if (!this.draggedObject) return;
         this.mouse.x = (e.clientX / this.wrapper.clientWidth) * 2 - 1;
         this.mouse.y = -((e.clientY - this.wrapper.getBoundingClientRect().top) / this.wrapper.clientHeight) * 2 + 1;
@@ -701,6 +710,7 @@ class ThreeApp {
     }
 
     async stopDragging() {
+        this.needsRender = true; 
         if (!this.draggedObject) return;
         
         let newCoords;
@@ -733,17 +743,26 @@ class ThreeApp {
 
     animate() {
         this.animationFrameId = requestAnimationFrame(() => this.animate());
+
+        if (!this.needsRender) {
+            return;
+        }
+
         if (this.navigationMode === 2 && this.textMeshes.length > 0) {
-        this.textMeshes.forEach(textMesh => {
-            const targetPosition = new THREE.Vector3(
-                this.camera.position.x,
-                textMesh.position.y,
-                this.camera.position.z
-            );
-            textMesh.lookAt(targetPosition);
-        });
-    }
+            this.textMeshes.forEach(textMesh => {
+                // Создаем точку для "взгляда" текста: она на той же высоте,
+                // что и сам текст, но с X/Z координатами камеры.
+                const targetPosition = new THREE.Vector3(
+                    this.camera.position.x,
+                    textMesh.position.y,
+                    this.camera.position.z
+                );
+                textMesh.lookAt(targetPosition);
+            });
+        }
+
         this.renderer.render(this.scene, this.camera);
+        this.needsRender = false;
     }
 
     destroy() {
