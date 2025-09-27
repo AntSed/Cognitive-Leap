@@ -1,6 +1,11 @@
 // file: nuxt.config.ts
 
 export default defineNuxtConfig({
+  app: {
+    head: {
+      viewport: 'width=device-width, initial-scale=1, viewport-fit=cover', 
+    }
+  },
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
   css: [
@@ -24,9 +29,9 @@ export default defineNuxtConfig({
 
   supabase: {
    redirectOptions: {
-      login: '/profile', // Страница, куда попадает пользователь, если пытается зайти в защищенную зону без логина
-      callback: '/',   // Страница, куда пользователь попадает после успешного входа (например, через Google)
-      exclude: ['/confirm-invitation'], // <-- САМАЯ ВАЖНАЯ СТРОКА
+      login: '/profile', 
+      callback: '/',
+      exclude: ['/confirm-invitation'],
     }
   },
 
@@ -37,9 +42,9 @@ export default defineNuxtConfig({
       { code: 'ru', file: 'ru.json', name: 'Русский' },
       { code: 'es', file: 'es.json', name: 'Español' }
     ],
-    lazy: true, // Загружает только нужный язык, а не все сразу
-    langDir: 'locales', // Указываем, где лежат файлы с переводами
-    defaultLocale: 'en', // Язык по умолчанию
-    strategy: 'no_prefix' // Не добавлять /en/ или /ru/ к URL
+    lazy: true,
+    langDir: 'locales', 
+    defaultLocale: 'en', 
+    strategy: 'no_prefix'
   },
 }) 

@@ -135,7 +135,7 @@ const cycleLanguage = () => {
   align-items: center;
   width: 100%;
   padding: 8px 10px;
-  background-color: #1a1a1a;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid #333;
   box-sizing: border-box;
 }
