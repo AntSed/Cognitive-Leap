@@ -2,28 +2,24 @@
   <div class="app-container">
     <main class="main-content">
       <div v-if="skins.head" class="view-container">
-        
         <div v-show="activeComponent === 1" class="text-page-wrapper">
           <TextPage />
         </div>
-
         <SceneKit 
           v-show="activeComponent === 2" 
           :skin-id="skins.head" 
           :is-active="activeComponent === 2"
         />
-        
         <div v-show="activeComponent === 3" class="profile-wrapper">
           <TheProfile />
         </div>
-
       </div>
       <div v-else class="component-placeholder">{{ $t('loading') }}</div>
-      
       <LessonModal />
     </main>
 
     <nav v-if="skins.head" class="app-nav">
+      <div class="nav-main-actions">
         <button
           @click="activeComponent = 1"
           :class="{ active: activeComponent === 1 }"
@@ -50,21 +46,21 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M720-240q25 0 42.5-17.5T780-300q0-25-17.5-42.5T720-360q-25 0-42.5 17.5T660-300q0 25 17.5 42.5T720-240Zm0 120q32 0 57-14t42-39q-20-16-45.5-23.5T720-204q-28 0-53.5 7.5T621-173q17 25 42 39t57 14Zm-520 0q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v268q-19-9-39-15.5t-41-9.5v-243H200v560h242q3 22 9.5 42t15.5 38H200Zm0-120v40-560 243-3 280Zm80-40h163q3-21 9.5-41t14.5-39H280v80Zm0-160h244q32-30 71.5-50t84.5-27v-3H280v80Zm0-160h400v-80H280v80ZM720-40q-83 0-141.5-58.5T520-240q0-83 58.5-141.5T720-440q83 0 141.5 58.5T920-240q0 83-58.5 141.5T720-40Z"/></svg>
         </button>
-
-        <div class="language-switcher">
-          <button @click="cycleLanguage" :title="$t('changeLanguage')">
-            {{ locale.toUpperCase() }}
-          </button>
-        </div>
+      </div>
+      
+      <div class="language-switcher">
+        <button @click="cycleLanguage" :title="$t('changeLanguage')">
+          {{ locale.toUpperCase() }}
+        </button>
+      </div>
     </nav>
   </div>
 </template>
 
 <script setup>
+// Секция script остается без изменений
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-// Подключаем компоненты явно, чтобы избежать путаницы.
-// Убедитесь, что у файлов правильные имена с суффиксом .client
 import SceneKit from '~/components/SceneKit.client.vue';
 import TheProfile from '~/components/TheProfile.client.vue';
 import TextPage from '~/components/TextPage.client.vue';
@@ -75,7 +71,6 @@ const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 
 const skins = ref({ head: null });
-// "Голова" активна по умолчанию
 const activeComponent = ref(2); 
 
 onMounted(async () => {
@@ -88,7 +83,6 @@ onMounted(async () => {
   }
 
   try {
-    // Загружаем только один нужный скин
     const { data, error } = await supabase.from('skins').select('id, name').eq('name', 'head').single();
     if (error) throw error;
     
@@ -101,7 +95,6 @@ onMounted(async () => {
   }
 });
 
-// Добавили 'es' в список
 const languages = ['en', 'ru', 'es']; 
 const cycleLanguage = () => {
   const currentIndex = languages.indexOf(locale.value);
@@ -109,3 +102,83 @@ const cycleLanguage = () => {
   setLocale(languages[nextIndex]);
 };
 </script>
+
+<style scoped>
+/* Общие стили для страницы */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.main-content {
+  flex-grow: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.view-container,
+.profile-wrapper,
+.text-page-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- ИЗМЕНЕНИЯ В СТИЛЯХ НАВИГАЦИИ --- */
+.app-nav {
+  flex-shrink: 0;
+  display: flex;
+  /* Раскидываем дочерние элементы по краям */
+  justify-content: space-between; 
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px; /* Добавили отступы по бокам */
+  border-top: 1px solid #333;
+  box-sizing: border-box; /* Учитываем padding в общей ширине */
+}
+
+/* Новый класс для группы основных кнопок */
+.nav-main-actions {
+  display: flex;
+  /* Распределяем кнопки равномерно внутри своей группы */
+  justify-content: space-around;
+  /* Группа занимает всё доступное центральное пространство */
+  flex-grow: 1;
+}
+
+
+.app-nav button {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.app-nav button:hover {
+  color: #fff;
+}
+
+.app-nav button.active {
+  color: #fff;
+  background-color: #333;
+}
+
+.app-nav button svg {
+  width: 28px;
+  height: 28px;
+}
+
+.language-switcher button {
+  font-weight: bold;
+  font-size: 14px;
+  min-width: 44px; /* Увеличиваем минимальную ширину для удобства нажатия */
+}
+</style>
