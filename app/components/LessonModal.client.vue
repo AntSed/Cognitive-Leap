@@ -137,6 +137,258 @@ const handleMaterialClick = (material) => {
 </script>
 
 <style scoped>
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: #2c3e50;
+  color: #ecf0f1;
+  padding: 2rem;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid #34495e;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-family: 'Inter', sans-serif;
+}
+
+.modal-content::-webkit-scrollbar { width: 8px; }
+.modal-content::-webkit-scrollbar-track { background: #2c3e50; }
+.modal-content::-webkit-scrollbar-thumb { background-color: #3498db; border-radius: 10px; border: 2px solid #2c3e50; }
+
+.modal-close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.modal-close-button:hover { color: #ecf0f1; }
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #34495e;
+  padding-bottom: 1rem;
+}
+
+.topic-title { font-size: 2.5rem; color: #3498db; margin: 0; }
+.topic-description { font-size: 1.1rem; color: #bdc3c7; max-width: 600px; margin: 0.5rem auto 0; }
+
+.tests-section {
+  background: #34495e;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  border: 1px solid #4a617a;
+  padding: 0.5rem 1.5rem;
+  transition: padding 0.3s ease;
+}
+.tests-section.is-expanded { padding: 1.5rem; }
+
+.tests-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.tests-header h3 { font-size: 1.2rem; color: #ecf0f1; margin: 0; }
+
+.header-right { display: flex; align-items: center; gap: 1rem; }
+
+.progress-bar-container {
+  width: 150px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 10px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.progress-bar-inner {
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.5s ease;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.8rem;
+  line-height: 20px;
+}
+
+.chevron-icon { width: 24px; height: 24px; color: #95a5a6; transition: transform 0.3s ease; }
+.chevron-icon.is-rotated { transform: rotate(180deg); }
+
+.tests-body { margin-top: 1rem; }
+
+.test-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+.test-info p { margin: 0; color: #bdc3c7; }
+.test-info p.test-title { font-weight: bold; color: #ecf0f1; }
+
+.test-button {
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+.test-button.start { background: #27ae60; }
+.test-button.start:hover { background: #229954; }
+.test-button.completed { background: #95a5a6; cursor: default; }
+
+.filters-container {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.filter-group { display: flex; align-items: center; gap: 0.5rem; }
+.filter-group label { font-weight: 500; color: #bdc3c7; }
+.filter-group select {
+  background-color: #34495e;
+  color: #ecf0f1;
+  border: 1px solid #7f8c8d;
+  border-radius: 5px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.materials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.material-card {
+  background: #34495e;
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  position: relative;
+}
+.material-card:hover:not(.is-locked) {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  border-color: #3498db;
+}
+.material-card.is-locked {
+  opacity: 0.5;
+  filter: grayscale(80%);
+  cursor: not-allowed;
+}
+
+.lock-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  color: #ecf0f1;
+  background: rgba(44, 62, 80, 0.7);
+  border-radius: 50%;
+  padding: 10px;
+}
+
+.material-icon { font-size: 2.5rem; }
+.material-title { margin: 0.5rem 0 0; font-size: 1.25rem; color: #ecf0f1; }
+.material-description { font-size: 0.9rem; color: #bdc3c7; flex-grow: 1; margin-bottom: 1rem; }
+.material-tags { margin-bottom: 1.5rem; }
+.tag {
+  background-color: rgba(0,0,0,0.3);
+  color: #bdc3c7;
+  padding: 0.25rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  margin: 0 0.25rem;
+}
+
+.action-button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: background-color 0.2s, transform 0.2s;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.action-button:hover:not(:disabled) { background: #2980b9; transform: scale(1.05); }
+.action-button:disabled { background: #7f8c8d; cursor: not-allowed; }
+
+.external-link-icon { width: 16px; height: 16px; }
+
+.no-materials-found {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
 .loading-state {
     display: flex; justify-content: center; align-items: center;
     height: 200px; font-size: 1.2rem; color: #bdc3c7;

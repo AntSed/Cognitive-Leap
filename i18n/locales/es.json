@@ -80,5 +80,17 @@
   "resetLinkSent": "Se ha enviado un enlace para restablecer la contraseña.",
   "enterEmailForReset": "Introduce tu email para restablecer la contraseña.",
   "error_weak_password": "Esta contraseña es demasiado común. Por favor, elige una más segura.",
-  "error_unknown": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo."
+  "error_unknown": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
+  "about_intro_1": "Hace 70.000 años, la Revolución Cognitiva nos hizo humanos. Hoy, en la era de la IA, es el momento del segundo Salto Cognitivo.",
+  "about_intro_2": "Olvida los 11 años en un pupitre. Nuestra plataforma basada en juegos te permite dominar el currículo escolar en 2-3 años, usando atractivos juegos 2D, así como mundos de Minecraft y Roblox.",
+  "about_body_1": "La escuela tradicional es una cinta transportadora que trata a todos por igual, matando la alegría del descubrimiento. Cognitive Leap es la alternativa. Reemplazamos la cinta transportadora por un GPS personal para el conocimiento. En lugar de niveles de grado, tenemos un mapa de 260 temas conectados por la lógica, no por un horario. Nuestro sistema construye una ruta de aprendizaje única y más rápida para cada estudiante.",
+  "about_body_2": "No creamos lecciones desde cero; seleccionamos el mejor contenido educativo de todo el mundo, desde conferencias de YouTube hasta simulaciones interactivas.",
+  "about_title": "Una invitación al salto",
+  "about_invitation_intro": "La educación es un ecosistema, y te invitamos a construirlo con nosotros.",
+  "about_subtitle_parents": "A los padres:",
+  "about_text_parents": "Ayúdanos a convertir el aprendizaje en una aventura emocionante encontrando el mejor contenido para desbloquear el potencial de tu hijo.",
+  "about_subtitle_educators": "A los educadores:",
+  "about_text_educators": "Libérate de la rutina. Deja que nuestra plataforma se encargue de lo básico, para que puedas centrarte en lo que realmente importa: guiar e inspirar a los estudiantes. Conviértete en el curador principal de tu materia.",
+  "about_conclusion": "Demos este salto cognitivo juntos y construyamos la educación que nuestros hijos merecen.",
+  "about_project": "Sobre el proyecto"
 }

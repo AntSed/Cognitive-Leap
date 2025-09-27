@@ -80,5 +80,17 @@
   "resetLinkSent": "A password reset link has been sent.",
   "enterEmailForReset": "Enter your email to reset the password.",
   "error_weak_password": "This password is too common. Please choose a more secure one.",
-  "error_unknown": "An unexpected error occurred. Please try again."
+  "error_unknown": "An unexpected error occurred. Please try again.",
+  "about_intro_1": "70,000 years ago, the Cognitive Revolution made us human. Today, in the age of AI, it's time for the second Cognitive Leap.",
+  "about_intro_2": "Forget 11 years at a desk. Our game-based platform allows you to master the school curriculum in 2-3 years, using engaging 2D games, as well as Minecraft and Roblox worlds.",
+  "about_body_1": "Traditional school is a conveyor belt that treats everyone the same, killing the joy of discovery. Cognitive Leap is the alternative. We replace the conveyor belt with a personal GPS for knowledge. Instead of grade levels, we have a map of 260 topics linked by logic, not by a schedule. Our system builds a unique and faster learning path for every student.",
+  "about_body_2": "We don't create lessons from scratch; we curate the best educational content from around the world, from YouTube lectures to interactive simulations.",
+  "about_title": "An Invitation to Leap",
+  "about_invitation_intro": "Education is an ecosystem, and we invite you to build it with us.",
+  "about_subtitle_parents": "To Parents:",
+  "about_text_parents": "Help us turn learning into a thrilling adventure by finding the best content to unlock your child's potential.",
+  "about_subtitle_educators": "To Educators:",
+  "about_text_educators": "Break free from the routine. Let our platform handle the basics, so you can focus on what truly matters: mentoring and inspiring students. Become a lead curator for your subject.",
+  "about_conclusion": "Let's take this cognitive leap together and build the education our children deserve.",
+  "about_project": "About Project"
 }
