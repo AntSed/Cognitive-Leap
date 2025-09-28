@@ -2,18 +2,25 @@
   <div class="app-container">
     <main class="main-content">
       <div v-if="skins.head" class="view-container">
-        
-        <div v-show="activeComponent === 1" class="text-page-wrapper">
-          <TextPage />
-        </div>
-        <SceneKit 
-          v-show="activeComponent === 2" 
-          :skin-id="skins.head" 
-          :is-active="activeComponent === 2"
-        />
-        <div v-show="activeComponent === 3" class="profile-wrapper">
-          <TheProfile />
-        </div>
+        <Transition name="fade">
+          <div v-show="activeComponent === 1" class="text-page-wrapper">
+            <TextPage />
+          </div>
+        </Transition>
+
+        <Transition name="fade">
+          <SceneKit
+            v-show="activeComponent === 2"
+            :skin-id="skins.head"
+            :is-active="activeComponent === 2"
+          />
+        </Transition>
+
+        <Transition name="fade">
+          <div v-show="activeComponent === 3" class="profile-wrapper">
+            <TheProfile />
+          </div>
+        </Transition>
 
       </div>
       <div v-else class="component-placeholder">{{ $t('loading') }}</div>
@@ -178,5 +185,14 @@ const cycleLanguage = () => {
   font-weight: bold;
   font-size: 14px;
   min-width: 44px;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

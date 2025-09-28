@@ -1,6 +1,6 @@
 // File: composables/useModalStore.ts
-import { toRefs } from 'vue'
-import { useI18n } from 'vue-i18n' // Импортируем useI18n
+import { toRefs, watch } from 'vue' 
+import { useI18n } from 'vue-i18n'
 
 // --- TYPE DEFINITIONS ---
 interface LessonDataFromServer {
@@ -10,38 +10,25 @@ interface LessonDataFromServer {
   quizzes: any[];
 }
 
-interface ModalState {
-  isOpen: boolean;
-  isLoading: boolean;
-  lessonData: LessonDataFromServer | null;
-  // currentLanguage теперь не нужен, мы будем использовать locale из i18n
-}
-
-interface GetLessonDetailsArgs {
-  p_lesson_id: string;
-  p_lang_code: string;
-  p_user_id: string | null;
-}
 
 // --- COMPOSABLE FUNCTION ---
 export const useModalStore = () => {
   const supabase = useSupabaseClient();
   const user = useSupabaseUser();
-  const { locale } = useI18n(); // Получаем доступ к глобальному состоянию языка
+  const { locale } = useI18n();
 
-  const state = useState<Omit<ModalState, 'currentLanguage'>>('modal-state', () => ({
+  const state = useState('modal-state', () => ({
     isOpen: false,
     isLoading: false,
     lessonData: null,
   }));
 
   /**
-   * Opens the modal and fetches lesson data from the database.
-   * @param {string} lessonId - The UUID of the lesson to open.
+   * Opens the modal and fetches lesson data.
    */
   const open = async (lessonId: string) => {
     if (!lessonId) {
-        console.error("Попытка открыть модальное окно без lessonId!");
+        console.error("Modal opened without lessonId!");
         return;
     }
 
@@ -50,21 +37,18 @@ export const useModalStore = () => {
     state.value.lessonData = null;
 
     try {
-        const rpcArgs: GetLessonDetailsArgs = {
+        const rpcArgs = {
             p_lesson_id: lessonId,
             p_user_id: user.value?.id ?? null,
-            // --- ИСПРАВЛЕНИЕ: Передаем текущий язык напрямую из i18n ---
             p_lang_code: locale.value
         };
 
         const { data, error } = await supabase.rpc('get_lesson_details', rpcArgs as any);
-
         if (error) throw error;
-
         state.value.lessonData = data;
 
     } catch (error) {
-        console.error("Ошибка при загрузке данных урока:", error);
+        console.error("Error loading lesson data:", error);
         close();
     } finally {
         state.value.isLoading = false;
@@ -72,31 +56,74 @@ export const useModalStore = () => {
   }
 
   /**
-   * Closes the modal window and clears its data.
+   * Closes the modal window.
    */
   const close = () => {
     state.value.isOpen = false;
-    setTimeout(() => {
-        state.value.lessonData = null;
-    }, 300);
+    // Данные теперь очищаются в watch, чтобы избежать гонки состояний
   }
   
-  // Функция setLanguage больше не нужна, так как язык управляется глобально
-  // const setLanguage = ...
+  // --- НОВАЯ ЛОГИКА УПРАВЛЕНИЯ ЗАКРЫТИЕМ (Escape, кнопка "назад") ---
+
+  if (import.meta.client) { // Выполняем этот код только в браузере
+    
+    let isPopStateClosing = false; // Флаг для избежания двойных вызовов
+
+    // Обработчик для клавиши Escape
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        close();
+      }
+    };
+
+    // Обработчик для кнопки "назад" в браузере
+    const handlePopState = () => {
+      isPopStateClosing = true;
+      close();
+    };
+
+    watch(() => state.value.isOpen, (isOpen) => {
+      if (isOpen) {
+        // --- ДЕЙСТВИЯ ПРИ ОТКРЫТИИ ОКНА ---
+        history.pushState({ modal: true }, '');
+        window.addEventListener('popstate', handlePopState);
+        window.addEventListener('keydown', handleKeyDown);
+      } else {
+        // --- ДЕЙСТВИЯ ПРИ ЗАКРЫТИИ ОКНА ---
+        window.removeEventListener('popstate', handlePopState);
+        window.removeEventListener('keydown', handleKeyDown);
+        
+        // Если окно закрылось НЕ через кнопку "назад", убираем запись из истории
+        if (!isPopStateClosing) {
+          // Проверяем, что мы не на главной странице, чтобы избежать выхода
+          if (history.state && history.state.modal) { 
+            history.back();
+          }
+        }
+        
+        isPopStateClosing = false; // Сбрасываем флаг
+
+        // Очищаем данные с задержкой для анимации
+        setTimeout(() => {
+          state.value.lessonData = null;
+        }, 300);
+      }
+    });
+  }
 
   const toggleTestCompletion = (testId: string) => {
-    console.log(`(демо) Тест ${testId} отмечен как пройденный/не пройденный.`);
+    console.log(`DEMO test ${testId} marked as complete/incomplete.`);
   }
 
   const completeMaterial = (materialId: string) => {
-     console.log(`(демо) Материал ${materialId} отмечен как пройденный.`);
+     console.log(`DEMO material ${materialId} marked as complete.`);
   }
+
 
   return {
     ...toRefs(state.value),
     open,
     close,
-    // setLanguage больше не экспортируется
     toggleTestCompletion,
     completeMaterial,
   }
