@@ -33,10 +33,17 @@ const uiComponent = shallowRef(null);
 // --- LIFECYCLE HOOKS ---
 onMounted(async () => {
   if (import.meta.server) return;
-
+  modalStore.open('modals/InfoModal', {
+      title: 'Загрузка...',
+      message: 'Готовим трёхмерное пространство для новых открытий...',
+      buttonText: 'Подождать'
+  });
   const { data: skinData, error } = await supabase.from('skins').select('*').eq('id', props.skinId).single();
-  if (error) { console.error("SceneKit Error: Failed to load skin data.", error); return; }
-
+  if (error) {
+    console.error("SceneKit Error: Failed to load skin data.", error);
+    modalStore.open('modals/InfoModal', { title: 'Ошибка', message: 'Не удалось загрузить данные сцены.' });
+    return;
+  }
   if (skinData.ui_component_name) {
     try {
       const componentModule = await import(`./ui/${skinData.ui_component_name}.vue`);
@@ -450,7 +457,7 @@ class SceneKitApp {
         }
         
         if (lessonId && !(parentGroup && parentGroup.userData.isLocked)) {
-            this.modalStore.open(lessonId);
+             this.modalStore.openLesson(lessonId);
         }
     }
   }

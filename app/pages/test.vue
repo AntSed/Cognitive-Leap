@@ -8,7 +8,7 @@
 
 <script setup>
 import SceneKit from '~/components/SceneKit.client.vue';
-import LessonModal from '~/components/LessonModal.client.vue';
+import LessonModal from '~/components/modals/LessonDetails.vue';
 
 // --- !!! ВАЖНО !!! ---
 // Вставь сюда ID твоего нового скина "Tree V2" из Шага 1

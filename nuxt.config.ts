@@ -22,6 +22,7 @@ export default defineNuxtConfig({
     }
   },
   modules: [
+    '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxtjs/supabase',
     '@nuxtjs/i18n' 

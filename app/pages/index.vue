@@ -45,8 +45,7 @@
         </button>
       </div>
     </nav>
-
-    <LessonModal />
+    <ModalWrapper />
   </div>
 </template>
 
@@ -56,7 +55,7 @@ import { useI18n } from 'vue-i18n';
 import SceneKit from '~/components/SceneKit.client.vue';
 import TheProfile from '~/components/TheProfile.client.vue';
 import TextPage from '~/components/TextPage.client.vue';
-import LessonModal from '~/components/LessonModal.client.vue'; 
+import LessonModal from '~/components/modals/LessonDetails.vue'; 
 
 
 const setVh = () => {
