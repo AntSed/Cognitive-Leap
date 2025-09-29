@@ -29,21 +29,27 @@ const modalStore = useModalStore();
 const supabase = useSupabaseClient();
 let sceneKitApp = null;
 const uiComponent = shallowRef(null);
+const hasInitialized = ref(false);
 
-// --- LIFECYCLE HOOKS ---
-onMounted(async () => {
-  if (import.meta.server) return;
-  modalStore.open('modals/InfoModal', {
+// --- ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ---
+// Мы вынесли всю тяжёлую логику из onMounted сюда.
+const initializeScene = async () => {
+  if (import.meta.server || hasInitialized.value) return;
+  hasInitialized.value = true;
+
+  // ---> ВЫЗОВ МОДАЛЬНОГО ОКНА ТЕПЕРЬ ЗДЕСЬ <---
+  modalStore.open(
+    'modals/InfoModal',
+    {
       title: 'Загрузка...',
       message: 'Готовим трёхмерное пространство для новых открытий...',
-      buttonText: 'Подождать'
-  });
+    },
+    { history: false }
+  );
+
   const { data: skinData, error } = await supabase.from('skins').select('*').eq('id', props.skinId).single();
-  if (error) {
-    console.error("SceneKit Error: Failed to load skin data.", error);
-    modalStore.open('modals/InfoModal', { title: 'Ошибка', message: 'Не удалось загрузить данные сцены.' });
-    return;
-  }
+  if (error) { console.error("SceneKit Error: Failed to load skin data.", error); return; }
+
   if (skinData.ui_component_name) {
     try {
       const componentModule = await import(`./ui/${skinData.ui_component_name}.vue`);
@@ -54,8 +60,17 @@ onMounted(async () => {
   sceneKitApp = new SceneKitApp(wrapperRef.value, canvasRef.value, skinData, supabase, modalStore);
   await sceneKitApp.init();
 
+  // Если компонент всё ещё активен после загрузки, запускаем анимацию
   if (props.isActive) {
     sceneKitApp.resume();
+  }
+};
+
+
+// --- LIFECYCLE HOOKS ---
+onMounted(() => {
+  if (props.isActive) {
+    initializeScene();
   }
 });
 
@@ -63,9 +78,18 @@ onUnmounted(() => {
   if (sceneKitApp) sceneKitApp.destroy();
 });
 
+// ---> ОСНОВНАЯ ЛОГИКА ТЕПЕРЬ ЗДЕСЬ <---
 watch(() => props.isActive, (newVal) => {
-  if (!sceneKitApp) return;
-  newVal ? sceneKitApp.resume() : sceneKitApp.pause();
+  if (newVal && !hasInitialized.value) {
+    // Если компонент стал активным В ПЕРВЫЙ РАЗ, запускаем инициализацию.
+    initializeScene();
+  } else if (newVal) {
+    // Если он просто снова стал активным, возобновляем анимацию.
+    sceneKitApp?.resume();
+  } else {
+    // Если он стал неактивным, ставим на паузу.
+    sceneKitApp?.pause();
+  }
 });
 
 watch(() => modalStore.isOpen.value, (isOpen) => {

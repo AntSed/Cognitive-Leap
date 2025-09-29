@@ -1,7 +1,7 @@
 <template>
   <div class="modal-wrapper">
     <transition name="fade">
-      <div v-if="isOpen" class="modal-overlay" @click="close"></div>
+      <div v-if="isOpen" class="modal-overlay" @click="close()"></div>
     </transition>
 
     <transition-group name="modal-scale">

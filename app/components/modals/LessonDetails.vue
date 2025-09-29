@@ -1,7 +1,7 @@
 <!-- File: components/LessonDetails.vue -->
 <template>
   <div class="lesson-modal-content">
-    <button class="modal-close-button" @click="close">&times;</button>
+    <button class="modal-close-button" @click="close()">&times;</button>
     
     <div v-if="isLoading" class="loading-state">
         <p>{{ $t('loadingLesson') }}</p>

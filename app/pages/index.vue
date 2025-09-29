@@ -9,11 +9,12 @@
         </Transition>
 
         <Transition name="fade">
-          <SceneKit
-            v-show="activeComponent === 2"
-            :skin-id="skins.head"
-            :is-active="activeComponent === 2"
-          />
+          <div v-show="activeComponent === 2" class="scenekit-wrapper">
+            <SceneKit
+              :skin-id="skins.head"
+              :is-active="activeComponent === 2"
+            />
+          </div>
         </Transition>
 
         <Transition name="fade">
@@ -50,13 +51,51 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'; 
+import { ref, onMounted, onUnmounted, watch } from 'vue'; 
 import { useI18n } from 'vue-i18n';
+import { useRouter, useRoute } from 'vue-router'; // ---> 1. Импортируем роутер
 import SceneKit from '~/components/SceneKit.client.vue';
 import TheProfile from '~/components/TheProfile.client.vue';
 import TextPage from '~/components/TextPage.client.vue';
-import LessonModal from '~/components/modals/LessonDetails.vue'; 
 
+// --- НАСТРОЙКА РОУТИНГА ---
+const router = useRouter();
+const route = useRoute();
+const activeComponent = ref(2); // 2 = 'play' по умолчанию
+
+// Карта для связи имени вида с его номером
+const viewMap = {
+  collaborate: 1,
+  play: 2,
+  profile: 3
+};
+
+// --- СИНХРОНИЗАЦИЯ URL И СОСТОЯНИЯ ---
+
+// 1. При загрузке страницы: читаем URL и устанавливаем активный компонент
+onMounted(() => {
+  const viewFromUrl = route.query.view;
+  if (viewFromUrl && viewMap[viewFromUrl]) {
+    activeComponent.value = viewMap[viewFromUrl];
+  } else {
+    // Если в URL ничего нет, устанавливаем 'play' по умолчанию
+    activeComponent.value = 2;
+  }
+});
+
+// 2. При клике на кнопку: следим за изменением activeComponent и обновляем URL
+watch(activeComponent, (newVal) => {
+  // Находим имя вида по его номеру
+  const viewName = Object.keys(viewMap).find(key => viewMap[key] === newVal);
+  
+  // Обновляем URL, только если он отличается, чтобы избежать лишних записей в истории
+  if (viewName && route.query.view !== viewName) {
+    router.push({ query: { view: viewName } });
+  }
+});
+
+
+// --- ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ ---
 
 const setVh = () => {
   document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
@@ -71,13 +110,11 @@ onUnmounted(() => {
   window.removeEventListener('resize', setVh);
 });
 
-
 const { locale, setLocale } = useI18n();
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 
 const skins = ref({ head: null });
-const activeComponent = ref(2); 
 
 onMounted(async () => {
   if (!user.value) { 
@@ -108,7 +145,6 @@ const cycleLanguage = () => {
   setLocale(languages[nextIndex]);
 };
 </script>
-
 <style scoped>
 .app-container {
   display: flex;
@@ -116,6 +152,7 @@ const cycleLanguage = () => {
   width: 100vw;
   overflow: hidden; 
   position: relative;
+  /* Используем --vh переменную для корректной высоты на мобильных */
   height: 100vh; 
   height: calc(var(--vh, 1vh) * 100);
 }
@@ -126,12 +163,34 @@ const cycleLanguage = () => {
   overflow: hidden;
 }
 
-
-.view-container,
-.profile-wrapper,
-.text-page-wrapper {
+.view-container > div {
   width: 100%;
   height: 100%;
+}
+
+/* ---> ДОБАВЛЯЕМ ЭТОТ КЛАСС <--- */
+/* Эта обёртка гарантирует, что SceneKit получит правильный размер */
+.scenekit-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---> ИСПРАВЛЕНИЕ СКРОЛЛИНГА <--- */
+/* Разрешаем прокрутку для страниц с текстом и профилем */
+.text-page-wrapper,
+.profile-wrapper {
+  overflow-y: auto;
+  /* Добавим немного отступа снизу для удобства прокрутки */
+  padding-bottom: 50px;
+  box-sizing: border-box;
+}
+
+/* Этот стиль был в app.css, но ему место здесь, так как он касается только этой страницы */
+.profile-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 5vh;
 }
 
 .app-nav {
@@ -141,6 +200,7 @@ const cycleLanguage = () => {
   align-items: center;
   width: 100%;
   padding: 8px 10px;
+  /* Учитываем "чёлку" на iOS */
   padding-bottom: calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid #333;
   box-sizing: border-box;
@@ -151,7 +211,6 @@ const cycleLanguage = () => {
   justify-content: space-around;
   flex-grow: 1;
 }
-
 
 .app-nav button {
   background: none;
@@ -185,6 +244,8 @@ const cycleLanguage = () => {
   font-size: 14px;
   min-width: 44px;
 }
+
+/* Анимация перехода между видами */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;

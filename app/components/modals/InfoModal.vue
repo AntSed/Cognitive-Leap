@@ -1,9 +1,9 @@
 <template>
   <div class="info-modal-content">
-    <button class="modal-close-button" @click="close">&times;</button>
+    <button class="modal-close-button" @click="close()">&times;</button>
     <h3 v-if="title">{{ title }}</h3>
     <p>{{ message }}</p>
-    <button class="action-button" @click="close">
+    <button class="action-button" @click="close()">
       {{ buttonText || 'Понятно' }}
     </button>
   </div>
