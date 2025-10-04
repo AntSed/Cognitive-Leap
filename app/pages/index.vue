@@ -10,22 +10,31 @@
 
         <Transition name="fade">
           <div v-show="activeComponent === 2" class="scenekit-wrapper">
-            <SceneKit
-              :skin-id="skins.head"
-              :is-active="activeComponent === 2"
-            />
+            <ClientOnly>
+              <SceneKit
+                :skin-id="skins.head"
+                :is-active="activeComponent === 2"
+              />
+              <template #fallback>
+                <div class="component-placeholder">{{ $t('loading') }}</div>
+              </template>
+            </ClientOnly>
           </div>
         </Transition>
 
         <Transition name="fade">
           <div v-show="activeComponent === 3" class="profile-wrapper">
-            <TheProfile />
+             <ClientOnly>
+              <TheProfile />
+               <template #fallback>
+                <div class="component-placeholder">{{ $t('loading') }}</div>
+              </template>
+            </ClientOnly>
           </div>
         </Transition>
 
       </div>
       <div v-else class="component-placeholder">{{ $t('loading') }}</div>
-      
     </main>
 
     <nav v-if="skins.head" class="app-nav">
@@ -51,108 +60,153 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'; 
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter, useRoute } from 'vue-router'; // ---> 1. Импортируем роутер
+import { useRouter, useRoute } from 'vue-router';
+import { useModalStore } from '~/composables/useModalStore';
 import SceneKit from '~/components/SceneKit.client.vue';
 import TheProfile from '~/components/TheProfile.client.vue';
 import TextPage from '~/components/TextPage.client.vue';
 
-// --- НАСТРОЙКА РОУТИНГА ---
+// --- STORES & CLIENTS ---
 const router = useRouter();
 const route = useRoute();
-const activeComponent = ref(2); // 2 = 'play' по умолчанию
+const { locale, setLocale } = useI18n();
+const supabase = useSupabaseClient();
+const user = useSupabaseUser();
+const modalStore = useModalStore();
 
-// Карта для связи имени вида с его номером
+// --- STATE ---
+const activeComponent = ref(2); // Default to 'play' view (2)
+const skins = ref({ head: null });
+const initialTipShown = ref(false); // Track if the initial tip has been shown this session
+
 const viewMap = {
   collaborate: 1,
   play: 2,
   profile: 3
 };
 
-// --- СИНХРОНИЗАЦИЯ URL И СОСТОЯНИЯ ---
-
-// 1. При загрузке страницы: читаем URL и устанавливаем активный компонент
-onMounted(() => {
-  const viewFromUrl = route.query.view;
-  if (viewFromUrl && viewMap[viewFromUrl]) {
-    activeComponent.value = viewMap[viewFromUrl];
-  } else {
-    // Если в URL ничего нет, устанавливаем 'play' по умолчанию
-    activeComponent.value = 2;
-  }
-});
-
-// 2. При клике на кнопку: следим за изменением activeComponent и обновляем URL
+// --- ROUTING LOGIC ---
 watch(activeComponent, (newVal) => {
-  // Находим имя вида по его номеру
   const viewName = Object.keys(viewMap).find(key => viewMap[key] === newVal);
-  
-  // Обновляем URL, только если он отличается, чтобы избежать лишних записей в истории
   if (viewName && route.query.view !== viewName) {
     router.push({ query: { view: viewName } });
   }
+
+  // Attempt to show the quick tip if navigating to the 'play' view for the first time.
+  const currentUser = user.value;
+  if (currentUser) {
+    tryShowInitialQuickTip(currentUser);
+  }
 });
 
-
-// --- ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ ---
-
+// --- HELPER FUNCTIONS ---
 const setVh = () => {
   document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-}
+};
 
-onMounted(() => {
-  setVh(); 
-  window.addEventListener('resize', setVh); 
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', setVh);
-});
-
-const { locale, setLocale } = useI18n();
-const supabase = useSupabaseClient();
-const user = useSupabaseUser();
-
-const skins = ref({ head: null });
-
-onMounted(async () => {
-  if (!user.value) { 
-    try {
-      await supabase.auth.signInAnonymously(); 
-    } catch(e) {
-      console.error("Anonymous sign-in failed:", e);
-    }
-  }
-
-  try {
-    const { data, error } = await supabase.from('skins').select('id, name').eq('name', 'head').single();
-    if (error) throw error;
-    
-    if (data) {
-      skins.value.head = data.id;
-    }
-
-  } catch (error) {
-    console.error("Could not fetch 'head' skin:", error);
-  }
-});
-
-const languages = ['en', 'ru', 'es']; 
+const languages = ['en', 'ru', 'es'];
 const cycleLanguage = () => {
   const currentIndex = languages.indexOf(locale.value);
   const nextIndex = (currentIndex + 1) % languages.length;
   setLocale(languages[nextIndex]);
 };
+
+// This is the actual function that calls the modal
+const showQuickTip = async (currentUser) => {
+  try {
+    const userProfile = {
+      userId: currentUser.id,
+      userProgress: currentUser.user_metadata?.progress || 0,
+      userAge: currentUser.user_metadata?.age || 25,
+      userLocale: locale.value
+    };
+
+    const { data: quickTip, error } = await supabase.functions.invoke('get-quick-tip', {
+      body: userProfile
+    });
+
+    if (error) throw error;
+
+    if (quickTip) {
+      modalStore.open('modals/InfoModal', {
+        title: 'Pro-Tip',
+        message: quickTip,
+        // By passing null to a prop that likely controls the button text,
+        // we can prevent the button from rendering without editing the component itself.
+        buttonText: null
+      }, { history: false });
+    }
+  } catch (e) {
+    console.error("Failed to fetch quick tip:", e);
+  }
+};
+
+// This is a wrapper to check conditions before showing the modal
+const tryShowInitialQuickTip = (currentUser) => {
+  // Only show on the 'play' component and only once per session.
+  if (activeComponent.value === 2 && !initialTipShown.value) {
+    showQuickTip(currentUser);
+    initialTipShown.value = true; // Mark as shown for this session
+  }
+};
+
+
+// --- LIFECYCYCLE HOOK ---
+onMounted(async () => {
+  setVh();
+  window.addEventListener('resize', setVh);
+
+  let currentUser = user.value;
+  if (!currentUser) {
+    try {
+      const { data: { user: signedInUser } } = await supabase.auth.signInAnonymously();
+      currentUser = signedInUser;
+    } catch (e) {
+      console.error("Anonymous sign-in failed:", e);
+    }
+  }
+
+  // Fetch essential data for the scene
+  try {
+    const { data, error } = await supabase.from('skins').select('id, name').eq('name', 'head').single();
+    if (error) throw error;
+    if (data) {
+      skins.value.head = data.id;
+    }
+  } catch (error) {
+    console.error("Could not fetch 'head' skin:", error);
+  }
+
+  // Sync component state with URL on initial load
+  const viewFromUrl = route.query.view;
+  if (viewFromUrl && viewMap[viewFromUrl]) {
+    activeComponent.value = viewMap[viewFromUrl];
+  } else {
+    activeComponent.value = 2; // Default to 'play'
+  }
+
+  // After determining the initial component, try to show the tip.
+  if (currentUser) {
+    tryShowInitialQuickTip(currentUser);
+  }
+});
+
+// --- CLEANUP ---
+onUnmounted(() => {
+  window.removeEventListener('resize', setVh);
+});
 </script>
+
+
 <style scoped>
 .app-container {
   display: flex;
   flex-direction: column;
   width: 100vw;
-  overflow: hidden; 
+  overflow: hidden;
   position: relative;
-  /* Используем --vh переменную для корректной высоты на мобильных */
   height: 100vh; 
   height: calc(var(--vh, 1vh) * 100);
 }
@@ -168,24 +222,18 @@ const cycleLanguage = () => {
   height: 100%;
 }
 
-/* ---> ДОБАВЛЯЕМ ЭТОТ КЛАСС <--- */
-/* Эта обёртка гарантирует, что SceneKit получит правильный размер */
 .scenekit-wrapper {
   width: 100%;
   height: 100%;
 }
 
-/* ---> ИСПРАВЛЕНИЕ СКРОЛЛИНГА <--- */
-/* Разрешаем прокрутку для страниц с текстом и профилем */
 .text-page-wrapper,
 .profile-wrapper {
   overflow-y: auto;
-  /* Добавим немного отступа снизу для удобства прокрутки */
   padding-bottom: 50px;
   box-sizing: border-box;
 }
 
-/* Этот стиль был в app.css, но ему место здесь, так как он касается только этой страницы */
 .profile-wrapper {
   display: flex;
   justify-content: center;
@@ -196,11 +244,10 @@ const cycleLanguage = () => {
 .app-nav {
   flex-shrink: 0;
   display: flex;
-  justify-content: space-between; 
+  justify-content: space-between;
   align-items: center;
   width: 100%;
   padding: 8px 10px;
-  /* Учитываем "чёлку" на iOS */
   padding-bottom: calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid #333;
   box-sizing: border-box;
@@ -245,7 +292,6 @@ const cycleLanguage = () => {
   min-width: 44px;
 }
 
-/* Анимация перехода между видами */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -256,3 +302,4 @@ const cycleLanguage = () => {
   opacity: 0;
 }
 </style>
+

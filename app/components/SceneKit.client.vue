@@ -37,16 +37,6 @@ const initializeScene = async () => {
   if (import.meta.server || hasInitialized.value) return;
   hasInitialized.value = true;
 
-  // ---> ВЫЗОВ МОДАЛЬНОГО ОКНА ТЕПЕРЬ ЗДЕСЬ <---
-  modalStore.open(
-    'modals/InfoModal',
-    {
-      title: 'Загрузка...',
-      message: 'Готовим трёхмерное пространство для новых открытий...',
-    },
-    { history: false }
-  );
-
   const { data: skinData, error } = await supabase.from('skins').select('*').eq('id', props.skinId).single();
   if (error) { console.error("SceneKit Error: Failed to load skin data.", error); return; }
 
