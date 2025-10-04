@@ -327,7 +327,6 @@ class SceneKitApp {
                         depthWrite: false,
                         side: THREE.DoubleSide
                     });
-
                 } else { // 'standard' by default
                     material = new THREE.MeshStandardMaterial({
                         color: new THREE.Color(params.color || 0x87ceeb),
@@ -374,8 +373,8 @@ class SceneKitApp {
     });
     await Promise.all(assetPromises);
     this.needsRender = true;
-  }
-
+  }  
+ 
   createNodes() {
     this.nodesData.forEach(nodeData => {
         const nodeGroup = new THREE.Group();

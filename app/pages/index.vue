@@ -16,7 +16,8 @@
                 :is-active="activeComponent === 2"
               />
               <template #fallback>
-                <div class="component-placeholder">{{ $t('loading') }}</div>
+                <!-- FIX: Removed loading text to prevent flicker before modal appears -->
+                <div class="component-placeholder"></div>
               </template>
             </ClientOnly>
           </div>
@@ -27,14 +28,16 @@
              <ClientOnly>
               <TheProfile />
                <template #fallback>
-                <div class="component-placeholder">{{ $t('loading') }}</div>
+                <!-- FIX: Removed loading text -->
+                <div class="component-placeholder"></div>
               </template>
             </ClientOnly>
           </div>
         </Transition>
 
       </div>
-      <div v-else class="component-placeholder">{{ $t('loading') }}</div>
+      <!-- FIX: Removed loading text -->
+      <div v-else class="component-placeholder"></div>
     </main>
 
     <nav v-if="skins.head" class="app-nav">
@@ -60,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { useModalStore } from '~/composables/useModalStore';
@@ -73,13 +76,13 @@ const router = useRouter();
 const route = useRoute();
 const { locale, setLocale } = useI18n();
 const supabase = useSupabaseClient();
-const user = useSupabaseUser();
 const modalStore = useModalStore();
 
 // --- STATE ---
 const activeComponent = ref(2); // Default to 'play' view (2)
 const skins = ref({ head: null });
-const initialTipShown = ref(false); // Track if the initial tip has been shown this session
+const initialTipShown = ref(false);
+const isInitialized = ref(false); // FIX: Flag to prevent premature modal opening
 
 const viewMap = {
   collaborate: 1,
@@ -92,12 +95,6 @@ watch(activeComponent, (newVal) => {
   const viewName = Object.keys(viewMap).find(key => viewMap[key] === newVal);
   if (viewName && route.query.view !== viewName) {
     router.push({ query: { view: viewName } });
-  }
-
-  // Attempt to show the quick tip if navigating to the 'play' view for the first time.
-  const currentUser = user.value;
-  if (currentUser) {
-    tryShowInitialQuickTip(currentUser);
   }
 });
 
@@ -113,62 +110,23 @@ const cycleLanguage = () => {
   setLocale(languages[nextIndex]);
 };
 
-// This is the actual function that calls the modal
-const showQuickTip = async (currentUser) => {
-  try {
-    const userProfile = {
-      userId: currentUser.id,
-      userProgress: currentUser.user_metadata?.progress || 0,
-      userAge: currentUser.user_metadata?.age || 25,
-      userLocale: locale.value
-    };
-
-    const { data: quickTip, error } = await supabase.functions.invoke('get-quick-tip', {
-      body: userProfile
-    });
-
-    if (error) throw error;
-
-    if (quickTip) {
-      modalStore.open('modals/InfoModal', {
-        title: 'Pro-Tip',
-        message: quickTip,
-        // By passing null to a prop that likely controls the button text,
-        // we can prevent the button from rendering without editing the component itself.
-        buttonText: null
-      }, { history: false });
-    }
-  } catch (e) {
-    console.error("Failed to fetch quick tip:", e);
+// --- FIX: Reactive effect to show the modal ---
+// This now waits for the component to be initialized before checking conditions.
+watchEffect(() => {
+  if (isInitialized.value && activeComponent.value === 2 && !initialTipShown.value && modalStore.quickTip) {
+    modalStore.open('modals/InfoModal', modalStore.quickTip, { history: false });
+    initialTipShown.value = true;
   }
-};
-
-// This is a wrapper to check conditions before showing the modal
-const tryShowInitialQuickTip = (currentUser) => {
-  // Only show on the 'play' component and only once per session.
-  if (activeComponent.value === 2 && !initialTipShown.value) {
-    showQuickTip(currentUser);
-    initialTipShown.value = true; // Mark as shown for this session
-  }
-};
+});
 
 
-// --- LIFECYCYCLE HOOK ---
+// --- LIFECYCYCLE HOOK (CONSOLIDATED) ---
 onMounted(async () => {
+  // Set up viewport and resize listener
   setVh();
   window.addEventListener('resize', setVh);
 
-  let currentUser = user.value;
-  if (!currentUser) {
-    try {
-      const { data: { user: signedInUser } } = await supabase.auth.signInAnonymously();
-      currentUser = signedInUser;
-    } catch (e) {
-      console.error("Anonymous sign-in failed:", e);
-    }
-  }
-
-  // Fetch essential data for the scene
+  // The plugin handles authentication. We just fetch the skin data.
   try {
     const { data, error } = await supabase.from('skins').select('id, name').eq('name', 'head').single();
     if (error) throw error;
@@ -184,13 +142,12 @@ onMounted(async () => {
   if (viewFromUrl && viewMap[viewFromUrl]) {
     activeComponent.value = viewMap[viewFromUrl];
   } else {
-    activeComponent.value = 2; // Default to 'play'
+    activeComponent.value = 2;
   }
 
-  // After determining the initial component, try to show the tip.
-  if (currentUser) {
-    tryShowInitialQuickTip(currentUser);
-  }
+  // FIX: Signal that initialization is complete.
+  // The watchEffect will now be allowed to run.
+  isInitialized.value = true;
 });
 
 // --- CLEANUP ---
