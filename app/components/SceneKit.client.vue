@@ -10,7 +10,6 @@ import { onMounted, onUnmounted, ref, watch, shallowRef } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
@@ -31,8 +30,6 @@ let sceneKitApp = null;
 const uiComponent = shallowRef(null);
 const hasInitialized = ref(false);
 
-// --- ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ---
-// Мы вынесли всю тяжёлую логику из onMounted сюда.
 const initializeScene = async () => {
   if (import.meta.server || hasInitialized.value) return;
   hasInitialized.value = true;
@@ -50,7 +47,6 @@ const initializeScene = async () => {
   sceneKitApp = new SceneKitApp(wrapperRef.value, canvasRef.value, skinData, supabase, modalStore);
   await sceneKitApp.init();
 
-  // Если компонент всё ещё активен после загрузки, запускаем анимацию
   if (props.isActive) {
     sceneKitApp.resume();
   }
@@ -68,49 +64,48 @@ onUnmounted(() => {
   if (sceneKitApp) sceneKitApp.destroy();
 });
 
-// ---> ОСНОВНАЯ ЛОГИКА ТЕПЕРЬ ЗДЕСЬ <---
 watch(() => props.isActive, (newVal) => {
   if (newVal && !hasInitialized.value) {
-    // Если компонент стал активным В ПЕРВЫЙ РАЗ, запускаем инициализацию.
     initializeScene();
   } else if (newVal) {
-    // Если он просто снова стал активным, возобновляем анимацию.
     sceneKitApp?.resume();
   } else {
-    // Если он стал неактивным, ставим на паузу.
     sceneKitApp?.pause();
   }
 });
 
 watch(() => modalStore.isOpen.value, (isOpen) => {
   if (!sceneKitApp) return;
-  // Убедимся, что модальное окно не может возобновить неактивный компонент
   if (props.isActive) {
     isOpen ? sceneKitApp.pause() : sceneKitApp.resume();
   }
 });
 
 // =================================================================================================
-// --- УНИВЕРСАЛЬНЫЙ 3D-ДВИЖОК ---
+// --- UNIVERSAL 3D ENGINE ---
 // =================================================================================================
 class SceneKitApp {
   constructor(wrapper, canvas, skinData, supabase, modalStore) {
-    this.wrapper = wrapper; this.canvas = canvas; this.skinData = skinData; this.supabase = supabase; this.modalStore = modalStore;
-    this.renderer = null; this.scene = null; this.camera = null;
-    this.mainGroup = new THREE.Group(); this.clock = new THREE.Clock();
-    this.controls = null; this.raycaster = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
-    this.font = null; this.geometryCache = {};
-    this.gltfLoader = new GLTFLoader(); 
-    this.stlLoader = new STLLoader(); 
-    this.textureLoader = new THREE.TextureLoader();
-    this.svgLoader = new SVGLoader();
-    this.nodesData = []; this.assetsData = [];
-    this.clickableObjects = []; this.attentionNodes = []; this.attentionEffectUpdater = null;
-    this.billboardGroups = [];
-    this.needsRender = true; this.animationFrameId = null; this.isPaused = true; // Начинаем с паузы
-    this.isEditMode = false; this.isProcessingClick = false;
-    this.draggedObject = null; this.dragPlane = new THREE.Plane(); this.dragOffset = new THREE.Vector3();
-  }
+    this.wrapper = wrapper; this.canvas = canvas; this.skinData = skinData; this.supabase = supabase; this.modalStore = modalStore;
+    this.renderer = null; this.scene = null; this.camera = null;
+    this.mainGroup = new THREE.Group(); this.clock = new THREE.Clock();
+    this.controls = null; this.raycaster = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
+    this.font = null; this.geometryCache = {};
+    this.gltfLoader = new GLTFLoader(); 
+    this.stlLoader = new STLLoader(); 
+    this.textureLoader = new THREE.TextureLoader();
+    this.svgLoader = new SVGLoader();
+    this.nodesData = []; this.assetsData = [];
+    this.clickableObjects = []; 
+    this.attentionNodes = []; 
+    this.allNodeGroups = [];
+    this.attentionEffectUpdater = null;
+    this.globalEffectUpdater = null;
+    this.billboardGroups = [];
+    this.needsRender = true; this.animationFrameId = null; this.isPaused = true;
+    this.isEditMode = false; this.isProcessingClick = false;
+    this.draggedObject = null; this.dragPlane = new THREE.Plane(); this.dragOffset = new THREE.Vector3();
+  }
 
   async init() {
     try {
@@ -130,10 +125,40 @@ class SceneKitApp {
       await this.initSharedAssets();
       await this.createAssets();
       this.createNodes();
+      this.initGlobalEffect();
       this.initAttentionEffect();
-      // Убираем animate() отсюда, им теперь управляет resume()
     } catch (error) { console.error("SceneKit Error: Failed to initialize.", error); }
   }
+
+    // --- EFFECT FACTORY: Central place for all visual effects ---
+    effectFactory = {
+        'pulse': (nodes) => ({
+            update: (deltaTime, elapsed) => {
+                const pulseAmount = 1.0 + Math.sin(elapsed * 5) * 0.05;
+                nodes.forEach(node => {
+                    const baseScale = node.userData.baseScale || 1.0;
+                    const finalScale = baseScale * pulseAmount;
+                    node.scale.set(finalScale, finalScale, finalScale);
+                });
+            }
+        }),
+        'color-shift': (nodes) => {
+            const highlightColor = new THREE.Color(0xf1c40f); // Bright yellow
+            return {
+                update: (deltaTime, elapsed) => {
+                    const lerpFactor = (Math.sin(elapsed * 3) + 1) / 2; // Smoothly oscillates between 0 and 1
+                    nodes.forEach(node => {
+                        const iconMesh = node.children[0];
+                        if (iconMesh && iconMesh.material && iconMesh.material.userData.originalColor) {
+                            iconMesh.material.color.copy(iconMesh.material.userData.originalColor).lerp(highlightColor, lerpFactor);
+                        }
+                    });
+                }
+            };
+        },
+        'none': () => null,
+    };
+
   SVG_PATHS = {
     'Icon_Mathematics': '<path d="M320-240h60v-80h80v-60h-80v-80h-60v80h-80v60h80v80Zm200-30h200v-60H520v60Zm0-100h200v-60H520v60Zm44-152 56-56 56 56 42-42-56-58 56-56-42-42-56 56-56-56-42 42 56 56-56 58 42 42Zm-314-70h200v-60H250v60Zm-50 472q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/>',
     'Icon_Geography': '<path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-155.5t86-127Q252-817 325-848.5T480-880q83 0 155.5 31.5t127 86q54.5 54.5 86 127T880-480q0 82-31.5 155t-86 127.5q-54.5 54.5-127 86T480-80Zm0-82q26-36 45-75t31-83H404q12 44 31 83t45 75Zm-104-16q-18-33-31.5-68.5T322-320H204q29 50 72.5 87t99.5 55Zm208 0q56-18 99.5-55t72.5-87H638q-9 38-22.5 73.5T584-178ZM170-400h136q-3-20-4.5-39.5T300-480q0-21 1.5-40.5T306-560H170q-5 20-7.5 39.5T160-480q0 21 2.5 40.5T170-400Zm216 0h188q3-20 4.5-39.5T580-480q0-21-1.5-40.5T574-560H386q-3 20-4.5 39.5T380-480q0 21 1.5 40.5T386-400Zm268 0h136q5-20 7.5-39.5T800-480q0-21-2.5-40.5T790-560H654q3 20 4.5 39.5T660-480q0 21-1.5 40.5T654-400Zm-16-240h118q-29-50-72.5-87T584-782q18 33 31.5 68.5T638-640Zm-234 0h152q-12-44-31-83t-45-75q-26 36-45 75t-31 83Zm-200 0h118q9-38 22.5-73.5T376-782q-56 18-99.5 55T204-640Z"/>',
@@ -190,32 +215,14 @@ class SceneKitApp {
       },
       'static': () => ({ enabled: false, update: () => false, dispose: () => {} }),
     };
-  effectFactory = {
-    'pulse': (nodes) => {
-      let time = 0;
-      return {
-        // Эта функция будет вызываться на каждом кадре
-        update: (deltaTime) => {
-          time += deltaTime * 5; // Умножаем на 5 для контроля скорости
-          const pulseAmount = 1.05 + Math.sin(time) * 0.05;
-          nodes.forEach(node => {
-              const baseScale = node.userData.baseScale || 1.0;
-              const finalScale = baseScale * pulseAmount;
-              node.scale.set(finalScale, finalScale, finalScale);
-          });
-        }
-      };
-    },
-    'none': () => null,
-  };
+
   initScene() {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: this.canvas, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    // setSize будет вызван в новом методе resize()
     
     this.scene = new THREE.Scene();
     this.scene.add(this.mainGroup);
-    this.camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000); // aspect 1 - временный
+    this.camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
     const initialPos = this.skinData.camera_initial_position?.position || [0, 0, 50];
     this.camera.position.set(...initialPos);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -223,7 +230,7 @@ class SceneKitApp {
     directionalLight.position.set(10, 20, 30);
     this.scene.add(directionalLight);
 
-    this.resize(); // Первый вызов для установки размера
+    this.resize();
   }
 
   initControls() {
@@ -321,7 +328,7 @@ class SceneKitApp {
                         side: THREE.DoubleSide
                     });
 
-                } else { // 'standard' по умолчанию
+                } else { // 'standard' by default
                     material = new THREE.MeshStandardMaterial({
                         color: new THREE.Color(params.color || 0x87ceeb),
                         roughness: params.roughness || 0.5,
@@ -372,6 +379,7 @@ class SceneKitApp {
   createNodes() {
     this.nodesData.forEach(nodeData => {
         const nodeGroup = new THREE.Group();
+        nodeGroup.userData.isNodeGroup = true;
         
         const shapeName = nodeData.shape;
         let geometry;
@@ -395,6 +403,8 @@ class SceneKitApp {
             color: new THREE.Color().lerpColors(startColor, endColor, nodeData.lesson.progress / 100)
         });
         
+        iconMaterial.userData.originalColor = iconMaterial.color.clone();
+        
         const iconMesh = new THREE.Mesh(geometry, iconMaterial);
         nodeGroup.add(iconMesh);
         
@@ -417,14 +427,14 @@ class SceneKitApp {
         
         const scale = nodeData.scale_multiplier || 1.0;
         nodeGroup.scale.set(scale, scale, scale);
-        nodeGroup.userData.baseScale = scale; // Store base scale for pulse effect
+        nodeGroup.userData.baseScale = scale;
         
-        nodeGroup.userData.isLocked = nodeData.prerequisites_met === false;
+        nodeGroup.userData.isLocked = nodeData.lesson.prerequisites_met === false;
         
         this.mainGroup.add(nodeGroup);
         this.billboardGroups.push(nodeGroup);
         this.clickableObjects.push(hitboxMesh); 
-
+        this.allNodeGroups.push(nodeGroup);
         if (nodeGroup.userData.isLocked) {
             iconMaterial.color.set(0x333333);
             iconMaterial.transparent = true;
@@ -436,15 +446,28 @@ class SceneKitApp {
     });
   }
 
+  initGlobalEffect() {
+    this.globalEffectUpdater = null;
+    const effectType = this.skinData.visual_effect || 'none';
+    const effectInitializer = this.effectFactory[effectType];
+    
+    if (effectInitializer) {
+      const effect = effectInitializer(this.allNodeGroups);
+      if (effect && effect.update) {
+        this.globalEffectUpdater = (delta) => effect.update(delta, this.clock.getElapsedTime());
+      }
+    }
+  }
+
   initAttentionEffect() {
-    this.attentionEffectUpdater = null; // Сбрасываем предыдущий эффект
+    this.attentionEffectUpdater = null;
     const effectType = this.skinData.attention_effect || 'none';
     const effectInitializer = this.effectFactory[effectType];
     
     if (effectInitializer) {
       const effect = effectInitializer(this.attentionNodes);
       if (effect && effect.update) {
-        this.attentionEffectUpdater = effect.update;
+        this.attentionEffectUpdater = (delta) => effect.update(delta, this.clock.getElapsedTime());
       }
     }
   }
@@ -536,12 +559,12 @@ class SceneKitApp {
     const width = this.wrapper.clientWidth;
     const height = this.wrapper.clientHeight;
 
-    if (width === 0 || height === 0) return; // Не обновляем, если элемент скрыт
+    if (width === 0 || height === 0) return;
 
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
-    this.needsRender = true; // Запросить перерисовку после изменения размера
+    this.needsRender = true;
   }
 
 animate() {
@@ -549,13 +572,16 @@ animate() {
 
     this.animationFrameId = requestAnimationFrame(() => this.animate());
     
-    // Получаем время, прошедшее с прошлого кадра
     const deltaTime = this.clock.getDelta();
     
-    // Вызываем обновление эффекта, если он есть
+    if (this.globalEffectUpdater) {
+      this.globalEffectUpdater(deltaTime);
+      this.needsRender = true;
+    }
+    
     if (this.attentionEffectUpdater) {
       this.attentionEffectUpdater(deltaTime);
-      this.needsRender = true; // Эффект работает, значит нужно постоянно рендерить
+      this.needsRender = true;
     }
 
     const controlsUpdated = this.controls.update ? this.controls.update() : false;
@@ -576,7 +602,6 @@ animate() {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
-    // Больше не нужно чистить интервал
   }
  
   resume() {
@@ -585,8 +610,8 @@ animate() {
     
     this.isPaused = false;
     this.needsRender = true;
-    this.initAttentionEffect(); // Пересоздаем эффект при возобновлении
-    this.clock.getDelta(); // Сбрасываем таймер, чтобы избежать большого скачка времени
+    this.initAttentionEffect();
+    this.clock.getDelta(); 
     
     if (!this.animationFrameId) {
       this.animate();
@@ -594,7 +619,7 @@ animate() {
   }
 
   destroy() {
-    this.pause(); // Убедимся, что все остановлено
+    this.pause();
     
     if (this.controls) this.controls.dispose();
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
@@ -632,3 +657,4 @@ canvas {
   height: 100%;
 }
 </style>
+
