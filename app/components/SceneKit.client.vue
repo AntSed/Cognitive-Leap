@@ -397,16 +397,25 @@ class SceneKitApp {
              return;
         }
 
-        const startColor = new THREE.Color(0x555555);
-        const endColor = new THREE.Color(nodeData.base_color || '#FFFFFF');
-        const iconMaterial = new THREE.MeshStandardMaterial({
-            color: new THREE.Color().lerpColors(startColor, endColor, nodeData.lesson.progress / 100)
-        });
-        
-        iconMaterial.userData.originalColor = iconMaterial.color.clone();
-        
-        const iconMesh = new THREE.Mesh(geometry, iconMaterial);
-        nodeGroup.add(iconMesh);
+      const baseColor = new THREE.Color(nodeData.base_color || '#FFFFFF');
+      let initialColor;
+
+      // Если урок в процессе (не 0% и не 100%), интерполируем цвет
+      if (nodeData.lesson.progress > 0 && nodeData.lesson.progress < 100) {
+          const startColor = new THREE.Color(0x555555);
+          initialColor = new THREE.Color().lerpColors(startColor, baseColor, nodeData.lesson.progress / 100);
+      } else {
+          // Если урок доступен (0%) или пройден (100%), он должен быть ярким
+          initialColor = baseColor;
+      }
+
+      const iconMaterial = new THREE.MeshStandardMaterial({ color: initialColor.clone() });
+      
+      // Базой для анимации ВСЕГДА будет яркий цвет, а не серый
+      iconMaterial.userData.originalColor = baseColor.clone();
+      
+      const iconMesh = new THREE.Mesh(geometry, iconMaterial);
+      nodeGroup.add(iconMesh);
         
         const textShapes = this.font.generateShapes(nodeData.lesson.game_id.toString(), 0.5);
         const textGeometry = new THREE.ShapeGeometry(textShapes);
