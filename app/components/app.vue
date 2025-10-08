@@ -1,28 +1,27 @@
 <template>
   <div>
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+
+    <ModalWrapper />
+
+    <PlayerModal 
+      v-if="modalStore.isPlayerOpen" 
+      :url="modalStore.playerUrl" 
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+// Здесь только самые необходимые глобальные импорты
+import { useModalStore } from '~/composables/useModalStore';
+import ModalWrapper from '~/components/ModalWrapper.vue';
+import PlayerModal from '~/components/modals/PlayerModal.vue'; // Убедись, что путь верный
 
-const route = useRoute();
+const modalStore = useModalStore();
 
-// This computed property will return 'no-scroll' for all pages
-// EXCEPT for those that start with '/hub'.
-const bodyClass = computed(() => {
-  if (route.path.startsWith('/hub')) {
-    return ''; // On hub pages, body has no extra class
-  }
-  return 'no-scroll'; // On all other pages, apply .no-scroll
-});
-
-// useHead is the Nuxt 3 way to manage the document's <head> and body attributes
-useHead({
-  bodyAttrs: {
-    class: bodyClass
-  }
-});
+// Глобальные настройки для <head> или <body> можно оставить здесь,
+// например, useHead для классов body, если это нужно на всех страницах.
 </script>
+

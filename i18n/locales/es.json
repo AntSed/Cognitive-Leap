@@ -92,5 +92,32 @@
   "about_subtitle_educators": "A los educadores:",
   "about_text_educators": "Libérate de la rutina. Deja que nuestra plataforma se encargue de lo básico, para que puedas centrarte en lo que realmente importa: guiar e inspirar a los estudiantes. Conviértete en el curador principal de tu materia.",
   "about_conclusion": "Demos este salto cognitivo juntos y construyamos la educación que nuestros hijos merecen.",
-  "about_project": "Sobre el proyecto"
+  "about_project": "Sobre el proyecto",
+  "common": {
+    "cancel": "Cancelar",
+    "confirm": "Confirmar"
+  },
+  "hub": {
+    "add": {
+      "title": "Añadir Nuevo Material",
+      "subtitle": "Contribuye a la biblioteca de Cognitive Leap.",
+      "chooseType": "1. Elige el tipo de material",
+      "typeExternal": "Enlace Externo",
+      "typeApp": "Subir Aplicación (.zip)",
+      "typeVideo": "Subir Video",
+      "typePresentation": "Subir Presentación (.zip)",
+      "provideSource": "2. Proporciona la fuente del contenido",
+      "addDetails": "3. Añade los detalles",
+      "contentLang": "Idioma del contenido:",
+      "recommendedAge": "Edad recomendada:",
+      "submitButton": "Enviar para revisión",
+      "submittingButton": "Enviando..."
+    },
+    "modals": {
+      "delete": {
+        "title": "Confirmar Eliminación",
+        "message": "¿Estás seguro de que quieres eliminar permanentemente \"{materialName}\"? Esta acción no se puede deshacer."
+      }
+    }
+  }
 }

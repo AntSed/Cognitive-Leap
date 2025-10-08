@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="page-wrapper">
     <main class="main-content">
       <div v-if="skins.head" class="view-container">
         <Transition name="fade">
@@ -7,7 +7,6 @@
             <TextPage />
           </div>
         </Transition>
-
         <Transition name="fade">
           <div v-show="activeComponent === 2" class="scenekit-wrapper">
             <ClientOnly>
@@ -16,27 +15,22 @@
                 :is-active="activeComponent === 2"
               />
               <template #fallback>
-                <!-- FIX: Removed loading text to prevent flicker before modal appears -->
                 <div class="component-placeholder"></div>
               </template>
             </ClientOnly>
           </div>
         </Transition>
-
         <Transition name="fade">
           <div v-show="activeComponent === 3" class="profile-wrapper">
-             <ClientOnly>
-              <TheProfile />
-               <template #fallback>
-                <!-- FIX: Removed loading text -->
-                <div class="component-placeholder"></div>
-              </template>
+              <ClientOnly>
+                <TheProfile />
+                <template #fallback>
+                  <div class="component-placeholder"></div>
+                </template>
             </ClientOnly>
           </div>
         </Transition>
-
       </div>
-      <!-- FIX: Removed loading text -->
       <div v-else class="component-placeholder"></div>
     </main>
 
@@ -58,11 +52,12 @@
         </button>
       </div>
     </nav>
-    <ModalWrapper />
+        <ModalWrapper />
   </div>
 </template>
 
 <script setup>
+// Скриптовая часть остается БЕЗ ИЗМЕНЕНИЙ
 import { ref, onMounted, onUnmounted, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
@@ -71,119 +66,95 @@ import SceneKit from '~/components/SceneKit.client.vue';
 import TheProfile from '~/components/TheProfile.client.vue';
 import TextPage from '~/components/TextPage.client.vue';
 
-// --- STORES & CLIENTS ---
 const router = useRouter();
 const route = useRoute();
 const { locale, setLocale } = useI18n();
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
-
-// --- STATE ---
-const activeComponent = ref(2); // Default to 'play' view (2)
+const activeComponent = ref(2);
 const skins = ref({ head: null });
 const initialTipShown = ref(false);
-const isInitialized = ref(false); // FIX: Flag to prevent premature modal opening
+const isInitialized = ref(false);
+const viewMap = { collaborate: 1, play: 2, profile: 3 };
 
-const viewMap = {
-  collaborate: 1,
-  play: 2,
-  profile: 3
-};
-
-// --- ROUTING LOGIC ---
 watch(activeComponent, (newVal) => {
   const viewName = Object.keys(viewMap).find(key => viewMap[key] === newVal);
-  if (viewName && route.query.view !== viewName) {
-    router.push({ query: { view: viewName } });
-  }
+  if (viewName && route.query.view !== viewName) { router.push({ query: { view: viewName } }); }
 });
-
-// --- HELPER FUNCTIONS ---
-const setVh = () => {
-  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-};
-
+const setVh = () => { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); };
 const languages = ['en', 'ru', 'es'];
 const cycleLanguage = () => {
   const currentIndex = languages.indexOf(locale.value);
   const nextIndex = (currentIndex + 1) % languages.length;
   setLocale(languages[nextIndex]);
 };
-
-// --- FIX: Reactive effect to show the modal ---
-// This now waits for the component to be initialized before checking conditions.
 watchEffect(() => {
   if (isInitialized.value && activeComponent.value === 2 && !initialTipShown.value && modalStore.quickTip) {
     modalStore.open('modals/InfoModal', modalStore.quickTip, { history: false });
     initialTipShown.value = true;
   }
 });
-
-
-// --- LIFECYCYCLE HOOK (CONSOLIDATED) ---
 onMounted(async () => {
-  // Set up viewport and resize listener
   setVh();
   window.addEventListener('resize', setVh);
-
-  // The plugin handles authentication. We just fetch the skin data.
   try {
     const { data, error } = await supabase.from('skins').select('id, name').eq('name', 'head').single();
     if (error) throw error;
-    if (data) {
-      skins.value.head = data.id;
-    }
-  } catch (error) {
-    console.error("Could not fetch 'head' skin:", error);
-  }
-
-  // Sync component state with URL on initial load
+    if (data) { skins.value.head = data.id; }
+  } catch (error) { console.error("Could not fetch 'head' skin:", error); }
   const viewFromUrl = route.query.view;
   if (viewFromUrl && viewMap[viewFromUrl]) {
     activeComponent.value = viewMap[viewFromUrl];
   } else {
     activeComponent.value = 2;
   }
-
-  // FIX: Signal that initialization is complete.
-  // The watchEffect will now be allowed to run.
   isInitialized.value = true;
 });
-
-// --- CLEANUP ---
-onUnmounted(() => {
-  window.removeEventListener('resize', setVh);
-});
+onUnmounted(() => { window.removeEventListener('resize', setVh); });
 </script>
 
-
 <style scoped>
-.app-container {
+/* ФИНАЛЬНЫЕ РАБОЧИЕ СТИЛИ
+*/
+.page-wrapper {
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  overflow: hidden;
-  position: relative;
-  height: 100vh; 
-  height: calc(var(--vh, 1vh) * 100);
+  height: 100%;
 }
 
 .main-content {
   flex-grow: 1;
-  position: relative;
-  overflow: hidden;
+  position: relative; /* Создаем контекст для .view-container */
 }
 
-.view-container > div {
+.view-container {
+  /* Заставляем контейнер для "видов" занять всё место в main */
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
 
-.scenekit-wrapper {
+/* Правила для переключения через v-show, которые мы вынесли из app.css 
+  :deep() нужен, чтобы стили применились к компонентам <Transition>
+*/
+.view-container > :deep(*) {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
+.view-container > :deep([style*="display: none;"]) {
+  display: block !important;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
 
+/* Оригинальные стили для навигации и оберток
+*/
 .text-page-wrapper,
 .profile-wrapper {
   overflow-y: auto;
@@ -259,4 +230,3 @@ onUnmounted(() => {
   opacity: 0;
 }
 </style>
-

@@ -7,42 +7,42 @@
         </button>
       </div>
       <div v-for="subject in subjects" :key="subject.id" class="subject-group">
-  
+
         <div class="subject-header" @click="toggleSubject(subject.id)">
-            <h3 class="subject-title">{{ subject.name_translations?.en || 'Unnamed Subject' }}</h3>
-            
-            <svg 
-            class="subject-chevron" 
-            :class="{ 'is-expanded': expandedSubjects.has(subject.id) }" 
+          <h3 class="subject-title">{{ subject.name_translations?.en || 'Unnamed Subject' }}</h3>
+
+          <svg
+            class="subject-chevron"
+            :class="{ 'is-expanded': expandedSubjects.has(subject.id) }"
             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
+          </svg>
         </div>
-        
+
         <ul v-if="expandedSubjects.has(subject.id)" class="lesson-list">
-            <li v-for="lesson in lessonsBySubject[subject.id]" :key="lesson.id">
+          <li v-for="lesson in lessonsBySubject[subject.id]" :key="lesson.id">
             <a @click="selectLesson(lesson)" :class="{ active: selectedLesson?.id === lesson.id }">
-                <span class="lesson-position">{{ lesson.position }}.</span>
-                <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
-                <span class="material-count">{{ lesson.material_count }}</span>
+              <span class="lesson-position">{{ lesson.position }}.</span>
+              <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
+              <span class="material-count">{{ lesson.material_count }}</span>
             </a>
-            </li>
+          </li>
         </ul>
 
-        </div>
+      </div>
     </aside>
-    <div 
-        v-if="isSidebarOpen" 
-        class="sidebar-overlay" 
-        @click="isSidebarOpen = false">
+    <div
+      v-if="isSidebarOpen"
+      class="sidebar-overlay"
+      @click="isSidebarOpen = false">
     </div>
 
     <main class="hub-main-content">
-        <div class="sidebar-toggle">
-            <button @click="isSidebarOpen = !isSidebarOpen">
-            ☰
-            </button>
-        </div>
+      <div class="sidebar-toggle">
+        <button @click="isSidebarOpen = !isSidebarOpen">
+          ☰
+        </button>
+      </div>
       <header class="hub-header">
         <h1>Content Hub</h1>
         <p v-if="selectedLesson">
@@ -87,66 +87,69 @@
       <div v-else-if="materials.length === 0" class="state-indicator">
         <p>No materials found for this selection.</p>
       </div>
-      <div v-else class="materials-grid">
-        <HubMaterialCard
-          v-for="material in materials"
-          :key="material.id"
-          :material="material"
-        />
+      <div v-if="currentUserProfile" class="materials-grid">
+        <template v-for="material in displayedMaterials" :key="material.id">
+          <AddNewMaterialCard
+            v-if="material.isAddNewCard"
+            :lesson-id="selectedLesson?.id"
+          />
+          <HubMaterialCard
+            v-else
+            :material="material"
+            :current-user="currentUserProfile"
+            :selected-lesson-id="selectedLesson?.id"
+          />
+        </template>
+      </div>
+      <div v-else-if="!isLoading">
+        <p>Loading user data...</p>
       </div>
     </main>
+    <ModalWrapper />
   </div>
 </template>
-
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
+import { useSupabaseUser, useSupabaseClient } from '#imports';
+import { useModalStore } from '~/composables/useModalStore';
+import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue'; 
 
 definePageMeta({
   middleware: 'auth'
 });
-const supabase = useSupabaseClient();
 
+// --- STATE ---
+const user = useSupabaseUser();
+const supabase = useSupabaseClient();
+const modalStore = useModalStore();
+
+const currentUserProfile = ref(null);
 const materials = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
-
-// --- Filter State (typeFilter is back) ---
 const searchQuery = ref('');
 const statusFilter = ref('');
 const typeFilter = ref('');
-
-// --- Tree State ---
 const subjects = ref([]);
 const lessons = ref([]);
 const selectedLesson = ref(null);
 const expandedSubjects = ref(new Set());
-
 const isSidebarOpen = ref(false);
-// This function will add or remove a subject's ID from our Set
+
+
+// --- DATA FETCHING & LOGIC (No changes below this line) ---
+const displayedMaterials = computed(() => {
+  if (selectedLesson.value) {
+    const addNewCard = { isAddNewCard: true, id: 'add-new' };
+    return [addNewCard, ...materials.value];
+  }
+  return materials.value;
+});
 const toggleSubject = (subjectId) => {
   if (expandedSubjects.value.has(subjectId)) {
     expandedSubjects.value.delete(subjectId);
   } else {
     expandedSubjects.value.add(subjectId);
-  }
-};
-// --- MODIFIED: Fetching tree data now uses RPC for lessons ---
-const fetchTreeData = async () => {
-  try {
-    const [subjectsRes, lessonsRes] = await Promise.all([
-      supabase.from('subjects').select('*').order('name_translations->>en'),
-      supabase.rpc('get_lessons_with_material_count') // Using our new function
-    ]);
-
-    if (subjectsRes.error) throw subjectsRes.error;
-    if (lessonsRes.error) throw lessonsRes.error;
-    
-    subjects.value = subjectsRes.data;
-    lessons.value = lessonsRes.data;
-
-  } catch (e) {
-    console.error("Error fetching tree data:", e);
-    error.value = e;
   }
 };
 
@@ -161,7 +164,46 @@ const lessonsBySubject = computed(() => {
   }, {});
 });
 
-// --- MODIFIED: The fetch function is now fixed and smarter ---
+const selectLesson = (lesson) => {
+  selectedLesson.value = lesson;
+  isSidebarOpen.value = false;
+};
+
+const fetchUserProfile = async () => {
+  if (user.value) {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('user_id, hub_role')
+      .eq('user_id', user.value.id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching user profile:", error.message);
+    } else {
+      currentUserProfile.value = data;
+    }
+  }
+};
+
+const fetchTreeData = async () => {
+  try {
+    const [subjectsRes, lessonsRes] = await Promise.all([
+      supabase.from('subjects').select('*').order('name_translations->>en'),
+      supabase.rpc('get_lessons_with_material_count')
+    ]);
+
+    if (subjectsRes.error) throw subjectsRes.error;
+    if (lessonsRes.error) throw lessonsRes.error;
+    
+    subjects.value = subjectsRes.data;
+    lessons.value = lessonsRes.data;
+
+  } catch (e) {
+    console.error("Error fetching tree data:", e);
+    error.value = e;
+  }
+};
+
 const fetchMaterials = async () => {
   isLoading.value = true;
   error.value = null;
@@ -169,7 +211,6 @@ const fetchMaterials = async () => {
     let query;
 
     if (selectedLesson.value) {
-      // --- A. A lesson IS selected ---
       query = supabase
         .from('lesson_materials')
         .select('learning_apps ( * )')
@@ -179,18 +220,15 @@ const fetchMaterials = async () => {
       if (typeFilter.value) query = query.eq('learning_apps.material_type', typeFilter.value);
       if (searchQuery.value) query = query.ilike('learning_apps.title_translations->>en', `%${searchQuery.value}%`);
       
-      // FIX: Apply referencedTable only when needed
       query = query.order('created_at', { referencedTable: 'learning_apps', ascending: false });
 
     } else {
-      // --- B. No lesson selected (Show All) ---
       query = supabase.from('learning_apps').select('*');
       
       if (statusFilter.value) query = query.eq('status', statusFilter.value);
       if (typeFilter.value) query = query.eq('material_type', typeFilter.value);
       if (searchQuery.value) query = query.ilike('title_translations->>en', `%${searchQuery.value}%`);
 
-      // FIX: Do NOT use referencedTable when querying the base table
       query = query.order('created_at', { ascending: false });
     }
 
@@ -211,17 +249,12 @@ const fetchMaterials = async () => {
   }
 };
 
-const selectLesson = (lesson) => {
-  selectedLesson.value = lesson;
-  isSidebarOpen.value = false; // NEW: Close sidebar after a lesson is selected on mobile
-};
-
-// Watch all filters now
 watch([searchQuery, statusFilter, typeFilter, selectedLesson], fetchMaterials, { deep: true });
 
-onMounted(() => {
-  fetchTreeData();
-  fetchMaterials();
+onMounted(async () => {
+  await fetchUserProfile();
+  await fetchTreeData();
+  await fetchMaterials();
 });
 </script>
 

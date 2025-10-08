@@ -92,5 +92,32 @@
   "about_subtitle_educators": "To Educators:",
   "about_text_educators": "Break free from the routine. Let our platform handle the basics, so you can focus on what truly matters: mentoring and inspiring students. Become a lead curator for your subject.",
   "about_conclusion": "Let's take this cognitive leap together and build the education our children deserve.",
-  "about_project": "About Project"
+  "about_project": "About Project",
+    "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "hub": {
+    "add": {
+      "title": "Add New Material",
+      "subtitle": "Contribute to the Cognitive Leap library.",
+      "chooseType": "1. Choose Material Type",
+      "typeExternal": "External Link",
+      "typeApp": "Upload App (.zip)",
+      "typeVideo": "Upload Video",
+      "typePresentation": "Upload Presentation (.zip)",
+      "provideSource": "2. Provide Content Source",
+      "addDetails": "3. Add Details",
+      "contentLang": "Language of the content itself:",
+      "recommendedAge": "Recommended Age:",
+      "submitButton": "Submit for Review",
+      "submittingButton": "Submitting..."
+    },
+    "modals": {
+      "delete": {
+        "title": "Confirm Deletion",
+        "message": "Are you sure you want to permanently delete \"{materialName}\"? This action cannot be undone."
+      }
+    }
+  }
 }

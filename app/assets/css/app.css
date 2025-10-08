@@ -4,6 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
+.app-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  overflow: hidden; /* Будь осторожен с этим свойством, оно может обрезать тени модалок */
+  position: relative;
+  height: 100vh; 
+  /* Если используешь --vh, onMounted логику нужно будет перенести сюда */
+}
+
+
 /*
   Глобальные стили и сбросы
   - Настраивает базовую структуру документа, основной шрифт и цвета.
@@ -18,25 +29,6 @@ html, body, #__nuxt {
   font-family: 'Inter', sans-serif;
 }
 
-/*
-  КРИТИЧЕСКИЕ ПРАВИЛА для работы v-show с SceneKit
-  - Заставляют все "страницы" накладываться друг на друга.
-  - Заменяют `display: none;` от v-show на `opacity: 0`, чтобы не ломать WebGL.
-*/
-.view-container > * {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.view-container > [style*="display: none;"] {
-  display: block !important;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-}
 
 /* Стиль для заглушки-загрузчика */
 .component-placeholder {
