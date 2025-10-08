@@ -76,17 +76,7 @@
             <option value="article">Article</option>
           </select>
         </div>
-      </div>
-
-      <div v-if="isLoading" class="state-indicator">
-        <p>Loading materials...</p>
-      </div>
-      <div v-else-if="error" class="state-indicator error">
-        <p>Failed to load materials: {{ error.message }}</p>
-      </div>
-      <div v-else-if="materials.length === 0" class="state-indicator">
-        <p>No materials found for this selection.</p>
-      </div>
+        </div>
       <div v-if="currentUserProfile" class="materials-grid">
         <template v-for="material in displayedMaterials" :key="material.id">
           <AddNewMaterialCard
@@ -98,6 +88,7 @@
             :material="material"
             :current-user="currentUserProfile"
             :selected-lesson-id="selectedLesson?.id"
+            :on-update="fetchMaterials"
           />
         </template>
       </div>
@@ -463,6 +454,7 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
+  grid-auto-rows: min-content;
 }
 
 .state-indicator {

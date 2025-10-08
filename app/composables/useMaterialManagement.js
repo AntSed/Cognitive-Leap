@@ -1,18 +1,31 @@
-// composables/useMaterialManagement.js
-
 import { useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 
-/**
- * Composable для управления материалами: открытие модальных окон
- * и выполнение действий (удаление, открепление, смена статуса).
- */
 export function useMaterialManagement() {
   const supabase = useSupabaseClient();
   const modalStore = useModalStore();
 
-  // --- "Приватная" функция, выполняющая реальное удаление ---
-  const _deleteMaterialFromDB = async (materialId) => {
+  // ИЗМЕНЕНИЕ: Функция теперь принимает колбэк
+  const _unpinMaterialFromDB = async (materialId, lessonId, onUpdateCallback) => {
+    try {
+      const { error } = await supabase
+        .from('lesson_materials')
+        .delete()
+        .match({ material_id: materialId, lesson_id: lessonId });
+
+      if (error) throw error;
+      
+      // ИЗМЕНЕНИЕ: Вызываем колбэк вместо перезагрузки
+      if (onUpdateCallback) onUpdateCallback();
+
+    } catch (error) {
+      console.error('Error unpinning material:', error.message);
+      alert(`Failed to unpin material: ${error.message}`);
+    }
+  };
+
+  // ИЗМЕНЕНИЕ: Функция теперь принимает колбэк
+  const _deleteMaterialFromDB = async (materialId, onUpdateCallback) => {
     try {
       const { error } = await supabase
         .from('learning_apps')
@@ -21,55 +34,42 @@ export function useMaterialManagement() {
 
       if (error) throw error;
 
-      // TODO: Заменить на более элегантное обновление списка без перезагрузки
-      window.location.reload(); 
+      // ИЗМЕНЕНИЕ: Вызываем колбэк вместо перезагрузки
+      if (onUpdateCallback) onUpdateCallback();
 
     } catch (error) {
       console.error('Error deleting material:', error.message);
-      // TODO: Заменить на красивое уведомление об ошибке
       alert(`Failed to delete material: ${error.message}`);
     }
   };
 
-  // --- Функции, которые будут вызываться из компонента карточки ---
-
-  /**
-   * Открывает модальное окно для подтверждения удаления материала.
-   * @param {object} material - Объект материала, который нужно удалить.
-   */
-  const openDeleteModal = (material) => {
-
+  // ИЗМЕНЕНИЕ: Функция теперь принимает колбэк и передаёт его дальше
+  const openDeleteModal = (material, onUpdateCallback) => {
     modalStore.open('hub/modals/ConfirmDeleteModal', {
       titleKey: 'hub.modals.delete.title',
       messageKey: 'hub.modals.delete.message',
-      messageParams: {
-        materialName: material.title_translations?.en || 'this material'
-      },
-      onConfirm: () => _deleteMaterialFromDB(material.id)
+      messageParams: { materialName: material.title_translations?.en || 'this material' },
+      onConfirm: () => _deleteMaterialFromDB(material.id, onUpdateCallback)
     });
   };
-  /**
-   * Открывает модальное окно для подтверждения открепления материала от урока.
-   * @param {object} material - Объект материала.
-   * @param {string} lessonId - ID урока, от которого открепляем.
-   */
-  const openUnpinModal = (material, lessonId) => {
-    console.log(`TODO: Open Unpin Modal for material ${material.id} from lesson ${lessonId}`);
-    // Здесь будет логика для модального окна ConfirmUnpinModal
-    // modalStore.open('modals/ConfirmUnpinModal', { ... });
+
+  // ИЗМЕНЕНИЕ: Функция теперь принимает колбэк и передаёт его дальше
+  const openUnpinModal = (material, lessonId, onUpdateCallback) => {
+    modalStore.open('hub/modals/ConfirmUnpinModal', {
+      titleKey: 'hub.modals.unpin.title',
+      messageKey: 'hub.modals.unpin.message',
+      messageParams: { materialName: material.title_translations?.en || 'this material' },
+      onConfirm: () => _unpinMaterialFromDB(material.id, lessonId, onUpdateCallback)
+    });
   };
 
-  /**
-   * Открывает модальное окно для изменения статуса и привязки к урокам.
-   * @param {object} material - Объект материала.
-   */
-  const openStatusModal = (material) => {
-    console.log(`TODO: Open Status Modal for material ${material.id}`);
-    // Здесь будет логика для модального окна ManageStatusModal
-    // modalStore.open('modals/ManageStatusModal', { ... });
+  const openStatusModal = (material, onUpdateCallback) => {
+    modalStore.open('hub/modals/ManageStatusModal', {
+      material: material,
+      onUpdateSuccess: onUpdateCallback 
+    });
   };
-
-
+  
   return {
     openDeleteModal,
     openUnpinModal,

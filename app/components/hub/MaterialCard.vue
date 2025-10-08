@@ -21,13 +21,13 @@
       </span>
       
       <div class="card-actions">
-        <button v-if="canManageStatus" @click="openStatusModal(material)" class="action-btn status-btn" title="Manage Status">
+        <button v-if="canManageStatus" @click="openStatusModal(material, props.onUpdate)" title="Manage Status">
           ⚙️
         </button>
-        <button v-if="canUnpin" @click="openUnpinModal(material, selectedLessonId)" class="action-btn unpin-btn" title="Unpin from Lesson">
+        <button v-if="canUnpin" @click="openUnpinModal(material, selectedLessonId, props.onUpdate)" class="action-btn unpin-btn" title="Unpin from Lesson">
           💔
         </button>
-        <button v-if="canDelete" @click="openDeleteModal(material)" class="action-btn delete-btn" title="Delete Material">
+        <button v-if="canDelete" @click="openDeleteModal(material, props.onUpdate)" class="action-btn delete-btn" title="Delete Material">
           🗑️
         </button>
       </div>
@@ -43,7 +43,8 @@ import { useMaterialManagement } from '~/composables/useMaterialManagement';
 const props = defineProps({
   material: { type: Object, required: true },
   currentUser: { type: Object, required: true },
-  selectedLessonId: { type: String, default: null }
+  selectedLessonId: { type: String, default: null },
+  onUpdate: { type: Function, required: true }
 });
 
 
@@ -112,10 +113,14 @@ const canManageStatus = computed(() => isEditor.value || isAdmin.value);
 .card-footer {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #ecf0f1;
+  border-top: 1px solid #e0f5fa;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.material-age {
+  font-size: 0.85rem;
+  color: #7f8c8d;
 }
 .play-button {
   padding: 0.5rem 1rem;
