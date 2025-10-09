@@ -7,10 +7,8 @@
         </button>
       </div>
       <div v-for="subject in subjects" :key="subject.id" class="subject-group">
-
         <div class="subject-header" @click="toggleSubject(subject.id)">
           <h3 class="subject-title">{{ subject.name_translations?.en || 'Unnamed Subject' }}</h3>
-
           <svg
             class="subject-chevron"
             :class="{ 'is-expanded': expandedSubjects.has(subject.id) }"
@@ -18,19 +16,36 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
           </svg>
         </div>
-
-        <ul v-if="expandedSubjects.has(subject.id)" class="lesson-list">
-          <li v-for="lesson in lessonsBySubject[subject.id]" :key="lesson.id">
-            <a @click="selectLesson(lesson)" :class="{ active: selectedLesson?.id === lesson.id }">
-              <span class="lesson-position">{{ lesson.position }}.</span>
-              <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
-              <span class="material-count">{{ lesson.material_count }}</span>
-            </a>
-          </li>
-        </ul>
-
+        <draggable
+          v-if="expandedSubjects.has(subject.id)" tag="ul"
+          :list="lessonsBySubject[subject.id]"
+          class="lesson-list"
+          group="materials"
+          item-key="id"
+          @add="onDrop"
+          @end="hoveredLesson = null"
+          :sort="false"
+          :ghost-class="'ghost-item'"
+        >
+          <template #item="{ element: lesson }">
+            <li
+              :class="{
+                'drop-target': hoveredLesson?.id === lesson.id,
+                'drop-error': errorLessonId === lesson.id
+              }"
+              @dragenter.prevent="hoveredLesson = lesson"
+            >
+              <a @click="selectLesson(lesson)" :class="{ active: selectedLesson?.id === lesson.id }">
+                <span class="lesson-position">{{ lesson.position }}.</span>
+                <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
+                <span class="material-count">{{ lesson.material_count }}</span>
+              </a>
+            </li>
+          </template>
+        </draggable>
       </div>
     </aside>
+
     <div
       v-if="isSidebarOpen"
       class="sidebar-overlay"
@@ -77,33 +92,43 @@
           </select>
         </div>
         </div>
-      <div v-if="currentUserProfile" class="materials-grid">
-        <template v-for="material in displayedMaterials" :key="material.id">
-          <AddNewMaterialCard
-            v-if="material.isAddNewCard"
-            :lesson-id="selectedLesson?.id"
-          />
-          <HubMaterialCard
-            v-else
-            :material="material"
-            :current-user="currentUserProfile"
-            :selected-lesson-id="selectedLesson?.id"
-            :on-update="fetchMaterials"
-          />
-        </template>
-      </div>
-      <div v-else-if="!isLoading">
-        <p>Loading user data...</p>
-      </div>
+
+        <div v-if="currentUserProfile" class="materials-grid">
+          <draggable
+            class="draggable-container"
+            :list="displayedMaterials"
+            :group="{ name: 'materials', pull: 'clone', put: false }"
+            item-key="id"
+            :sort="false"
+            :drag-class="'dragging-card'"
+          >
+            <template #item="{ element: material }">
+              <template v-if="material.isAddNewCard">
+                <AddNewMaterialCard :lesson-id="selectedLesson?.id" />
+              </template>
+              <template v-else>
+                <HubMaterialCard
+                  :material="material"
+                  :current-user="currentUserProfile"
+                  :selected-lesson-id="selectedLesson?.id"
+                  :on-update="handleMaterialUpdate" @update-position="handlePositionUpdate"
+                />
+              </template>
+            </template>
+          </draggable>
+        </div>
     </main>
     <ModalWrapper />
   </div>
 </template>
+
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
+import draggable from 'vuedraggable';
 import { useSupabaseUser, useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
-import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue'; 
+import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
+import HubMaterialCard from '~/components/hub/MaterialCard.vue';
 
 definePageMeta({
   middleware: 'auth'
@@ -126,23 +151,18 @@ const lessons = ref([]);
 const selectedLesson = ref(null);
 const expandedSubjects = ref(new Set());
 const isSidebarOpen = ref(false);
+const hoveredLesson = ref(null);
+const errorLessonId = ref(null);
 
-
-// --- DATA FETCHING & LOGIC (No changes below this line) ---
+// --- COMPUTED ---
 const displayedMaterials = computed(() => {
+  // Display logic: Prepend an "Add New" card when a lesson is selected.
   if (selectedLesson.value) {
     const addNewCard = { isAddNewCard: true, id: 'add-new' };
     return [addNewCard, ...materials.value];
   }
   return materials.value;
 });
-const toggleSubject = (subjectId) => {
-  if (expandedSubjects.value.has(subjectId)) {
-    expandedSubjects.value.delete(subjectId);
-  } else {
-    expandedSubjects.value.add(subjectId);
-  }
-};
 
 const lessonsBySubject = computed(() => {
   if (!lessons.value) return {};
@@ -155,6 +175,15 @@ const lessonsBySubject = computed(() => {
   }, {});
 });
 
+// --- METHODS ---
+const toggleSubject = (subjectId) => {
+  if (expandedSubjects.value.has(subjectId)) {
+    expandedSubjects.value.delete(subjectId);
+  } else {
+    expandedSubjects.value.add(subjectId);
+  }
+};
+
 const selectLesson = (lesson) => {
   selectedLesson.value = lesson;
   isSidebarOpen.value = false;
@@ -162,14 +191,14 @@ const selectLesson = (lesson) => {
 
 const fetchUserProfile = async () => {
   if (user.value) {
-    const { data, error } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('user_profiles')
       .select('user_id, hub_role')
       .eq('user_id', user.value.id)
       .single();
 
-    if (error) {
-      console.error("Error fetching user profile:", error.message);
+    if (fetchError) {
+      console.error("Error fetching user profile:", fetchError.message);
     } else {
       currentUserProfile.value = data;
     }
@@ -185,7 +214,7 @@ const fetchTreeData = async () => {
 
     if (subjectsRes.error) throw subjectsRes.error;
     if (lessonsRes.error) throw lessonsRes.error;
-    
+
     subjects.value = subjectsRes.data;
     lessons.value = lessonsRes.data;
 
@@ -194,7 +223,11 @@ const fetchTreeData = async () => {
     error.value = e;
   }
 };
-
+const handleMaterialUpdate = async () => {
+  // This function refreshes both the main content and the sidebar.
+  await fetchMaterials();
+  await fetchTreeData();
+};
 const fetchMaterials = async () => {
   isLoading.value = true;
   error.value = null;
@@ -202,20 +235,21 @@ const fetchMaterials = async () => {
     let query;
 
     if (selectedLesson.value) {
+      // Fetch materials for the selected lesson, ordered by position.
       query = supabase
         .from('lesson_materials')
-        .select('learning_apps ( * )')
+        .select('position, learning_apps ( * )')
         .eq('lesson_id', selectedLesson.value.id);
 
       if (statusFilter.value) query = query.eq('learning_apps.status', statusFilter.value);
       if (typeFilter.value) query = query.eq('learning_apps.material_type', typeFilter.value);
       if (searchQuery.value) query = query.ilike('learning_apps.title_translations->>en', `%${searchQuery.value}%`);
-      
-      query = query.order('created_at', { referencedTable: 'learning_apps', ascending: false });
 
+      query = query.order('position', { ascending: true });
     } else {
+      // Fetch all materials if no lesson is selected.
       query = supabase.from('learning_apps').select('*');
-      
+
       if (statusFilter.value) query = query.eq('status', statusFilter.value);
       if (typeFilter.value) query = query.eq('material_type', typeFilter.value);
       if (searchQuery.value) query = query.ilike('title_translations->>en', `%${searchQuery.value}%`);
@@ -225,9 +259,13 @@ const fetchMaterials = async () => {
 
     const { data, error: fetchError } = await query;
     if (fetchError) throw fetchError;
-    
+
     if (selectedLesson.value) {
-      materials.value = data.map(item => item.learning_apps).filter(Boolean);
+      // Map the RPC result, combining the material data with its position.
+      materials.value = data.map(item => ({
+        ...item.learning_apps,
+        position: item.position
+      })).filter(Boolean);
     } else {
       materials.value = data;
     }
@@ -240,6 +278,94 @@ const fetchMaterials = async () => {
   }
 };
 
+const handlePositionUpdate = async ({ materialId, newPosition }) => {
+  // Handles reordering materials via manual input on the card component.
+  if (!selectedLesson.value) return;
+
+  try {
+    const { error: rpcError } = await supabase.rpc('reorder_lesson_materials', {
+      p_lesson_id: selectedLesson.value.id,
+      p_material_id: materialId,
+      p_new_position: newPosition
+    });
+
+    if (rpcError) throw rpcError;
+    await fetchMaterials();
+
+  } catch (e) {
+    console.error('Failed to reorder materials by input:', e);
+    await fetchMaterials();
+  }
+};
+
+const onDrop = async (event) => {
+  // Handles dropping a material onto a lesson in the sidebar.
+  const { newIndex } = event;
+  const droppedMaterial = event.item.__draggable_context.element;
+  const targetLesson = hoveredLesson.value;
+
+  // Immediately remove the item vuedraggable adds to the lesson list to prevent UI glitches.
+  if (targetLesson) {
+    const lessonList = lessonsBySubject.value[targetLesson.subject_id];
+    if (lessonList) {
+      lessonList.splice(newIndex, 1);
+    }
+  }
+
+  if (!droppedMaterial || !targetLesson || droppedMaterial.isAddNewCard) {
+    hoveredLesson.value = null;
+    return;
+  }
+
+  try {
+    const { data: existingLink, error: checkError } = await supabase
+      .from('lesson_materials')
+      .select('lesson_id')
+      .match({ material_id: droppedMaterial.id, lesson_id: targetLesson.id })
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+
+    if (existingLink) {
+      errorLessonId.value = targetLesson.id;
+      setTimeout(() => { errorLessonId.value = null; }, 1500);
+      return;
+    }
+
+    const { count, error: countError } = await supabase
+      .from('lesson_materials')
+      .select('*', { count: 'exact', head: true })
+      .eq('lesson_id', targetLesson.id);
+
+    if (countError) throw countError;
+    const newPosition = (count ?? 0) + 1;
+
+    const { error: insertError } = await supabase
+      .from('lesson_materials')
+      .insert({
+        lesson_id: targetLesson.id,
+        material_id: droppedMaterial.id,
+        position: newPosition
+      });
+
+    if (insertError) throw insertError;
+
+    // Optimistically update the material count in the UI.
+    const lessonInUI = lessons.value.find(l => l.id === targetLesson.id);
+    if (lessonInUI) {
+      lessonInUI.material_count = (lessonInUI.material_count || 0) + 1;
+    }
+
+    await fetchTreeData();
+
+  } catch (e) {
+    console.error("Error linking material:", e);
+  } finally {
+    hoveredLesson.value = null;
+  }
+};
+
+// --- LIFECYCLE & WATCHERS ---
 watch([searchQuery, statusFilter, typeFilter, selectedLesson], fetchMaterials, { deep: true });
 
 onMounted(async () => {
@@ -354,7 +480,11 @@ onMounted(async () => {
   cursor: pointer;
   transition: background-color 0.2s;
 }
-
+.lesson-list li.drop-target > a {
+  background-color: #6d28d9; 
+  outline: 2px dashed #fff;
+  outline-offset: -2px;
+}
 .lesson-position {
   flex-shrink: 0;
   font-weight: bold;
@@ -387,7 +517,24 @@ onMounted(async () => {
 .lesson-list a.active .lesson-title {
   color: #fff; /* White title when active */
 }
+.lesson-list li.drop-error > a {
+  /* Мигающая красная рамка для обратной связи */
+  animation: flash-red 0.5s ease-in-out 3;
+}
 
+@keyframes flash-red {
+  0%, 100% {
+    box-shadow: none;
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.7);
+  }
+}
+.ghost-item {
+  opacity: 0;
+  height: 0;
+  display: none;
+}
 /* The material-count style remains the same */
 .material-count {
   position: absolute;
@@ -456,7 +603,12 @@ onMounted(async () => {
   gap: 1.5rem;
   grid-auto-rows: min-content;
 }
-
+.draggable-container {
+  display: contents; 
+}
+.ghost-item {
+  display: none;
+}
 .state-indicator {
   text-align: center;
   margin-top: 4rem;

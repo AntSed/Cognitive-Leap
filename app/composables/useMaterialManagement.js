@@ -5,17 +5,16 @@ export function useMaterialManagement() {
   const supabase = useSupabaseClient();
   const modalStore = useModalStore();
 
-  // ИЗМЕНЕНИЕ: Функция теперь принимает колбэк
   const _unpinMaterialFromDB = async (materialId, lessonId, onUpdateCallback) => {
     try {
-      const { error } = await supabase
-        .from('lesson_materials')
-        .delete()
-        .match({ material_id: materialId, lesson_id: lessonId });
+      // ИЗМЕНЕНИЕ: Вызываем нашу новую "умную" RPC-функцию
+      const { error } = await supabase.rpc('unpin_material_and_reorder', {
+        p_lesson_id: lessonId,
+        p_material_id: materialId
+      });
 
       if (error) throw error;
       
-      // ИЗМЕНЕНИЕ: Вызываем колбэк вместо перезагрузки
       if (onUpdateCallback) onUpdateCallback();
 
     } catch (error) {
@@ -24,8 +23,8 @@ export function useMaterialManagement() {
     }
   };
 
-  // ИЗМЕНЕНИЕ: Функция теперь принимает колбэк
   const _deleteMaterialFromDB = async (materialId, onUpdateCallback) => {
+
     try {
       const { error } = await supabase
         .from('learning_apps')
@@ -34,7 +33,6 @@ export function useMaterialManagement() {
 
       if (error) throw error;
 
-      // ИЗМЕНЕНИЕ: Вызываем колбэк вместо перезагрузки
       if (onUpdateCallback) onUpdateCallback();
 
     } catch (error) {

@@ -1,5 +1,10 @@
 <template>
   <div class="material-card" :class="`status-${material.status}`">
+    <EditablePosition
+      v-if="material.position && (isAdmin || isEditor)"
+      :model-value="material.position"
+      @update:modelValue="handlePositionUpdate"
+    />
     <div class="card-header">
       <span class="material-type">{{ material.material_type || 'N/A' }}</span>
       <span class="material-status">{{ material.status }}</span>
@@ -39,7 +44,7 @@
 import { computed } from 'vue';
 import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
 import { useMaterialManagement } from '~/composables/useMaterialManagement';
-
+import EditablePosition from './EditablePosition.vue';
 const props = defineProps({
   material: { type: Object, required: true },
   currentUser: { type: Object, required: true },
@@ -47,7 +52,7 @@ const props = defineProps({
   onUpdate: { type: Function, required: true }
 });
 
-
+const emit = defineEmits(['update-position']);
 const { openDeleteModal, openUnpinModal, openStatusModal } = useMaterialManagement();
 const { getButtonText, playMaterial } = useMaterialPlayer();
 
@@ -58,7 +63,12 @@ const isEditor = computed(() => props.currentUser.hub_role === 'editor');
 const canDelete = computed(() => isAuthor.value || isAdmin.value);
 const canUnpin = computed(() => (isEditor.value || isAdmin.value) && props.selectedLessonId);
 const canManageStatus = computed(() => isEditor.value || isAdmin.value);
-
+const handlePositionUpdate = (newPosition) => {
+  emit('update-position', {
+    materialId: props.material.id,
+    newPosition: newPosition
+  });
+};
 </script>
 
 <style scoped>

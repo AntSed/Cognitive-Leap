@@ -28,8 +28,6 @@ html, body, #__nuxt {
   color: #f3f4f6;
   font-family: 'Inter', sans-serif;
 }
-
-
 /* Стиль для заглушки-загрузчика */
 .component-placeholder {
   display: flex;
