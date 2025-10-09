@@ -26,7 +26,7 @@
       </span>
       
       <div class="card-actions">
-        <button v-if="canManageStatus" @click="openStatusModal(material, props.onUpdate)" title="Manage Status">
+        <button v-if="canManageStatus" @click="openStatusModal(material, activeProgramId, props.onUpdate)" title="Manage Status">
           ⚙️
         </button>
         <button v-if="canUnpin" @click="openUnpinModal(material, selectedLessonId, props.onUpdate)" class="action-btn unpin-btn" title="Unpin from Lesson">
@@ -49,7 +49,8 @@ const props = defineProps({
   material: { type: Object, required: true },
   currentUser: { type: Object, required: true },
   selectedLessonId: { type: String, default: null },
-  onUpdate: { type: Function, required: true }
+  onUpdate: { type: Function, required: true },
+  activeProgramId: { type: String, default: null }
 });
 
 const emit = defineEmits(['update-position']);

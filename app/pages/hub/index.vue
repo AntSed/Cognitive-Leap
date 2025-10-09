@@ -6,9 +6,20 @@
           Show All Materials
         </button>
       </div>
+
+      <div v-if="isProgramOwner" class="add-controls">
+        <input v-model="newSubjectName" placeholder="New subject name..." @keyup.enter="handleAddSubject" />
+        <button @click="handleAddSubject">+</button>
+      </div>
+
       <div v-for="subject in subjects" :key="subject.id" class="subject-group">
         <div class="subject-header" @click="toggleSubject(subject.id)">
           <h3 class="subject-title">{{ subject.name_translations?.en || 'Unnamed Subject' }}</h3>
+          
+          <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteSubject(subject)">
+            &times;
+          </button>
+          
           <svg
             class="subject-chevron"
             :class="{ 'is-expanded': expandedSubjects.has(subject.id) }"
@@ -16,6 +27,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
           </svg>
         </div>
+
         <draggable
           v-if="expandedSubjects.has(subject.id)" tag="ul"
           :list="lessonsBySubject[subject.id]"
@@ -33,16 +45,33 @@
                 'drop-target': hoveredLesson?.id === lesson.id,
                 'drop-error': errorLessonId === lesson.id
               }"
-              @dragenter.prevent="hoveredLesson = lesson"
             >
-              <a @click="selectLesson(lesson)" :class="{ active: selectedLesson?.id === lesson.id }">
+              <a
+                @click="selectLesson(lesson)"
+                :class="{ active: selectedLesson?.id === lesson.id }"
+                @dragenter.prevent="hoveredLesson = lesson"
+              >
                 <span class="lesson-position">{{ lesson.position }}.</span>
                 <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
+                
+                <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteLesson(lesson)">
+                  &times;
+                </button>
+                
                 <span class="material-count">{{ lesson.material_count }}</span>
               </a>
             </li>
           </template>
         </draggable>
+
+        <div v-if="isProgramOwner && expandedSubjects.has(subject.id)" class="add-controls lesson-add">
+          <input 
+            v-model="newLessonTopics[subject.id]" 
+            placeholder="New lesson topic..." 
+            @keyup.enter="handleAddLesson(subject)" 
+          />
+          <button @click="handleAddLesson(subject)">+</button>
+        </div>
       </div>
     </aside>
 
@@ -97,32 +126,34 @@
             <option value="article">Article</option>
           </select>
         </div>
-        </div>
+      </div>
 
-        <div v-if="currentUserProfile" class="materials-grid">
-          <draggable
-            class="draggable-container"
-            :list="displayedMaterials"
-            :group="{ name: 'materials', pull: 'clone', put: false }"
-            item-key="id"
-            :sort="false"
-            :drag-class="'dragging-card'"
-          >
-            <template #item="{ element: material }">
-              <template v-if="material.isAddNewCard">
-                <AddNewMaterialCard :lesson-id="selectedLesson?.id" />
-              </template>
-              <template v-else>
-                <HubMaterialCard
-                  :material="material"
-                  :current-user="currentUserProfile"
-                  :selected-lesson-id="selectedLesson?.id"
-                  :on-update="handleMaterialUpdate" @update-position="handlePositionUpdate"
-                />
-              </template>
+      <div v-if="currentUserProfile" class="materials-grid">
+        <draggable
+          class="draggable-container"
+          :list="displayedMaterials"
+          :group="{ name: 'materials', pull: 'clone', put: false }"
+          item-key="id"
+          :sort="false"
+          :drag-class="'dragging-card'"
+        >
+          <template #item="{ element: material }">
+            <template v-if="material.isAddNewCard">
+              <AddNewMaterialCard :lesson-id="selectedLesson?.id" />
             </template>
-          </draggable>
-        </div>
+            <template v-else>
+              <HubMaterialCard
+                :material="material"
+                :current-user="currentUserProfile"
+                :selected-lesson-id="selectedLesson?.id"
+                :on-update="handleMaterialUpdate"
+                :active-program-id="activeProgram?.id"
+                @update-position="handlePositionUpdate"
+              />
+            </template>
+          </template>
+        </draggable>
+      </div>
     </main>
     <ModalWrapper />
   </div>
@@ -154,6 +185,8 @@ const statusFilter = ref('');
 const typeFilter = ref('');
 const subjects = ref([]);
 const lessons = ref([]);
+const newLessonTopics = ref({}); 
+const newSubjectName = ref('');
 const selectedLesson = ref(null);
 const expandedSubjects = ref(new Set());
 const isSidebarOpen = ref(false);
@@ -164,6 +197,93 @@ const activeProgram = ref(null);
 const selectProgram = (program) => {
   activeProgram.value = program;
   // The watcher we will add in the next step will handle the data refetching.
+};
+const handleAddSubject = async () => {
+  if (!newSubjectName.value.trim() || !isProgramOwner.value) return;
+
+  try {
+    // Generate a simple unique prefix, required by the database schema
+    const prefix = newSubjectName.value.trim().toLowerCase().slice(0, 4) + Math.random().toString(36).slice(-4);
+    
+    const { error } = await supabase.from('subjects').insert({
+      name_translations: { en: newSubjectName.value.trim() },
+      program_id: activeProgram.value.id,
+      prefix: prefix
+    });
+
+    if (error) throw error;
+    
+    newSubjectName.value = '';
+    await fetchTreeData(); // Refresh the sidebar
+  } catch (error) {
+    console.error('Error adding subject:', error);
+    alert('Failed to add subject.');
+  }
+};
+
+const handleDeleteSubject = (subject) => {
+  modalStore.open('hub/modals/ConfirmDeleteModal', {
+    titleKey: 'hub.modals.deleteSubject.title',
+    messageKey: 'hub.modals.deleteSubject.message',
+    messageParams: { subjectName: subject.name_translations?.en || 'this subject' },
+    onConfirm: async () => {
+      try {
+        const { error } = await supabase.from('subjects').delete().eq('id', subject.id);
+        if (error) throw error;
+        await fetchTreeData(); // Refresh the sidebar
+      } catch (error) {
+        console.error('Error deleting subject:', error);
+        alert('Failed to delete subject.');
+      }
+    }
+  });
+};
+const handleAddLesson = async (subject) => {
+  const topic = newLessonTopics.value[subject.id]?.trim();
+  if (!topic || !isProgramOwner.value) return;
+
+  try {
+    const currentLessons = lessonsBySubject.value[subject.id] || [];
+    const newPosition = currentLessons.length + 1;
+    const slug = topic.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).slice(-4);
+
+    const { error } = await supabase.from('lessons').insert({
+      topic_translations: { en: topic },
+      subject_id: subject.id,
+      program_id: activeProgram.value.id,
+      position: newPosition,
+      slug: slug
+    });
+
+    if (error) throw error;
+    
+    newLessonTopics.value[subject.id] = '';
+    await fetchTreeData();
+  } catch (error) {
+    console.error('Error adding lesson:', error);
+    alert('Failed to add lesson.');
+  }
+};
+
+const handleDeleteLesson = (lesson) => {
+  modalStore.open('hub/modals/ConfirmDeleteModal', {
+    titleKey: 'hub.modals.deleteLesson.title',
+    messageKey: 'hub.modals.deleteLesson.message',
+    messageParams: { lessonName: lesson.topic_translations?.en || 'this lesson' },
+    onConfirm: async () => {
+      try {
+        // Use our new "smart" delete function
+        const { error } = await supabase.rpc('delete_lesson_and_reorder', {
+          p_lesson_id: lesson.id
+        });
+        if (error) throw error;
+        await fetchTreeData();
+      } catch (error) {
+        console.error('Error deleting lesson:', error);
+        alert('Failed to delete lesson.');
+      }
+    }
+  });
 };
 
 const openProgramsModal = () => {
@@ -181,6 +301,14 @@ const applyProgramScope = (query) => {
   }
 };
 // --- COMPUTED ---
+const isProgramOwner = computed(() => {
+  // The user must be logged in and a custom program must be active
+  if (!user.value || !activeProgram.value) {
+    return false;
+  }
+  // The logged-in user's ID must match the program's creator_id
+  return user.value.id === activeProgram.value.creator_id;
+});
 const displayedMaterials = computed(() => {
   // Display logic: Prepend an "Add New" card when a lesson is selected.
   if (selectedLesson.value) {
@@ -587,6 +715,56 @@ onMounted(async () => {
   opacity: 0;
   height: 0;
   display: none;
+}
+.add-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0 0.5rem;
+}
+.add-controls input {
+  flex-grow: 1;
+  background-color: #374151;
+  border: 1px solid #4b5563;
+  color: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+.add-controls button {
+  flex-shrink: 0;
+  background-color: #4f46e5;
+  border: none;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+.lesson-add {
+  margin-top: 0.5rem;
+}
+.delete-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 0 0.5rem;
+}
+.delete-btn:hover {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+/* Make sure delete button on lesson is positioned correctly */
+.lesson-list a {
+  align-items: center; /* This helps center the delete button vertically */
+}
+.lesson-title {
+  margin-right: auto; /* Push delete button and count to the right */
 }
 /* The material-count style remains the same */
 .material-count {

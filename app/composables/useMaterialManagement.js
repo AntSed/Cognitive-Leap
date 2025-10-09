@@ -61,9 +61,10 @@ export function useMaterialManagement() {
     });
   };
 
-  const openStatusModal = (material, onUpdateCallback) => {
+  const openStatusModal = (material, activeProgramId, onUpdateCallback) => {
     modalStore.open('hub/modals/ManageStatusModal', {
       material: material,
+      activeProgramId: activeProgramId,
       onUpdateSuccess: onUpdateCallback 
     });
   };

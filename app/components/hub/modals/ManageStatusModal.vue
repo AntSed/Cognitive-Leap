@@ -53,35 +53,45 @@
 
 <script setup>
 import { ref, onMounted, computed, defineEmits } from 'vue';
+import { useSupabaseClient } from '#imports'; // Added missing import
 import { useModalStore } from '~/composables/useModalStore';
 
 const props = defineProps({
-  material: { type: Object, required: true }
+  material: { type: Object, required: true },
+  activeProgramId: { type: String, default: null }, // Corrected type to String
+  onUpdateSuccess: { type: Function, default: () => {} } // Corrected type to Function
 });
 const emit = defineEmits(['update-success']);
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
+
+// --- STATE ---
 const isLoading = ref(true);
 const isSaving = ref(false);
-
 const currentStatus = ref(props.material.status);
 const allLessons = ref([]);
 const attachedLessonIds = ref([]);
-const expandedSubjects = ref(new Set()); 
+const expandedSubjects = ref(new Set());
 
-
+// --- LOGIC ---
 const groupedLessons = computed(() => {
   const groups = {};
+  if (!allLessons.value) return [];
+  
   allLessons.value.forEach(lesson => {
-    const subjectId = lesson.subjects.id;
-    const subjectName = lesson.subjects.name_translations?.en || 'Uncategorized';
+    // Ensure lesson.subjects exists and is not null
+    const subject = lesson.subjects;
+    if (!subject) return;
+
+    const subjectId = subject.id;
+    const subjectName = subject.name_translations?.en || 'Uncategorized';
     if (!groups[subjectId]) {
       groups[subjectId] = { id: subjectId, name: subjectName, lessons: [] };
     }
     groups[subjectId].lessons.push(lesson);
   });
+
   const sortedGroups = Object.values(groups);
-  // Сортировка теперь будет выполняться
   sortedGroups.sort((a, b) => a.name.localeCompare(b.name));
   return sortedGroups;
 });
@@ -94,17 +104,70 @@ const toggleSubject = (subjectId) => {
   }
 };
 
-onMounted(async () => {
+const handleSubmit = async () => {
+  isSaving.value = true;
   try {
- 
-    const { data: lessonsData, error: lessonsError } = await supabase
+    const { error: statusError } = await supabase
+      .from('learning_apps')
+      .update({ status: currentStatus.value })
+      .eq('id', props.material.id);
+    if (statusError) throw statusError;
+
+    const { error: deleteError } = await supabase
+      .from('lesson_materials')
+      .delete()
+      .eq('material_id', props.material.id);
+    if (deleteError) throw deleteError;
+
+    if (attachedLessonIds.value.length > 0) {
+      // We need to re-fetch lesson positions to order correctly,
+      // but for now, a simple index-based position is a placeholder.
+      const newLinks = attachedLessonIds.value.map((lessonId, index) => ({
+        material_id: props.material.id,
+        lesson_id: lessonId,
+        position: index + 1,
+      }));
+      const { error: insertError } = await supabase
+        .from('lesson_materials')
+        .insert(newLinks);
+      if (insertError) throw insertError;
+    }
+
+    modalStore.close();
+    // Use the prop function if it exists, otherwise emit
+    if (props.onUpdateSuccess) {
+        props.onUpdateSuccess();
+    } else {
+        emit('update-success');
+    }
+  } catch (error) {
+    console.error("Error saving changes:", error);
+    alert("Failed to save changes.");
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+// --- LIFECYCLE ---
+onMounted(async () => {
+  isLoading.value = true;
+  try {
+    let lessonsQuery = supabase
       .from('lessons')
-      .select('id, topic_translations, subjects (id, name_translations)')
-      .order('position', { ascending: true });
+      .select('id, position, topic_translations, subjects (id, name_translations)');
+    
+    // Apply program scope to the lessons query
+    if (props.activeProgramId) {
+      lessonsQuery = lessonsQuery.eq('program_id', props.activeProgramId);
+    } else {
+      lessonsQuery = lessonsQuery.is('program_id', null);
+    }
+
+    const { data: lessonsData, error: lessonsError } = await lessonsQuery;
     if (lessonsError) throw lessonsError;
     allLessons.value = lessonsData;
 
-
+    // Fetch existing links for this material
     const { data: linksData, error: linksError } = await supabase
       .from('lesson_materials')
       .select('lesson_id')
@@ -118,45 +181,6 @@ onMounted(async () => {
     isLoading.value = false;
   }
 });
-
-const handleSubmit = async () => {
-  isSaving.value = true;
-  try {
-  
-    const { error: statusError } = await supabase
-      .from('learning_apps')
-      .update({ status: currentStatus.value })
-      .eq('id', props.material.id);
-    if (statusError) throw statusError;
-
-    const { error: deleteError } = await supabase
-      .from('lesson_materials')
-      .delete()
-      .eq('material_id', props.material.id);
-    if (deleteError) throw deleteError;
-
-    // Шаг 3: Создаём новые привязки на основе выбранных чекбоксов
-    if (attachedLessonIds.value.length > 0) {
-      const newLinks = attachedLessonIds.value.map((lessonId, index) => ({
-        material_id: props.material.id,
-        lesson_id: lessonId,
-        position: index + 1, // Простое позиционирование по порядку
-      }));
-      const { error: insertError } = await supabase
-        .from('lesson_materials')
-        .insert(newLinks);
-      if (insertError) throw insertError;
-    }
-    
-    modalStore.close();
-    emit('update-success');
-  } catch (error) {
-    console.error("Error saving changes:", error);
-    alert("Failed to save changes.");
-  } finally {
-    isSaving.value = false;
-  }
-};
 </script>
 
 <style scoped>
