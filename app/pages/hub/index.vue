@@ -60,6 +60,12 @@
       </div>
       <header class="hub-header">
         <h1>Content Hub</h1>
+        <div class="program-selector" @click="openProgramsModal">
+          <span class="program-name">{{ activeProgram?.title || 'Default School Program' }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+          </svg>
+        </div>
         <p v-if="selectedLesson">
           Showing materials for: <strong>{{ selectedLesson.topic_translations?.en }}</strong>
         </p>
@@ -153,7 +159,27 @@ const expandedSubjects = ref(new Set());
 const isSidebarOpen = ref(false);
 const hoveredLesson = ref(null);
 const errorLessonId = ref(null);
+const activeProgram = ref(null); 
+// --- PROGRAM MANAGEMENT ---
+const selectProgram = (program) => {
+  activeProgram.value = program;
+  // The watcher we will add in the next step will handle the data refetching.
+};
 
+const openProgramsModal = () => {
+  modalStore.open('hub/modals/ProgramsModal', {
+    activeProgram: activeProgram.value,
+    onSelect: selectProgram,
+    onClose: () => modalStore.close()
+  });
+};
+const applyProgramScope = (query) => {
+  if (activeProgram.value) {
+    return query.eq('program_id', activeProgram.value.id);
+  } else {
+    return query.is('program_id', null);
+  }
+};
 // --- COMPUTED ---
 const displayedMaterials = computed(() => {
   // Display logic: Prepend an "Add New" card when a lesson is selected.
@@ -207,9 +233,16 @@ const fetchUserProfile = async () => {
 
 const fetchTreeData = async () => {
   try {
+    let subjectsQuery = supabase.from('subjects').select('*').order('name_translations->>en');
+    // Apply program scope to the subjects query
+    subjectsQuery = applyProgramScope(subjectsQuery);
+
     const [subjectsRes, lessonsRes] = await Promise.all([
-      supabase.from('subjects').select('*').order('name_translations->>en'),
-      supabase.rpc('get_lessons_with_material_count')
+      subjectsQuery,
+      // Pass the program ID to the RPC function
+      supabase.rpc('get_lessons_with_material_count', {
+        p_program_id: activeProgram.value ? activeProgram.value.id : null
+      })
     ]);
 
     if (subjectsRes.error) throw subjectsRes.error;
@@ -365,13 +398,33 @@ const onDrop = async (event) => {
   }
 };
 
-// --- LIFECYCLE & WATCHERS ---
-watch([searchQuery, statusFilter, typeFilter, selectedLesson], fetchMaterials, { deep: true });
+// This new function will be our main data loader.
+const fetchAllHubData = async () => {
+  isLoading.value = true;
+  await fetchTreeData();
+  await fetchMaterials();
+  isLoading.value = false;
+};
+
+watch([selectedLesson, activeProgram], (newValue, oldValue) => {
+  const oldProgramId = oldValue[1]?.id;
+  const newProgramId = newValue[1]?.id;
+
+  // If the program has changed, we must reset the selected lesson
+  // to avoid showing a lesson that doesn't belong to the new program.
+  if (oldProgramId !== newProgramId) {
+    selectedLesson.value = null;
+  }
+
+  // Refetch all data whenever the lesson or program changes.
+  fetchAllHubData();
+}, {
+  deep: true // Use deep watch for objects
+});
 
 onMounted(async () => {
   await fetchUserProfile();
-  await fetchTreeData();
-  await fetchMaterials();
+  await fetchAllHubData(); // Use the new main data loader
 });
 </script>
 
@@ -554,7 +607,31 @@ onMounted(async () => {
   background-color: #f3f4f6;
   color: #4f46e5;
 }
-
+.program-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  cursor: pointer;
+  margin: 0.5rem 0;
+  transition: all 0.2s ease;
+}
+.program-selector:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.program-name {
+  font-weight: 600;
+  color: #262e3d;
+}
+.program-selector svg {
+  width: 1rem;
+  height: 1rem;
+  color: #9ca3af;
+}
 /* Filters Styles */
 .filters-container {
   display: flex;

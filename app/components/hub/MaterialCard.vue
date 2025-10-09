@@ -107,7 +107,9 @@ const handlePositionUpdate = (newPosition) => {
   text-transform: uppercase;
   font-weight: bold;
 }
-.material-status { font-style: italic; }
+.material-status { 
+  font-style: italic;
+ }
 .card-body { flex-grow: 1; }
 .material-title {
   margin: 0 0 0.5rem 0;
