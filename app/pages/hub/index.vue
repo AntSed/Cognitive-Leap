@@ -31,6 +31,8 @@
         <draggable
           v-if="expandedSubjects.has(subject.id)" tag="ul"
           :list="lessonsBySubject[subject.id]"
+          :delay="250"
+          :delay-on-touch-only="true"
           class="lesson-list"
           group="materials"
           item-key="id"
@@ -132,6 +134,8 @@
         <draggable
           class="draggable-container"
           :list="displayedMaterials"
+          :delay="250"
+          :delay-on-touch-only="true"
           :group="{ name: 'materials', pull: 'clone', put: false }"
           item-key="id"
           :sort="false"
