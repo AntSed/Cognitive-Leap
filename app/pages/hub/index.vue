@@ -15,7 +15,9 @@
       <div v-for="subject in subjects" :key="subject.id" class="subject-group">
         <div class="subject-header" @click="toggleSubject(subject.id)">
           <h3 class="subject-title">{{ subject.name_translations?.en || 'Unnamed Subject' }}</h3>
-          
+          <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditSubject(subject)">
+            ✏️
+          </button>
           <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteSubject(subject)">
             &times;
           </button>
@@ -55,7 +57,9 @@
               >
                 <span class="lesson-position">{{ lesson.position }}.</span>
                 <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
-                
+                  <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditLesson(lesson)">
+                    ✏️
+                  </button>
                 <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteLesson(lesson)">
                   &times;
                 </button>
@@ -200,31 +204,48 @@ const activeProgram = ref(null);
 // --- PROGRAM MANAGEMENT ---
 const selectProgram = (program) => {
   activeProgram.value = program;
-  // The watcher we will add in the next step will handle the data refetching.
+  if (program) {
+    localStorage.setItem('activeProgramId', program.id);
+  } else {
+    localStorage.removeItem('activeProgramId');
+  }
 };
 const handleAddSubject = async () => {
   if (!newSubjectName.value.trim() || !isProgramOwner.value) return;
 
   try {
-    // Generate a simple unique prefix, required by the database schema
     const prefix = newSubjectName.value.trim().toLowerCase().slice(0, 4) + Math.random().toString(36).slice(-4);
     
-    const { error } = await supabase.from('subjects').insert({
-      name_translations: { en: newSubjectName.value.trim() },
-      program_id: activeProgram.value.id,
-      prefix: prefix
+    // TODO: The skin_id should be dynamically retrieved from the program's settings.
+    // For now, we hardcode the default 'head' skin ID.
+    const skinIdForStyle = '38c24e69-24f9-4a7c-a003-84d298280c14';
+
+    const { error } = await supabase.rpc('create_subject_with_style', {
+      p_program_id: activeProgram.value.id,
+      p_name_en: newSubjectName.value.trim(),
+      p_prefix: prefix,
+      p_skin_id: skinIdForStyle
     });
 
     if (error) throw error;
     
     newSubjectName.value = '';
-    await fetchTreeData(); // Refresh the sidebar
+    await fetchTreeData();
   } catch (error) {
     console.error('Error adding subject:', error);
     alert('Failed to add subject.');
   }
 };
-
+const handleEditSubject = (subject) => {
+  const skinId = activeProgram.value?.skin_id || '38c24e69-24f9-4a7c-a003-84d298280c14'; // Fallback to default head skin
+  modalStore.open('hub/modals/EditSubjectModal', {
+    subjectId: subject.id,
+    skinId: skinId,
+    onUpdateSuccess: () => {
+      fetchTreeData();
+    }
+  });
+};
 const handleDeleteSubject = (subject) => {
   modalStore.open('hub/modals/ConfirmDeleteModal', {
     titleKey: 'hub.modals.deleteSubject.title',
@@ -251,12 +272,16 @@ const handleAddLesson = async (subject) => {
     const newPosition = currentLessons.length + 1;
     const slug = topic.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).slice(-4);
 
-    const { error } = await supabase.from('lessons').insert({
-      topic_translations: { en: topic },
-      subject_id: subject.id,
-      program_id: activeProgram.value.id,
-      position: newPosition,
-      slug: slug
+    // TODO: The skin_id should be dynamically retrieved from the program's settings.
+    const skinIdForLayout = '38c24e69-24f9-4a7c-a003-84d298280c14';
+
+    const { error } = await supabase.rpc('create_lesson_with_layout', {
+      p_program_id: activeProgram.value.id,
+      p_subject_id: subject.id,
+      p_topic_en: topic,
+      p_position: newPosition,
+      p_slug: slug,
+      p_skin_id: skinIdForLayout
     });
 
     if (error) throw error;
@@ -268,7 +293,16 @@ const handleAddLesson = async (subject) => {
     alert('Failed to add lesson.');
   }
 };
-
+const handleEditLesson = (lesson) => {
+  const skinId = activeProgram.value?.skin_id;
+  modalStore.open('hub/modals/EditLessonModal', {
+    lessonId: lesson.id,
+    skinId: skinId,
+    onUpdateSuccess: () => {
+      fetchTreeData(); // Refresh sidebar to show new lesson name
+    }
+  });
+};
 const handleDeleteLesson = (lesson) => {
   modalStore.open('hub/modals/ConfirmDeleteModal', {
     titleKey: 'hub.modals.deleteLesson.title',
@@ -556,7 +590,25 @@ watch([selectedLesson, activeProgram], (newValue, oldValue) => {
 
 onMounted(async () => {
   await fetchUserProfile();
-  await fetchAllHubData(); // Use the new main data loader
+  const savedProgramId = localStorage.getItem('activeProgramId');
+  if (savedProgramId) {
+    try {
+      const { data: savedProgram, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', savedProgramId)
+        .single();
+      
+      if (error) throw error;
+      if (savedProgram) {
+        activeProgram.value = savedProgram;
+      }
+    } catch (e) {
+      console.error('Failed to restore active program, defaulting.', e);
+      localStorage.removeItem('activeProgramId');
+    }
+  }
+  await fetchAllHubData(); 
 });
 </script>
 
@@ -762,7 +814,20 @@ onMounted(async () => {
   background-color: #ef4444;
   color: #fff;
 }
-
+.edit-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1rem; /* Smaller than delete button */
+  line-height: 1;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.edit-btn:hover {
+  background-color: #2563eb;
+  color: #fff;
+}
 /* Make sure delete button on lesson is positioned correctly */
 .lesson-list a {
   align-items: center; /* This helps center the delete button vertically */

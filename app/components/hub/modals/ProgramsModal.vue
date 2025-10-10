@@ -33,6 +33,12 @@
               >
                 Share
               </button>
+                  <button
+                    class="action-button edit-button"
+                    @click.stop="handleEditProgram(program)"
+                  >
+                    Edit
+                  </button>
               <button
                 class="action-button delete-button"
                 @click.stop="handleDeleteProgram(program)"
@@ -167,7 +173,14 @@ const handleShareProgram = async (event, program) => {
     alert('Could not copy link to clipboard.');
   }
 };
-
+const handleEditProgram = (programToEdit) => {
+  modalStore.open('hub/modals/EditProgramModal', {
+    program: programToEdit,
+    onUpdateSuccess: () => {
+      fetchUserPrograms(); // Refresh the list after a successful edit
+    }
+  });
+};
 onMounted(() => {
   fetchUserPrograms();
 });
@@ -215,6 +228,10 @@ onMounted(() => {
 }
 .program-title { flex-grow: 1; }
 .program-actions { display: flex; gap: 0.75rem; }
+.edit-button:hover {
+  background-color: #1d4ed8;
+  border-color: #2563eb;
+}
 .action-button {
   background: none; border: 1px solid #52525B; color: #D4D4D8;
   padding: 0.25rem 0.75rem; border-radius: 6px; cursor: pointer;
