@@ -18,7 +18,8 @@ import { useModalStore } from '~/composables/useModalStore';
 // --- PROPS ---
 const props = defineProps({
   skinId: { type: String, required: true },
-  isActive: { type: Boolean, default: false }
+  isActive: { type: Boolean, default: false },
+  programId: { type: String, default: null }
 });
 
 // --- VUE REACTIVE STATE ---
@@ -44,7 +45,7 @@ const initializeScene = async () => {
     } catch (e) { console.error(`SceneKit Error: Failed to load UI component: ./ui/${skinData.ui_component_name}.vue`, e); }
   }
 
-  sceneKitApp = new SceneKitApp(wrapperRef.value, canvasRef.value, skinData, supabase, modalStore);
+  sceneKitApp = new SceneKitApp(wrapperRef.value, canvasRef.value, skinData, supabase, modalStore, props.programId);
   await sceneKitApp.init();
 
   if (props.isActive) {
@@ -85,9 +86,9 @@ watch(() => modalStore.isOpen.value, (isOpen) => {
 // --- UNIVERSAL 3D ENGINE ---
 // =================================================================================================
 class SceneKitApp {
-  constructor(wrapper, canvas, skinData, supabase, modalStore) {
+  constructor(wrapper, canvas, skinData, supabase, modalStore, programId) {
     this.wrapper = wrapper; this.canvas = canvas; this.skinData = skinData; this.supabase = supabase; this.modalStore = modalStore;
-    this.renderer = null; this.scene = null; this.camera = null;
+    this.renderer = null; this.scene = null; this.programId = programId; this.camera = null;
     this.mainGroup = new THREE.Group(); this.clock = new THREE.Clock();
     this.controls = null; this.raycaster = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
     this.font = null; this.geometryCache = {};
@@ -111,7 +112,7 @@ class SceneKitApp {
     try {
       const { data: { user } } = await this.supabase.auth.getUser();
       const [nodesResult, assetsResult] = await Promise.all([
-          this.supabase.rpc('get_layout_data', { p_skin_id: this.skinData.id, p_user_id: user?.id }),
+          this.supabase.rpc('get_layout_data', { p_skin_id: this.skinData.id, p_user_id: user?.id, p_program_id: this.programId }),
           this.supabase.from('skin_assets').select('*').eq('skin_id', this.skinData.id)
       ]);
       if (nodesResult.error) throw nodesResult.error;
