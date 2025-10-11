@@ -18,10 +18,7 @@ interface QuickTip {
   buttonText?: string | null;
 }
 
-// --- НОВОЕ РЕШЕНИЕ С import.meta.glob ---
-// 1. Vite находит ВСЕ .vue файлы внутри папки /components и её подпапок.
-const modalComponents = import.meta.glob('../components/**/*.vue');
-
+const modalComponents = import.meta.glob('~/components/**/*.vue');
 
 export const useModalStore = defineStore('modal', () => {
   const stack = ref<ModalInstance[]>([]);
@@ -30,22 +27,24 @@ export const useModalStore = defineStore('modal', () => {
   const isOpen = computed(() => stack.value.length > 0);
   const currentStack = computed(() => stack.value);
 
-  const open = async (componentPath: string, componentProps: Record<string, any> = {}, options: ModalOptions = {}) => {
+   const open = async (componentPath: string, componentProps: Record<string, any> = {}, options: ModalOptions = {}) => {
     if (options.history !== false && stack.value.length === 0) {
       window.location.hash = 'modal';
     }
 
-    // 2. Мы строим полный путь к файлу, который будет ключом в нашей "карте".
-    const fullPath = `../components/${componentPath}.vue`;
+    // РЕФАКТОРИНГ: Строим путь, который будет соответствовать ключам из import.meta.glob
+    // Ключи теперь будут иметь вид '/components/modals/PlayerModal.vue'
+    const fullPath = `/components/${componentPath}.vue`;
 
     // 3. Проверяем, есть ли такой компонент в нашей "карте".
     if (!modalComponents[fullPath]) {
-      console.error(`Modal store error: Component at path "${componentPath}" not found.`);
+      // Добавим в лог, какой именно путь искали, для удобной отладки
+      console.error(`Modal store error: Component at path "${componentPath}" not found. Looked for key: "${fullPath}"`);
       return;
     }
 
     try {
-      // 4. Загружаем нужный компонент из "карты". Это работает с любой вложенностью.
+      // 4. Загружаем нужный компонент из "карты". Эта логика не меняется.
       const componentModule = await modalComponents[fullPath]();
       
       stack.value.push({
@@ -60,31 +59,13 @@ export const useModalStore = defineStore('modal', () => {
     }
   };
 
-
-
   const openLesson = (lessonId: string) => {
     open('modals/LessonDetails', { lessonId });
   };
 
-  const openPlayer = (material: Record<string, any>) => {
-    const interactiveTypes = ['app', 'game', 'presentation'];
-    
-    let playerProps = {};
-
-    if (interactiveTypes.includes(material.material_type)) {
-      playerProps = {
-        htmlContent: material.html_content,
-        contentType: 'interactive', 
-      };
-    } else {
-      // For other types like video, we just pass the URL.
-      playerProps = {
-        url: material.url,
-        contentType: material.material_type, // e.g., 'video'
-      };
-    }
-    open('modals/PlayerModal', playerProps, { history: false });
-  };
+const openPlayer = (material: Record<string, any>) => {
+  open('modals/PlayerModal', { material: material }, { history: false });
+};
   
   const close = () => {
     if (stack.value.length === 0) return;

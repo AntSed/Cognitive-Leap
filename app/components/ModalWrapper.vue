@@ -6,7 +6,7 @@
       class="modal-backdrop"
       @click.self="modalStore.close()"
     >
-      <component :is="modal.component" v-bind="modal.props" :key="locale" />
+      <component :is="modal.component" v-bind="modal.props" />
     </div>
   </TransitionGroup>
 </template>

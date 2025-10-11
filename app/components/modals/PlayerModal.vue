@@ -1,103 +1,260 @@
 <template>
   <div class="player-modal-overlay" @click="closeOnOverlayClick">
-    <button class="close-button" @click="modalStore.close()">&times;</button>
+    <header class="player-header">
+      <h3>{{ material.title_translations?.en || 'Player' }}</h3>
+      <div class="player-controls">
+        <button @click="zoomOut" title="Zoom Out">-</button>
+        <span>{{ (manualZoomLevel * 100).toFixed(0) }}%</span>
+        <button @click="zoomIn" title="Zoom In">+</button>
+        <button v-if="isTouchDevice" @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen & Rotate'">
+          <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
+          <svg v-else class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg>
+        </button>
+      </div>
+      <button class="close-button" @click="modalStore.close()">×</button>
+    </header>
     
-    <div class="player-content" @click.stop>
-      <!-- Case 1: Interactive content (game, app, presentation) uses srcdoc -->
-      <iframe 
-        v-if="contentType === 'interactive'"
-        :srcdoc="htmlContent"
-        frameborder="0"
-        allowfullscreen
-        sandbox="allow-scripts allow-same-origin"
-      ></iframe>
-      
-      <!-- Case 2: Other content (like video) uses the direct URL -->
-      <iframe
-        v-else
-        :src="url"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen
-      ></iframe>
+    <div ref="scrollerRef" class="player-scroller" @click.stop>
+      <div 
+        ref="viewportRef"
+        class="player-viewport" 
+        :style="viewportStyle"
+      >
+        <iframe
+          ref="iframeRef"
+          :src="iframeSrc"
+          width="100%"
+          height="100%"
+          frameborder="0"
+          sandbox="allow-scripts allow-same-origin"
+          allowfullscreen
+        ></iframe>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'; // Добавили nextTick
 import { useModalStore } from '~/composables/useModalStore';
+import { useResizeObserver } from '@vueuse/core';
+import { useGesture } from '@vueuse/gesture';
 
-// The component now accepts different props based on the content type
 const props = defineProps({
-  htmlContent: {
-    type: String,
-    required: false,
-    default: ''
-  },
-  url: {
-    type: String,
-    required: false,
-    default: ''
-  },
-  contentType: {
-    type: String,
-    required: true,
-  }
+  material: { type: Object, required: true }
 });
 
 const modalStore = useModalStore();
 
-const closeOnOverlayClick = (event) => {
-  if (event.target === event.currentTarget) {
-    modalStore.close();
+const manualZoomLevel = ref(1.0);
+const autoScale = ref(0);
+const scrollerRef = ref(null);
+const viewportRef = ref(null);
+const iframeRef = ref(null);
+const iframeSrc = ref('');
+const isFullscreen = ref(false);
+const isTouchDevice = ref(false);
+
+// ... computed-свойства остаются без изменений ...
+const isInteractive = computed(() => {
+  const interactiveTypes = ['app', 'game', 'presentation'];
+  return interactiveTypes.includes(props.material.material_type);
+});
+const nativeWidth = computed(() => props.material.player_options?.width || 1280);
+const nativeHeight = computed(() => props.material.player_options?.height || 720);
+const combinedScale = computed(() => autoScale.value * manualZoomLevel.value);
+const viewportStyle = computed(() => ({
+  width: `${nativeWidth.value}px`,
+  height: `${nativeHeight.value}px`,
+  transform: `scale(${combinedScale.value})`,
+  transformOrigin: 'center',
+  willChange: 'transform',
+}));
+
+// ... watch для iframe остается без изменений ...
+watch(() => props.material, (newMaterial) => {
+  const oldSrc = iframeSrc.value;
+  if (oldSrc && oldSrc.startsWith('blob:')) {
+    URL.revokeObjectURL(oldSrc);
+  }
+  if (isInteractive.value && newMaterial.html_content) {
+    const fullHtml = `<!DOCTYPE html><html><head><style>body,html{margin:0;padding:0;overflow:hidden;background-color:black;}</style></head><body>${newMaterial.html_content}</body></html>`;
+    const blob = new Blob([fullHtml], { type: 'text/html' });
+    iframeSrc.value = URL.createObjectURL(blob);
+  } else {
+    iframeSrc.value = newMaterial.url || '';
+  }
+}, { immediate: true, deep: true });
+
+// ИЗМЕНЕНИЕ 1: Обновляем логику ресайза
+useResizeObserver(scrollerRef, (entries) => {
+  if (!isInteractive.value) return;
+  const entry = entries[0];
+  const { width: containerWidth, height: containerHeight } = entry.contentRect;
+  if (containerWidth > 0 && containerHeight > 0) {
+    const scaleX = containerWidth / nativeWidth.value;
+    const scaleY = containerHeight / nativeHeight.value;
+    
+    // РЕШЕНИЕ 2: Добавляем 10% к масштабу для "воздуха"
+    const PADDING_SCALE_FACTOR = 1.1; 
+    autoScale.value = Math.min(scaleX, scaleY) * PADDING_SCALE_FACTOR;
+
+    // РЕШЕНИЕ 3: Сбрасываем ручной зум при ресайзе/повороте
+    manualZoomLevel.value = 1.0; 
+  }
+});
+
+// ИЗМЕНЕНИЕ 2: Добавляем watch для принудительного центрирования
+watch(autoScale, async () => {
+  // Ждем, пока Vue обновит DOM после изменения масштаба
+  await nextTick();
+  const scroller = scrollerRef.value;
+  if (scroller) {
+    // РЕШЕНИЕ 1: Программно выставляем скролл в центр
+    // Это решает проблему "уехавшего" контента при загрузке и повороте
+    scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+    scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
+  }
+});
+
+// ... остальная часть скрипта (useGesture, onMounted, методы) остается без изменений ...
+let initialZoomOnPinch = 1.0;
+useGesture({
+  onPinchStart: () => { initialZoomOnPinch = manualZoomLevel.value; },
+  onPinch: ({ offset: [scale] }) => { 
+    manualZoomLevel.value = Math.max(0.3, Math.min(initialZoomOnPinch * scale, 4.0));
+  },
+}, { 
+  target: scrollerRef,
+});
+
+const onFullscreenChange = () => { isFullscreen.value = !!document.fullscreenElement; };
+onMounted(() => {
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+});
+onUnmounted(() => {
+  if (iframeSrc.value.startsWith('blob:')) { URL.revokeObjectURL(iframeSrc.value); }
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
+});
+
+const zoomIn = () => manualZoomLevel.value = Math.min(4.0, manualZoomLevel.value + 0.2);
+const zoomOut = () => manualZoomLevel.value = Math.max(0.3, manualZoomLevel.value - 0.2);
+const closeOnOverlayClick = (event) => { if (event.target === event.currentTarget) { modalStore.close(); } };
+const toggleFullscreen = async () => {
+  const element = scrollerRef.value;
+  if (!element) return;
+  if (!document.fullscreenElement) {
+    try {
+      await element.requestFullscreen();
+      if ('orientation' in screen && typeof screen.orientation.lock === 'function') {
+        await screen.orientation.lock('landscape');
+      }
+    } catch (err) { console.error('Failed to enter fullscreen:', err); }
+  } else {
+    if (document.exitFullscreen) {
+      await document.exitFullscreen();
+      if ('orientation' in screen && typeof screen.orientation.unlock === 'function') {
+        screen.orientation.unlock();
+      }
+    }
   }
 };
 </script>
 
 <style scoped>
+.icon { 
+  width: 24px; 
+  height: 24px; 
+}
+.player-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: .75rem 1.5rem;
+  color: #e4e4e7;
+  z-index: 2001;
+  background: linear-gradient(to bottom, rgba(0,0,0,.6), transparent);
+  pointer-events: none; /* Чтобы клики проходили сквозь header */
+}
+.player-header > * {
+  pointer-events: auto; /* Возвращаем кликабельность для дочерних элементов */
+}
+.player-header h3 {
+  font-weight: 600;
+  margin-right: auto;
+}
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  font-weight: 500;
+}
+.player-controls button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: rgba(63,63,70,.8);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.close-button {
+  background: none;
+  border: none;
+  color: #a1a1aa;
+  font-size: 2.5rem;
+  line-height: 1;
+  cursor: pointer;
+  margin-left: 1.5rem;
+  padding: 0;
+}
 .player-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(0,0,0,.9);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer; /* Indicates the overlay is clickable */
 }
-
-.close-button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  background-color: #333;
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  font-size: 2rem;
-  line-height: 40px;
-  text-align: center;
-  cursor: pointer;
-  z-index: 2002;
-}
-
-.player-content {
-  width: 95%;
-  height: 95%;
-  background-color: #000;
-  border-radius: 10px;
-  overflow: hidden;
-  cursor: default; /* The content area itself is not a close button */
-}
-
-iframe {
+.player-scroller {
   width: 100%;
   height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  cursor: grab;
+}
+.player-scroller:active {
+  cursor: grabbing;
+}
+.player-viewport {
+  position: relative;
+  background-color: #000;
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  flex-shrink: 0;
+}
+.player-viewport iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* В полноэкранном режиме контент растягивается на весь экран */
+.player-scroller:fullscreen .player-viewport {
+  /* Мы больше не управляем transform, браузер сам растягивает scroller */
+  /* Но можно добавить специфичные стили при необходимости */
 }
 </style>
-
