@@ -16,7 +16,7 @@
         :model-value="material.title_translations?.en"
         :can-edit="canEdit"
         placeholder="Untitled"
-        @update:modelValue="newValue => handleFieldUpdate('title_translations', { ...material.title_translations, en: newValue })"
+        @update:modelValue="newValue => handleFieldUpdate('title_translations', { ...(material.title_translations || {}), en: newValue })"
       />
       <InlineEditor
         tag="p"
@@ -25,7 +25,7 @@
         :model-value="material.description_translations?.en"
         :can-edit="canEdit"
         placeholder="No description"
-        @update:modelValue="newValue => handleFieldUpdate('description_translations', { ...material.description_translations, en: newValue })"
+        @update:modelValue="newValue => handleFieldUpdate('description_translations', { ...(material.description_translations || {}), en: newValue })"
       />
     </div>
     <div class="card-footer">
@@ -40,6 +40,7 @@
           :can-edit="canEdit"
           input-type="number"
           placeholder="?"
+          input-class="age-input"
           @update:modelValue="newValue => handleFieldUpdate('recommended_age_min', parseInt(newValue) || null)"
         />
         -
@@ -48,6 +49,7 @@
           :can-edit="canEdit"
           input-type="number"
           placeholder="?"
+          input-class="age-input"
           @update:modelValue="newValue => handleFieldUpdate('recommended_age_max', parseInt(newValue) || null)"
         />
       </span>
@@ -73,12 +75,12 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { computed } from 'vue';
-import { useSupabaseClient } from '#imports'; 
+import { useSupabaseClient } from '#imports';
 import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
-import EditablePosition from './EditablePosition.vue';
+import { useMaterialManagement } from '~/composables/useMaterialManagement'; // 1. Недостающий импорт
+import EditablePosition from '~/components/hub/EditablePosition.vue';
 import InlineEditor from '~/components/hub/InlineEditor.vue';
 
 const props = defineProps({
@@ -90,14 +92,26 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update-position']);
+
+// 2. Недостающий вызов компосабла для модалок
+const { openDeleteModal, openUnpinModal, openStatusModal } = useMaterialManagement();
+
 const { getButtonText, playMaterial } = useMaterialPlayer();
 const supabase = useSupabaseClient();
 
+// --- Вычисляемые свойства для прав доступа ---
 const isAuthor = computed(() => props.currentUser.user_id === props.material.developer_id);
 const isAdmin = computed(() => props.currentUser.hub_role === 'admin');
 const isEditor = computed(() => props.currentUser.hub_role === 'editor');
 const canEdit = computed(() => isAuthor.value || isAdmin.value || isEditor.value);
 
+// 3. Недостающие свойства для v-if на кнопках
+const canDelete = computed(() => isAuthor.value || isAdmin.value);
+const canUnpin = computed(() => (isEditor.value || isAdmin.value) && props.selectedLessonId);
+const canManageStatus = computed(() => isEditor.value || isAdmin.value);
+
+
+// --- Обработчики ---
 const handlePositionUpdate = (newPosition) => {
   emit('update-position', {
     materialId: props.material.id,
@@ -106,29 +120,21 @@ const handlePositionUpdate = (newPosition) => {
 };
 
 const handleFieldUpdate = async (field, value) => {
-  // 1. Save the original value in case of an error.
-  // Using JSON.stringify/parse for a deep copy to handle nested objects.
-  const oldValue = JSON.parse(JSON.stringify(props.material[field] || null));
-
-  // 2. Optimistic UI Update: Mutate the local data immediately.
-  // Vue will detect this change and update the UI instantly.
-  props.material[field] = value;
-  
   try {
-    // 3. Send the update to the server in the background.
     const { error } = await supabase
       .from('learning_apps')
       .update({ [field]: value })
       .eq('id', props.material.id);
     
-    // If the server returns an error, throw it to be caught by the catch block.
     if (error) throw error;
-
+    
+    if (props.onUpdate) {
+      props.onUpdate();
+    }
   } catch (error) {
-    // 4. Rollback: If the update failed, revert to the old value and notify the user.
-    props.material[field] = oldValue;
     console.error(`Failed to update field '${field}':`, error);
-    alert('Update failed. Your changes have been reverted.');
+    alert('Update failed.');
+    // Можно добавить логику отката изменений, если потребуется
   }
 };
 </script>
