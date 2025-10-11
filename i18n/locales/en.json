@@ -99,19 +99,22 @@
   },
   "hub": {
     "add": {
-      "title": "Add New Material",
-      "subtitle": "Contribute to the Cognitive Leap library.",
-      "chooseType": "1. Choose Material Type",
+      "chooseType": "Choose material type",
       "typeExternal": "External Link",
-      "typeApp": "Upload App (.zip)",
-      "typeVideo": "Upload Video",
-      "typePresentation": "Upload Presentation (.zip)",
-      "provideSource": "2. Provide Content Source",
-      "addDetails": "3. Add Details",
-      "contentLang": "Language of the content itself:",
-      "recommendedAge": "Recommended Age:",
-      "submitButton": "Submit for Review",
-      "submittingButton": "Submitting..."
+      "typeVideoInternal": "Video (In-App)",
+      "typeApp": "App Package",
+      "typePresentation": "Presentation Package",
+      "typeExternal_desc": "Use this option when you are not sure if the author consents to using their material on our platform. The link will open in a new tab.",
+      "typeVideoInternal_desc": "Use this option when you are sure the author consents to using their material on our platform. The video will open in our modal player.",
+      "typeApp_desc": "For interactive content like games or simulations. Requires a .zip archive with an index.html file in the root.",
+      "typePresentation_desc": "For interactive presentations (e.g., exported from Genially). Requires a .zip archive with an index.html file in the root.",
+      "provideSource": "Provide the source",
+      "selectedFile": "Selected file",
+      "addDetails": "Add details",
+      "contentLang": "Content languages",
+      "recommendedAge": "Recommended age",
+      "submittingButton": "Submitting...",
+      "submitButton": "Submit Material"
     },
     "modals": {
       "delete": {

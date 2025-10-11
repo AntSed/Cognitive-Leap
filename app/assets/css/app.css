@@ -36,3 +36,15 @@ html, body, #__nuxt {
   height: 100%;
   color: #9ca3af;
 }
+.hide-scrollbar {
+  /* Для Firefox */
+  scrollbar-width: none;
+  
+  /* Для Internet Explorer и старых версий Edge */
+  -ms-overflow-style: none;
+}
+
+/* Для Chrome, Safari, Opera и других WebKit-браузеров */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

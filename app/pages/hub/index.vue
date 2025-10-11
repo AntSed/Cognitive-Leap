@@ -1,6 +1,6 @@
 <template>
   <div class="hub-layout" :class="{ 'sidebar-is-open': isSidebarOpen }">
-    <aside class="hub-sidebar">
+    <aside class="hub-sidebar hide-scrollbar">
       <div class="tree-controls">
         <button @click="selectLesson(null)" :class="{ active: !selectedLesson }">
           Show All Materials
@@ -15,26 +15,31 @@
       <div v-for="subject in subjects" :key="subject.id" class="subject-group">
         <div class="subject-header" @click="toggleSubject(subject.id)">
           <h3 class="subject-title">{{ subject.name_translations?.en || 'Unnamed Subject' }}</h3>
-          <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditSubject(subject)">
-            ✏️
-          </button>
-          <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteSubject(subject)">
-            &times;
-          </button>
-          
-          <svg
-            class="subject-chevron"
-            :class="{ 'is-expanded': expandedSubjects.has(subject.id) }"
-            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
+          <div class="sidebar-actions">
+            <svg
+              class="subject-chevron"
+              :class="{ 'is-expanded': expandedSubjects.has(subject.id) }"
+              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+            <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditSubject(subject)">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+              </svg>
+            </button>
+            <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteSubject(subject)">
+              &times;
+            </button>
+          </div>
         </div>
 
         <draggable
           v-if="expandedSubjects.has(subject.id)" tag="ul"
-          :list="lessonsBySubject[subject.id]"
+          :list="lessonsBySubject[subject.id] || []"
           :delay="250"
           :delay-on-touch-only="true"
+          :disabled="isInlineEditing" 
           class="lesson-list"
           group="materials"
           item-key="id"
@@ -50,21 +55,31 @@
                 'drop-error': errorLessonId === lesson.id
               }"
             >
-              <a
-                @click="selectLesson(lesson)"
+              <a 
+                @click="selectLesson(lesson)" 
                 :class="{ active: selectedLesson?.id === lesson.id }"
                 @dragenter.prevent="hoveredLesson = lesson"
               >
-                <span class="lesson-position">{{ lesson.position }}.</span>
-                <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
-                  <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditLesson(lesson)">
-                    ✏️
-                  </button>
-                <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteLesson(lesson)">
-                  &times;
-                </button>
+                <EditablePosition
+                  v-if="isProgramOwner"
+                  :model-value="lesson.position"
+                  @update:modelValue="newPosition => handleLessonPositionUpdate(lesson, newPosition)"
+                />
+                <span v-else class="lesson-position">{{ lesson.position }}.</span>
                 
-                <span class="material-count">{{ lesson.material_count }}</span>
+                <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
+                
+                <div class="sidebar-actions">
+                  <span class="material-count">{{ lesson.material_count }}</span>
+                  <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditLesson(lesson)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                  </button>
+                  <button v-if="isProgramOwner" class="delete-btn" @click.stop="handleDeleteLesson(lesson)">
+                    &times;
+                  </button>
+                </div>
               </a>
             </li>
           </template>
@@ -138,6 +153,7 @@
         <draggable
           class="draggable-container"
           :list="displayedMaterials"
+          :disabled="isInlineEditing" 
           :delay="250"
           :delay-on-touch-only="true"
           :group="{ name: 'materials', pull: 'clone', put: false }"
@@ -168,13 +184,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, provide } from 'vue';
 import draggable from 'vuedraggable';
 import { useSupabaseUser, useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
 import HubMaterialCard from '~/components/hub/MaterialCard.vue';
-
+import EditablePosition from '~/components/hub/EditablePosition.vue';
 definePageMeta({
   middleware: 'auth'
 });
@@ -193,6 +209,7 @@ const statusFilter = ref('');
 const typeFilter = ref('');
 const subjects = ref([]);
 const lessons = ref([]);
+const isInlineEditing = ref(false);
 const newLessonTopics = ref({}); 
 const newSubjectName = ref('');
 const selectedLesson = ref(null);
@@ -236,6 +253,11 @@ const handleAddSubject = async () => {
     alert('Failed to add subject.');
   }
 };
+const setInlineEditingState = (isEditing) => {
+  isInlineEditing.value = isEditing;
+};
+provide('setInlineEditingState', setInlineEditingState);
+
 const handleEditSubject = (subject) => {
   const skinId = activeProgram.value?.skin_id || '38c24e69-24f9-4a7c-a003-84d298280c14'; // Fallback to default head skin
   modalStore.open('hub/modals/EditSubjectModal', {
@@ -323,7 +345,28 @@ const handleDeleteLesson = (lesson) => {
     }
   });
 };
+const handleLessonPositionUpdate = async (lesson, newPosition) => {
+  // Add a guard to prevent invalid position numbers
+  if (!newPosition || newPosition < 1) {
+    alert("Please enter a valid position number.");
+    return;
+  }
 
+  try {
+    const { error } = await supabase.rpc('reorder_lessons', {
+      p_lesson_id: lesson.id,
+      p_new_position: newPosition
+    });
+    if (error) throw error;
+    
+    // Refresh the entire tree to reflect the new order
+    await fetchTreeData();
+  } catch (error) {
+    console.error('Failed to reorder lesson:', error);
+    alert('Failed to reorder lesson.');
+    await fetchTreeData(); // Re-fetch to revert UI
+  }
+};
 const openProgramsModal = () => {
   modalStore.open('hub/modals/ProgramsModal', {
     activeProgram: activeProgram.value,
@@ -619,39 +662,19 @@ onMounted(async () => {
   grid-template-columns: 280px 1fr;
   height: 100vh;
 }
-
 .hub-sidebar {
   background-color: #1f2937;
   padding: 1.5rem;
   overflow-y: auto;
   border-right: 1px solid #374151;
 }
-
 .hub-main-content {
   overflow-y: auto;
   padding: 2rem;
   background-color: #f0f2f5;
 }
 
-.hub-header {
-  margin-bottom: 2rem;
-  text-align: center;
-  color: #262e3d;
-}
-
-.hub-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  color: #262e3d;
-}
-
-/* Sidebar Tree Styles */
-.hub-sidebar h2 {
-  font-size: 1.2rem;
-  color: #d1d5db;
-  margin-bottom: 1rem;
-}
-
+/* --- Sidebar Content --- */
 .tree-controls button {
   width: 100%;
   padding: 0.5rem;
@@ -660,117 +683,12 @@ onMounted(async () => {
   color: #f3f4f6;
   border-radius: 6px;
   cursor: pointer;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   text-align: left;
 }
-
 .tree-controls button.active {
   background-color: #df6a8d;
   font-weight: bold;
-}
-
-.subject-title {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #9ca3af;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-/* Add this to your style block */
-.subject-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  padding: 0.25rem 0;
-}
-
-.subject-header:hover .subject-title {
-  color: #fff;
-}
-
-.subject-chevron {
-  width: 16px;
-  height: 16px;
-  color: #9ca3af;
-  transition: transform 0.2s ease-in-out;
-}
-
-.subject-chevron.is-expanded {
-  transform: rotate(180deg);
-}
-.lesson-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.lesson-list a {
-  position: relative;
-  display: flex;
-  align-items: baseline;
- 
-  padding: 0.1rem;
-  text-decoration: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.lesson-list li.drop-target > a {
-  background-color: #6d28d9; 
-  outline: 2px dashed #fff;
-  outline-offset: -2px;
-}
-.lesson-position {
-  flex-shrink: 0;
-  font-weight: bold;
-  color: #e46ca8;
-  
-  /* NEW: Fixed width for perfect alignment */
-  width: 1.6rem; /* Задаем фиксированную ширину */
-  text-align: left; /* Выравниваем текст номера по левому краю */
-}
-
-.lesson-title {
-  flex-grow: 1; /* Allow title to take up available space */
-  color: #d1d5db; /* Main color for the title */
-  /* The right padding is now handled by the counter's position */
-}
-/* --- Hover and Active States --- */
-
-.lesson-list a:hover .lesson-title {
-  color: #fff;
-}
-
-.lesson-list a.active {
-  background-color: #4f46e5;
-}
-
-.lesson-list a.active .lesson-position {
-  color: #cc68ae; /* Lighter color for number when active */
-}
-
-.lesson-list a.active .lesson-title {
-  color: #fff; /* White title when active */
-}
-.lesson-list li.drop-error > a {
-  /* Мигающая красная рамка для обратной связи */
-  animation: flash-red 0.5s ease-in-out 3;
-}
-
-@keyframes flash-red {
-  0%, 100% {
-    box-shadow: none;
-  }
-  50% {
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.7);
-  }
-}
-.ghost-item {
-  opacity: 0;
-  height: 0;
-  display: none;
 }
 .add-controls {
   display: flex;
@@ -787,59 +705,126 @@ onMounted(async () => {
 }
 .add-controls button {
   flex-shrink: 0;
-  background-color: #4f46e5;
+  background-color: #1F2937;
   border: none;
-  color: #fff;
+  color: #c5bdbd;
   font-weight: bold;
   border-radius: 4px;
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 40px;
   cursor: pointer;
 }
 .lesson-add {
   margin-top: 0.5rem;
 }
-.delete-btn {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  font-size: 1.5rem;
-  line-height: 1;
-  padding: 0 0.5rem;
+
+/* Subject & Lesson List */
+.subject-group {
+  margin-top: 1rem;
+}
+.subject-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   cursor: pointer;
+  padding: 0.25rem 0;
+}
+.subject-header:hover .subject-title {
+  color: #fff;
+}
+.subject-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+.lesson-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.lesson-list a {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.1rem;
+  text-decoration: none;
   border-radius: 4px;
-  margin: 0 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.lesson-list a:hover .lesson-title {
+  color: #fff;
+}
+.lesson-list a.active {
+  background-color: #4c4c53;
+}
+.lesson-list a.active .lesson-position {
+  color: #cc68ae;
+}
+.lesson-list a.active .lesson-title {
+  color: #fff;
+}
+.lesson-list a.active .material-count {
+  background-color: #f3f4f6;
+  color: #4f46e5;
+}
+.lesson-position {
+  flex-shrink: 0;
+  font-weight: bold;
+  color: #e46ca8;
+  width: 1.6rem;
+  text-align: left;
+  margin-left: -1rem;
+}
+.lesson-title {
+  color: #d1d5db;
+}
+
+/* Sidebar Action Icons (New & Corrected) */
+.sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0; /* Prevent icons from shrinking */
+  margin-right: -1.3rem; 
+}
+.subject-chevron {
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+  transition: transform 0.2s ease-in-out;
+}
+.subject-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+.edit-btn {
+  background: none; border: none; color: #9ca3af; margin-left: 0.2rem;
+ cursor: pointer; border-radius: 4px;
+  display: flex; align-items: right; justify-content: right;
+}
+.edit-btn:hover {
+  background-color: #1F2937;
+  color: #fff;
+}
+.edit-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.delete-btn {
+  background: none; border: none; color: #9ca3af;
+  font-size: 1.5rem; line-height: 1; padding: 0 0.2rem;
+  cursor: pointer; border-radius: 4px;
+  display: flex; align-items: right; justify-content: right;
 }
 .delete-btn:hover {
   background-color: #ef4444;
   color: #fff;
 }
-.edit-btn {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  font-size: 1rem; /* Smaller than delete button */
-  line-height: 1;
-  padding: 0 0.25rem;
-  cursor: pointer;
-  border-radius: 4px;
-}
-.edit-btn:hover {
-  background-color: #2563eb;
-  color: #fff;
-}
-/* Make sure delete button on lesson is positioned correctly */
-.lesson-list a {
-  align-items: center; /* This helps center the delete button vertically */
-}
-.lesson-title {
-  margin-right: auto; /* Push delete button and count to the right */
-}
-/* The material-count style remains the same */
 .material-count {
-  position: absolute;
-  top: 15px;
-  right: -15px;
   font-size: 0.7rem;
   padding: 1px 5px;
   background-color: #4b5563;
@@ -850,9 +835,40 @@ onMounted(async () => {
   text-align: center;
 }
 
-.lesson-list a.active .material-count {
-  background-color: #f3f4f6;
-  color: #4f46e5;
+/* Sidebar States */
+.lesson-list li.drop-target > a {
+  background-color: #bebdc0; 
+  outline: 2px dashed #fff;
+  outline-offset: -2px;
+}
+.lesson-list li.drop-error > a {
+  animation: flash-red 0.5s ease-in-out 3;
+}
+@keyframes flash-red {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.7); }
+}
+.lesson-list :deep(.editable-position) {
+  flex-shrink: 0;
+  width: 2.2rem;
+  text-align: left;
+  list-style-type: none;
+  margin-left: -1rem;
+}
+.ghost-item {
+  display: none;
+}
+
+/* --- Main Content Area --- */
+.hub-header {
+  margin-bottom: 2rem;
+  text-align: center;
+  color: #262e3d;
+}
+.hub-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: #262e3d;
 }
 .program-selector {
   display: inline-flex;
@@ -879,7 +895,6 @@ onMounted(async () => {
   height: 1rem;
   color: #9ca3af;
 }
-/* Filters Styles */
 .filters-container {
   display: flex;
   gap: 1.5rem;
@@ -890,21 +905,18 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   flex-wrap: wrap;
 }
-
 .filter-group {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   min-width: 180px;
 }
-
 .filter-group label {
   font-size: 0.8rem;
   font-weight: 500;
   margin-bottom: 0.25rem;
   color: #374151;
 }
-
 .filter-group input,
 .filter-group select {
   padding: 0.5rem;
@@ -913,14 +925,6 @@ onMounted(async () => {
   background-color: #fff;
   color: #111827;
 }
-
-@media (max-width: 768px) {
-  .filters-container {
-    flex-direction: column;
-  }
-}
-
-/* Main Content Grid & States */
 .materials-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -930,35 +934,36 @@ onMounted(async () => {
 .draggable-container {
   display: contents; 
 }
-.ghost-item {
-  display: none;
-}
 .state-indicator {
   text-align: center;
   margin-top: 4rem;
   color: #555;
   font-size: 1.2rem;
 }
-
 .state-indicator.error {
   color: #e74c3c;
 }
-/* Hide the toggle button by default on larger screens */
+
+/* --- Responsive & Mobile Styles --- */
 .sidebar-toggle {
   display: none;
 }
-/* =================================== */
-/* === NEW: Mobile Responsive Styles === */
-/* =================================== */
-
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
 @media (max-width: 768px) {
-  
-  /* The layout becomes a single column */
   .hub-layout {
     grid-template-columns: 1fr;
   }
-
-  /* The toggle button, hidden on desktop, now appears */
+  .filters-container {
+    flex-direction: column;
+  }
   .sidebar-toggle {
     position: fixed;
     top: 1rem;
@@ -967,46 +972,28 @@ onMounted(async () => {
     display: block;
     margin-bottom: 1rem;
   }
-  
-.sidebar-toggle button {
-  /* MODIFIED: Glassmorphism effect */
-  background-color: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(1px);
-
-  border: 1px solid rgba(209, 213, 219, 0.5);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
-  color: #111827;
-}
-
-  /* The sidebar is now positioned absolutely, off-screen */
+  .sidebar-toggle button {
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(1px);
+    border: 1px solid rgba(209, 213, 219, 0.5);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    color: #111827;
+  }
   .hub-sidebar {
     position: fixed;
     top: 0;
     left: 0;
-    width: 280px; /* Same width as before */
+    width: 280px;
     height: 100%;
     z-index: 1000;
-    transform: translateX(-100%); /* Hidden by default */
+    transform: translateX(-100%);
     transition: transform 0.3s ease-in-out;
     box-shadow: 5px 0px 15px rgba(0,0,0,0.2);
   }
-
-  /* When the .sidebar-is-open class is added, the sidebar slides in */
   .hub-layout.sidebar-is-open .hub-sidebar {
     transform: translateX(0);
   }
 }
-/* NEW: Style for the clickable overlay */
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999; /* Below sidebar, above content */
-}
-
 </style>

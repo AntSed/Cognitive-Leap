@@ -10,30 +10,64 @@
       <span class="material-status">{{ material.status }}</span>
     </div>
     <div class="card-body">
-      <h3 class="material-title">
-        {{ material.title_translations?.en || 'Untitled' }}
-      </h3>
-      <p v-if="material.description_translations?.en" class="material-description">
-        {{ material.description_translations.en.substring(0, 100) }}...
-      </p>
+      <InlineEditor
+        tag="h3"
+        class="material-title"
+        :model-value="material.title_translations?.en"
+        :can-edit="canEdit"
+        placeholder="Untitled"
+        @update:modelValue="newValue => handleFieldUpdate('title_translations', { ...material.title_translations, en: newValue })"
+      />
+      <InlineEditor
+        tag="p"
+        class="material-description"
+        input-type="textarea"
+        :model-value="material.description_translations?.en"
+        :can-edit="canEdit"
+        placeholder="No description"
+        @update:modelValue="newValue => handleFieldUpdate('description_translations', { ...material.description_translations, en: newValue })"
+      />
     </div>
     <div class="card-footer">
-        <button class="play-button" @click="playMaterial(material)">
+      <button class="play-button" @click="playMaterial(material)">
         {{ getButtonText(material) }}
       </button>
+
       <span class="material-age">
-        Ages: {{ material.recommended_age_min || '?' }} - {{ material.recommended_age_max || '?' }}
+        Ages:
+        <InlineEditor
+          :model-value="material.recommended_age_min"
+          :can-edit="canEdit"
+          input-type="number"
+          placeholder="?"
+          @update:modelValue="newValue => handleFieldUpdate('recommended_age_min', parseInt(newValue) || null)"
+        />
+        -
+        <InlineEditor
+          :model-value="material.recommended_age_max"
+          :can-edit="canEdit"
+          input-type="number"
+          placeholder="?"
+          @update:modelValue="newValue => handleFieldUpdate('recommended_age_max', parseInt(newValue) || null)"
+        />
       </span>
       
       <div class="card-actions">
-        <button v-if="canManageStatus" @click="openStatusModal(material, activeProgramId, props.onUpdate)" title="Manage Status">
-          ⚙️
+        <button v-if="canManageStatus" class="action-btn" @click="openStatusModal(material, activeProgramId, props.onUpdate)" title="Manage Status">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.438 1.001v.001c0 .388.145.761.438 1.001l1.003.827a1.125 1.125 0 01.26 1.431l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.075.124a6.57 6.57 0 01-.22.127c-.332.183-.582.495-.645.87l-.213 1.281c-.09.543-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 01-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 01-1.37-.49l-1.296-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.437-1.001v-.001c0-.388-.145-.761-.437-1.001l-1.004-.827a1.125 1.125 0 01-.26-1.431l1.296-2.247a1.125 1.125 0 011.37-.49l1.217.456c.355.133.75.072 1.075-.124.072-.044.146-.087.22-.127.332-.183.582-.495.645-.87l.213-1.281z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
         </button>
         <button v-if="canUnpin" @click="openUnpinModal(material, selectedLessonId, props.onUpdate)" class="action-btn unpin-btn" title="Unpin from Lesson">
-          💔
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+          </svg>
         </button>
         <button v-if="canDelete" @click="openDeleteModal(material, props.onUpdate)" class="action-btn delete-btn" title="Delete Material">
-          🗑️
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
         </button>
       </div>
     </div>
@@ -42,9 +76,11 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useSupabaseClient } from '#imports'; 
 import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
-import { useMaterialManagement } from '~/composables/useMaterialManagement';
 import EditablePosition from './EditablePosition.vue';
+import InlineEditor from '~/components/hub/InlineEditor.vue';
+
 const props = defineProps({
   material: { type: Object, required: true },
   currentUser: { type: Object, required: true },
@@ -54,21 +90,46 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update-position']);
-const { openDeleteModal, openUnpinModal, openStatusModal } = useMaterialManagement();
 const { getButtonText, playMaterial } = useMaterialPlayer();
+const supabase = useSupabaseClient();
 
 const isAuthor = computed(() => props.currentUser.user_id === props.material.developer_id);
 const isAdmin = computed(() => props.currentUser.hub_role === 'admin');
 const isEditor = computed(() => props.currentUser.hub_role === 'editor');
+const canEdit = computed(() => isAuthor.value || isAdmin.value || isEditor.value);
 
-const canDelete = computed(() => isAuthor.value || isAdmin.value);
-const canUnpin = computed(() => (isEditor.value || isAdmin.value) && props.selectedLessonId);
-const canManageStatus = computed(() => isEditor.value || isAdmin.value);
 const handlePositionUpdate = (newPosition) => {
   emit('update-position', {
     materialId: props.material.id,
     newPosition: newPosition
   });
+};
+
+const handleFieldUpdate = async (field, value) => {
+  // 1. Save the original value in case of an error.
+  // Using JSON.stringify/parse for a deep copy to handle nested objects.
+  const oldValue = JSON.parse(JSON.stringify(props.material[field] || null));
+
+  // 2. Optimistic UI Update: Mutate the local data immediately.
+  // Vue will detect this change and update the UI instantly.
+  props.material[field] = value;
+  
+  try {
+    // 3. Send the update to the server in the background.
+    const { error } = await supabase
+      .from('learning_apps')
+      .update({ [field]: value })
+      .eq('id', props.material.id);
+    
+    // If the server returns an error, throw it to be caught by the catch block.
+    if (error) throw error;
+
+  } catch (error) {
+    // 4. Rollback: If the update failed, revert to the old value and notify the user.
+    props.material[field] = oldValue;
+    console.error(`Failed to update field '${field}':`, error);
+    alert('Update failed. Your changes have been reverted.');
+  }
 };
 </script>
 
@@ -157,7 +218,6 @@ const handlePositionUpdate = (newPosition) => {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.2rem;
   padding: 0.25rem;
   border-radius: 50%;
   width: 32px;
@@ -165,8 +225,23 @@ const handlePositionUpdate = (newPosition) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  color: #7f8c8d; /* Default icon color */
+  transition: all 0.2s;
 }
-.action-btn:hover { background-color: #ecf0f1; }
-.delete-btn:hover { background-color: #fadbd8; }
+.action-btn:hover { 
+  background-color: #ecf0f1;
+  color: #2c3e50;
+}
+.action-btn svg {
+  width: 20px;
+  height: 20px;
+}
+.delete-btn:hover { 
+  background-color: #fadbd8;
+  color: #c0392b;
+}
+.unpin-btn:hover {
+  background-color: #e8daef;
+  color: #8e44ad;
+}
 </style>

@@ -52,10 +52,6 @@ const cancelEditing = () => {
 
 <style scoped>
 .editable-position {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
   cursor: pointer;
   min-width: 28px;
   text-align: center;
@@ -64,13 +60,13 @@ const cancelEditing = () => {
   padding: 4px 8px;
   border-radius: 6px;
   font-weight: 500;
-  color: #7f8c8d;
-  background-color: #ecf0f1;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
+  color: var(--editable-position-color, #7f8c8d);
+  background-color: var(--editable-position-bg, #ecf0f1);
 }
 .editable-position:hover .position-display {
-  background-color: #bdc3c7;
-  color: #2c3e50;
+  color: var(--editable-position-hover-color, #2c3e50);
+  background-color: var(--editable-position-hover-bg, #bdc3c7);
 }
 .position-input {
   width: 45px;
@@ -80,5 +76,19 @@ const cancelEditing = () => {
   text-align: center;
   font-weight: bold;
   outline: none;
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+/* --- НОВЫЕ ПРАВИЛА ДЛЯ УДАЛЕНИЯ СТРЕЛОК --- */
+/* Для Chrome, Safari, Edge, Opera */
+.position-input::-webkit-outer-spin-button,
+.position-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Для Firefox */
+.position-input[type=number] {
+  -moz-appearance: textfield;
 }
 </style>
