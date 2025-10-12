@@ -122,10 +122,7 @@
           </div>
           <button @click="updatePassword" class="w-full bg-[#3b82f6] text-white py-3 px-4 rounded-lg font-semibold transition-colors hover:bg-[#1d4ed8]" :disabled="!newPassword">{{ $t('profile_setPassword') }}</button>
           <p v-if="passwordUpdateMessage" class="text-green-400 text-center mt-2">{{ passwordUpdateMessage }}</p>
-        </div>
-      </section>
-      <section class="mb-8">
-          <h2 class="text-xl font-semibold border-b border-[#374151] pb-2 mb-6 text-center">{{ $t('profile_passwordManagement') }}</h2>
+          </div>
           <div class="space-y-4">
               <div class="relative">
                   <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-600"></div></div>
@@ -369,9 +366,13 @@ onMounted(() => {
     history.pushState("", document.title, window.location.pathname + window.location.search);
   }
 
-  watch(user, (currentUser) => {
+watch(user, (currentUser, previousUser) => {
+    if (currentUser && (!previousUser || previousUser.is_anonymous)) {
+      loading.value = true;
+    }
+
     if (currentUser && !currentUser.is_anonymous) {
-      fetchProfileAndRelations();
+      fetchProfileAndRelations(); 
     } else {
       loading.value = false;
     }
