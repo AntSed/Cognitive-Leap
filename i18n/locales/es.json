@@ -93,6 +93,10 @@
   "about_text_educators": "Libérate de la rutina. Deja que nuestra plataforma se encargue de lo básico, para que puedas centrarte en lo que realmente importa: guiar e inspirar a los estudiantes. Conviértete en el curador principal de tu materia.",
   "about_conclusion": "Demos este salto cognitivo juntos y construyamos la educación que nuestros hijos merecen.",
   "about_project": "Sobre el proyecto",
+  "profile_identityExistsTitle": "El cuenta ya existe",
+  "profile_identityExistsHint": "Parece que ya tienes una cuenta con este email. Por favor, inicia sesión usando tu contraseña o la opción '¿Olvidaste tu contraseña?'. Después de iniciar sesión, podrás vincular Google en la configuración de tu perfil.",
+  "profile_linkGoogle": "Vincular cuenta de Google",
+  "error_linking_account": "No se pudo vincular la cuenta: ",
   "common": {
     "cancel": "Cancelar",
     "confirm": "Confirmar"

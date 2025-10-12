@@ -93,6 +93,10 @@
   "about_text_educators": "Break free from the routine. Let our platform handle the basics, so you can focus on what truly matters: mentoring and inspiring students. Become a lead curator for your subject.",
   "about_conclusion": "Let's take this cognitive leap together and build the education our children deserve.",
   "about_project": "About Project",
+  "profile_identityExistsTitle": "An account already exists",
+  "profile_identityExistsHint": "It seems you already have an account with this email. Please log in using your password or the 'Forgot Password?' option. After logging in, you will be able to link Google in your profile settings.",
+  "profile_linkGoogle": "Link Google Account",
+  "error_linking_account": "Failed to link account: ",
     "common": {
     "cancel": "Cancel",
     "confirm": "Confirm"
