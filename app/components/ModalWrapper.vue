@@ -28,10 +28,10 @@ const modalStore = useModalStore();
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1001; /* Должен быть выше всего остального */
+  z-index: 1001;
 }
 
-/* Анимация для появления */
+
 .modal-scale-enter-active {
   transition: all 0.2s ease-out;
 }

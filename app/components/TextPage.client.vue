@@ -5,7 +5,13 @@
         <p class="intro">{{ $t('about_intro_1') }}</p>
         <p>{{ $t('about_intro_2') }}</p>
         <p>{{ $t('about_body_1') }}</p>
-        <p>{{ $t('about_body_2') }}</p>
+        <i18n-t keypath="about_body_2" tag="p">
+          <template #link>
+            <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
+              {{ $t('about_body_2LinkText') }}
+            </router-link>
+          </template>
+        </i18n-t>
       </section>
 
       <section class="invitation-section">
@@ -19,7 +25,13 @@
         
         <div class="card">
           <h2>{{ $t('about_subtitle_educators') }}</h2>
-          <p>{{ $t('about_text_educators') }}</p>
+          <i18n-t keypath="about_text_educators" tag="p">
+            <template #link>
+              <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
+                {{ $t('about_text_educatorsLinkText') }}
+              </router-link>
+            </template>
+          </i18n-t>
         </div>
 
         <p class="conclusion">{{ $t('about_conclusion') }}</p>

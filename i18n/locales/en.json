@@ -3,8 +3,8 @@
   "tree": "Tree",
   "head": "Head",
   "profile_title": "Profile",
-  "changeLanguage": "Change language",
-  "logout": "Logout",
+  "changeLanguage": "Change Language",
+  "logout": "Log Out",
   "signIn": "Sign In",
   "signUp": "Sign Up",
   "or": "Or",
@@ -12,12 +12,12 @@
   "invalidLogin": "Invalid login or password.",
   "profile_saveYourProgress": "Save Your Progress",
   "profile_createAccountHint": "Create an account to save your achievements and access all platform features.",
-  "profile_emailExistsError": "A user with this email address is already registered. Please sign in.",
+  "profile_emailExistsError": "A user with this email is already registered. Please sign in.",
   "profile_avatar": "Avatar",
   "profile_style": "Style",
-  "profile_seed": "Seed word",
+  "profile_seed": "Secret word",
   "profile_seedHint": "Write something and watch the avatar change!",
-  "profile_randomAvatar": "Random avatar",
+  "profile_randomAvatar": "Random Avatar",
   "profile_personalData": "Personal Data",
   "cannot_change": "cannot be changed",
   "profile_name": "Name",
@@ -27,15 +27,15 @@
   "profile_country": "Country",
   "profile_countryHint": "For geography and history lessons of your country",
   "profile_countryNotSelected": "Not selected",
-  "profile_iAmStudent": "I am a Student",
-  "profile_iAmCurator": "I am a Curator",
-  "profile_curatorRequests": "Curator requests:",
+  "profile_iAmStudent": "I am a student",
+  "profile_iAmCurator": "I am a curator",
+  "profile_curatorRequests": "Curatorship requests:",
   "profile_wantsToBeCurator": "wants to be your curator",
   "accept": "Accept",
   "reject": "Reject",
   "manage": "Manage",
   "profile_addCurator": "Add Curator",
-  "profile_studentRequests": "Student requests:",
+  "profile_studentRequests": "Requests from students:",
   "profile_wantsToBeStudent": "wants to be your student",
   "status": "Status",
   "settings": "Settings",
@@ -49,7 +49,7 @@
   "profile_sendInvite": "Send Invite",
   "profile_roleAndConnections": "Role & Connections",
   "loadingLesson": "Loading lesson...",
-  "proveYouKnow": "prove you know",
+  "proveYouKnow": "Prove you know",
   "startTest": "Start Test",
   "study": "Study",
   "watch": "Watch",
@@ -57,47 +57,51 @@
   "open": "Open",
   "fullName": "Full Name",
   "password": "Password",
-  "pending": "Pending",
-  "active": "Active",
-  "unknown_user": "Unknown User",
-  "profile_cancelInvitation": "Cancel Invitation",
-  "profile_deleteConnection": "Delete Connection",
-  "profile_confirmDelete": "Are you sure you want to delete this connection?",
   "checkYourEmail": "Please check your email to confirm your registration.",
   "processing_invitation": "Processing invitation...",
+  "pending": "Pending",
+  "active": "Active",
+  "unknown_user": "Unknown user",
+  "profile_cancelInvitation": "Cancel invitation",
+  "profile_deleteConnection": "Break connection",
+  "profile_confirmDelete": "Are you sure you want to delete this connection?",
   "confirm_invitation_title": "Complete your registration",
   "confirm_invitation_subtitle": "Create a password to protect your account.",
   "newPassword": "New Password",
-  "password_requirements": "Minimum 8 characters, don't use a password that is too common.",
+  "password_requirements": "Minimum 8 characters, don't use overly simple passwords.",
   "password_placeholder": "••••••••",
   "profile_passwordManagement": "Password Management",
   "profile_newPassword": "New Password",
-  "profile_passwordHint": "If you logged in via link, set a permanent password here.",
+  "profile_passwordHint": "If you signed in via a link, set a permanent password here.",
   "profile_setPassword": "Set Password",
   "complete_registration": "Complete Registration",
   "processing": "Processing",
   "forgotPassword": "Forgot password?",
-  "resetLinkSent": "A password reset link has been sent.",
-  "enterEmailForReset": "Enter your email to reset the password.",
-  "error_weak_password": "This password is too common. Please choose a more secure one.",
+  "resetLinkSent": "Password reset link has been sent.",
+  "enterEmailForReset": "Enter your email to reset your password.",
+  "error_weak_password": "This password is too simple. Please come up with something more complex.",
   "error_unknown": "An unexpected error occurred. Please try again.",
   "about_intro_1": "70,000 years ago, the Cognitive Revolution made us human. Today, in the age of AI, it's time for the second Cognitive Leap.",
-  "about_intro_2": "Forget 11 years at a desk. Our game-based platform allows you to master the school curriculum in 2-3 years, using engaging 2D games, as well as Minecraft and Roblox worlds.",
-  "about_body_1": "Traditional school is a conveyor belt that treats everyone the same, killing the joy of discovery. Cognitive Leap is the alternative. We replace the conveyor belt with a personal GPS for knowledge. Instead of grade levels, we have a map of 260 topics linked by logic, not by a schedule. Our system builds a unique and faster learning path for every student.",
+  "about_intro_2": "Forget 11 years at a desk. Our gaming platform allows you to master the school curriculum in 2-3 years through engaging 2D games, as well as Minecraft and Roblox worlds.",
+  "about_body_1": "Traditional school is a conveyor belt that treats everyone the same, killing the joy of discovery. Cognitive Leap is the alternative. We replace the conveyor belt with a personal GPS for knowledge. Instead of classes, we have a map of 260 topics linked by logic, not a schedule. Our system builds a unique and fast learning path for each student.",
   "about_body_2": "We don't create lessons from scratch; we curate the best educational content from around the world, from YouTube lectures to interactive simulations.",
+  "about_text_educators": "Break free from routine. Let our platform handle the basics so you can focus on what truly matters: mentoring and inspiring students. {link}.",
+  "about_body_2LinkText": "best educational content",
+  "about_text_educatorsLinkText": "Become a leading curator in your subject",
   "about_title": "An Invitation to Leap",
   "about_invitation_intro": "Education is an ecosystem, and we invite you to build it with us.",
-  "about_subtitle_parents": "To Parents:",
-  "about_text_parents": "Help us turn learning into a thrilling adventure by finding the best content to unlock your child's potential.",
-  "about_subtitle_educators": "To Educators:",
-  "about_text_educators": "Break free from the routine. Let our platform handle the basics, so you can focus on what truly matters: mentoring and inspiring students. Become a lead curator for your subject.",
-  "about_conclusion": "Let's take this cognitive leap together and build the education our children deserve.",
-  "about_project": "About Project",
-  "profile_identityExistsTitle": "An account already exists",
-  "profile_identityExistsHint": "It seems you already have an account with this email. Please log in using your password or the 'Forgot Password?' option. After logging in, you will be able to link Google in your profile settings.",
+  "about_subtitle_parents": "For Parents:",
+  "about_text_parents": "Help us turn learning into an exciting adventure by finding the best content to unlock your child's potential.",
+  "about_subtitle_educators": "For Educators:",
+  "about_conclusion": "Let's make this cognitive leap together and build the education our children deserve.",
+  "about_project": "About the Project",
+  "profile_identityExistsTitle": "Account Already Exists",
+  "profile_identityExistsHint": "It seems you already have an account with this email. Please sign in using your password or the 'Forgot Password' option. After signing in, you can link your Google account in your profile settings.",
   "profile_linkGoogle": "Link Google Account",
   "error_linking_account": "Failed to link account: ",
-    "common": {
+  "profile_hubInvitation": "Teachers and parents! Help us make Cognitive Leap better by adding the best videos and interactive materials to {link}.",
+  "profile_hubLinkText": "our Hub",
+  "common": {
     "cancel": "Cancel",
     "confirm": "Confirm"
   },
@@ -105,30 +109,87 @@
     "add": {
       "chooseType": "Choose material type",
       "typeExternal": "External Link",
-      "typeVideoInternal": "Video (In-App)",
-      "typeApp": "App Package",
+      "typeVideoInternal": "Video (in-app)",
+      "typeApp": "Application Package",
       "typePresentation": "Presentation Package",
-      "typeExternal_desc": "Use this option when you are not sure if the author consents to using their material on our platform. The link will open in a new tab.",
-      "typeVideoInternal_desc": "Use this option when you are sure the author consents to using their material on our platform. The video will open in our modal player.",
-      "typeApp_desc": "For interactive content like games or simulations. Requires a .zip archive with an index.html file in the root.",
+      "typeExternal_desc": "Use this option if you are unsure whether the author agrees to the use of their material on our platform. The link will open in a new tab.",
+      "typeVideoInternal_desc": "Use this option if you are sure the author agrees to the use of their material on our platform. The video will open in our player.",
+      "typeApp_desc": "For interactive content such as games or simulations. Requires a .zip archive with an index.html file in the root.",
       "typePresentation_desc": "For interactive presentations (e.g., exported from Genially). Requires a .zip archive with an index.html file in the root.",
       "provideSource": "Provide the source",
       "selectedFile": "Selected file",
       "addDetails": "Add details",
-      "contentLang": "Content languages",
-      "recommendedAge": "Recommended age",
+      "contentLang": "Content Languages",
+      "recommendedAge": "Recommended Age",
       "submittingButton": "Submitting...",
       "submitButton": "Submit Material"
     },
     "modals": {
       "delete": {
         "title": "Confirm Deletion",
-        "message": "Are you sure you want to permanently delete \"{materialName}\"? This action cannot be undone."
+        "message": "Are you sure you want to permanently delete “{materialName}”? This action cannot be undone."
       },
       "unpin": {
-        "title": "Confirm Unpinning",
-        "message": "Are you sure you want to unpin \"{materialName}\" from this lesson?"
-      }      
+        "title": "Confirm Unpin",
+        "message": "Are you sure you want to unpin “{materialName}” from this lesson?"
+      }
+    }
+  },
+  "ui": {
+    "buttons": {
+      "newMap": "New Map",
+      "addNode": "Add Node",
+      "addConnection": "Add Connection",
+      "save": "Save",
+      "load": "Load",
+      "deleteMap": "Delete Map",
+      "close": "Close",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "ok": "OK"
+    },
+    "tooltips": {
+      "switchToStraight": "Switch to Straight Lines",
+      "switchToCurved": "Switch to Curved Lines"
+    }
+  },
+  "loadPanel": {
+    "title": "Load Map",
+    "noMapsFound": "No saved maps found."
+  },
+  "defaultMap": {
+    "welcomeNode": "Welcome!",
+    "name": "New Map",
+    "unknownName": "Unknown Map"
+  },
+  "confirmations": {
+    "restoreUnsaved": "Unsaved changes detected. Restore them?",
+    "loseUnsavedChanges": "You have unsaved changes that will be lost. Are you sure you want to continue?",
+    "deleteMap": "Are you sure you want to delete the map “{name}”? This action is irreversible.",
+    "startNewMap": "Are you sure you want to create a new map? All unsaved changes will be lost."
+  },
+  "prompts": {
+    "enterMapName": "Enter a name for your map:"
+  },
+  "notifications": {
+    "errors": {
+      "noDataToSave": "Error: No data to save.",
+      "saveFailed": "Error saving map: {message}",
+      "fetchListFailed": "Error fetching maps list: {message}",
+      "loadFailed": "Error loading map: {message}",
+      "deleteFailed": "Error deleting map: {message}"
+    },
+    "success": {
+      "mapSaved": "Map “{name}” saved successfully!",
+      "mapDeleted": "Map deleted successfully."
+    }
+  },
+  "modals": {
+    "confirm": {
+      "title": "Confirmation Required"
+    },
+    "prompt": {
+      "title": "Input Required"
     }
   }
 }

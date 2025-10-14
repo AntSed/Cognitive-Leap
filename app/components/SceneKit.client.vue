@@ -108,28 +108,48 @@ class SceneKitApp {
     this.draggedObject = null; this.dragPlane = new THREE.Plane(); this.dragOffset = new THREE.Vector3();
   }
 
-  async init() {
-    try {
-      const { data: { user } } = await this.supabase.auth.getUser();
-      const [nodesResult, assetsResult] = await Promise.all([
-          this.supabase.rpc('get_layout_data', { p_skin_id: this.skinData.id, p_user_id: user?.id, p_program_id: this.programId }),
-          this.supabase.from('skin_assets').select('*').eq('skin_id', this.skinData.id)
-      ]);
-      if (nodesResult.error) throw nodesResult.error;
-      if (assetsResult.error) throw assetsResult.error;
-      this.nodesData = nodesResult.data || [];
-      this.assetsData = assetsResult.data || [];
-      
-      this.initScene();
-      this.initControls();
-      this.initEventListeners();
-      await this.initSharedAssets();
-      await this.createAssets();
-      this.createNodes();
-      this.initGlobalEffect();
-      this.initAttentionEffect();
-    } catch (error) { console.error("SceneKit Error: Failed to initialize.", error); }
+async init() {
+  try {
+    // Шаг 1: Используем getSession(), он надежнее при инициализации
+    let { data: { session } } = await this.supabase.auth.getSession();
+
+    // Шаг 2: Если сессии нет ВООБЩЕ (даже анонимной), создаем её принудительно.
+    // Это наша страховка, которая гарантирует наличие user.id.
+    if (!session) {
+      const { data: anonSessionData, error: anonError } = await this.supabase.auth.signInAnonymously();
+      if (anonError) throw anonError; // Если даже анонимный вход не удался, прекращаем работу
+      session = anonSessionData.session;
+    }
+    
+    // Теперь мы на 100% уверены, что session и session.user существуют
+    const user = session.user;
+
+    // Шаг 3: Выполняем запросы, теперь уже без '?' у user.id
+    const [nodesResult, assetsResult] = await Promise.all([
+        this.supabase.rpc('get_layout_data', { p_skin_id: this.skinData.id, p_user_id: user.id, p_program_id: this.programId }),
+        this.supabase.from('skin_assets').select('*').eq('skin_id', this.skinData.id)
+    ]);
+
+    if (nodesResult.error) throw nodesResult.error;
+    if (assetsResult.error) throw assetsResult.error;
+
+    this.nodesData = nodesResult.data || [];
+    this.assetsData = assetsResult.data || [];
+    
+    // Остальная часть твоей функции инициализации
+    this.initScene();
+    this.initControls();
+    this.initEventListeners();
+    await this.initSharedAssets();
+    await this.createAssets();
+    this.createNodes();
+    this.initGlobalEffect();
+    this.initAttentionEffect();
+
+  } catch (error) { 
+    console.error("SceneKit Error: Failed to initialize.", error); 
   }
+}
 
     // --- EFFECT FACTORY: Central place for all visual effects ---
     effectFactory = {
