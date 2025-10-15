@@ -1,51 +1,57 @@
 <template>
-  <div ref="mountPoint" class="mind-map-container">
-    <div v-if="selectedNode" class="panel properties-panel">
-        <div class="prop-group">
-            <label>Name</label>
-            <input type="text" v-model="selectedNode.label" @input="updateNodeProperties">
-        </div>
-        <div class="prop-group">
-            <label>Color</label>
-            <input type="color" v-model="selectedNode.color" @input="updateNodeProperties">
-        </div>
-        <div class="prop-group">
-            <label>Size</label>
-            <input type="range" v-model.number="selectedNode.size" @input="updateNodeProperties" min="1" max="20" step="0.5">
-        </div>
-        <div class="prop-group">
-            <label>Shape</label>
-            <select v-model="selectedNode.shape" @change="updateNodeProperties">
-                <option value="sphere">Sphere</option>
-                <option value="box">Cube</option>
-                <option value="cone">Pyramid</option>
-                <option value="cylinder">Cylinder</option>
-                <option value="octahedron">Diamond</option>
-                <option value="torus">Torus</option>
-                <option value="dodecahedron">Dodecahedron</option>
-                <option value="icosahedron">Icosahedron</option>
-                <option value="torusKnot">Torus Knot</option>
-            </select>
-        </div>
-        <button @click="deleteSelected" class="btn btn-danger">Delete Node</button>
+<div ref="mountPoint" class="mind-map-container">
+
+  <div v-if="selectedNode" class="panel properties-panel">
+    <div class="prop-group">
+      <input type="text" v-model="selectedNode.label" @input="updateNodeProperties" placeholder="Name">
     </div>
-    
-    <div v-if="selectedConnection" class="panel connection-properties-panel">
-        <div class="prop-group">
-            <label>Name</label>
-            <input type="text" v-model="selectedConnection.label" @input="updateConnectionProperties">
-        </div>
-        <div class="prop-group">
-            <label>Color</label>
-            <input type="color" v-model="selectedConnection.color" @input="updateConnectionProperties">
-        </div>
-        <div class="prop-group">
-            <label>Width</label>
-            <input type="range" v-model.number="selectedConnection.width" @input="updateConnectionProperties" min="0.1" max="2" step="0.1">
-        </div>
-        <button @click="deleteSelected" class="btn btn-danger">Delete Connection</button>
+    <div class="prop-group">
+      <textarea v-model="selectedNode.description" @input="updateNodeProperties" rows="4" placeholder="Description"></textarea>
+    </div>
+    <div class="prop-group">
+      <input type="range" v-model.number="selectedNode.size" @input="updateNodeProperties" min="1" max="20" step="0.5" title="Size">
+    </div>
+
+    <div class="controls-row">
+      <div class="prop-group">
+        <input type="color" v-model="selectedNode.color" @input="updateNodeProperties" title="Color">
+      </div>
+      <div class="prop-group">
+        <select v-model="selectedNode.shape" @change="updateNodeProperties" title="Shape">
+          <option value="sphere">Sphere</option>
+          <option value="box">Cube</option>
+          <option value="cone">Pyramid</option>
+          <option value="cylinder">Cylinder</option>
+          <option value="octahedron">Diamond</option>
+          <option value="torus">Torus</option>
+          <option value="dodecahedron">Dodecahedron</option>
+          <option value="icosahedron">Icosahedron</option>
+          <option value="torusKnot">Torus Knot</option>
+        </select>
+      </div>
+      <button @click="deleteSelected" class="btn btn-danger btn-delete-compact" title="Delete Node">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+      </button>
     </div>
   </div>
+  
+  <div v-if="selectedConnection" class="panel connection-properties-panel">
+    <div class="prop-group">
+      <input type="text" v-model="selectedConnection.label" @input="updateConnectionProperties" placeholder="Name">
+    </div>
+    <div class="prop-group">
+      <input type="range" v-model.number="selectedConnection.width" @input="updateConnectionProperties" min="0.1" max="2" step="0.1" title="Width">
+    </div>
+    <div class="controls-row">
+      <div class="prop-group">
+        <input type="color" v-model="selectedConnection.color" @input="updateConnectionProperties" title="Color">
+      </div>
+      <button @click="deleteSelected" class="btn btn-danger btn-delete-compact" title="Delete Connection">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+      </button>
+    </div>
+  </div>
+</div>
 </template>
 
 <script setup>
@@ -273,7 +279,7 @@ function _createNode(options) {
     const nodeLabel = new CSS2DObject(labelDiv);
     nodeLabel.position.set(0, size + 2, 0);
     mesh.add(nodeLabel);
-    const nodeObject = { id, mesh, label: nodeLabel, connections: [], shape, size };
+    const nodeObject = { id, mesh, label: nodeLabel, connections: [], shape, size, description: options.description || '' };
     nodes.push(nodeObject);
     return nodeObject;
 }
@@ -338,7 +344,7 @@ function _selectNode(node) {
     selectedNode.value = reactive({
         _ref: node, id: node.id, label: node.label.element.textContent,
         color: '#' + node.mesh.userData.originalColor.getHexString(),
-        size: node.size, shape: node.shape,
+        size: node.size, shape: node.shape, description: node.description
     });
     node.mesh.material.opacity = 0.5;
 }
@@ -364,6 +370,7 @@ function updateNodeProperties() {
     if (!selectedNode.value) return;
     const node = selectedNode.value._ref;
     const data = selectedNode.value;
+    node.description = data.description;
     node.label.element.textContent = data.label;
     const color = new THREE.Color(data.color);
     node.mesh.material.color.set(color);
@@ -399,7 +406,7 @@ function serializeMapData() {
     return {
         nodes: nodes.map(n => ({
             id: n.id, label: n.label.element.textContent, position: n.mesh.position.clone(),
-            color: '#' + n.mesh.userData.originalColor.getHexString(), size: n.size, shape: n.shape,
+            color: '#' + n.mesh.userData.originalColor.getHexString(), size: n.size, shape: n.shape, description: n.description,
         })),
         connections: connections.map(c => ({
             startId: c.start.id, endId: c.end.id, label: c.label.element.textContent,
@@ -532,20 +539,114 @@ function loadNewMap(data) {
 defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serializeMapData, toggleLineStyle });
 </script>
 
-<style scoped>
-.mind-map-container { width: 100%; height: 100%; position: relative; cursor: grab; }
-.mind-map-container:active { cursor: grabbing; }
-.panel { position: absolute; top: 10px; right: 10px; z-index: 102; background-color: rgba(40, 40, 40, 0.85); border: 1px solid #555; border-radius: 8px; padding: 15px; width: 230px; }
-.panel h3 { margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #555; padding-bottom: 10px; }
-.prop-group { margin-bottom: 15px; }
-.prop-group label { display: block; margin-bottom: 5px; font-size: 14px; }
-.prop-group input, .prop-group select { width: 100%; padding: 8px; box-sizing: border-box; background-color: #333; border: 1px solid #555; color: #f0f0f0; border-radius: 4px; }
-.prop-group input[type="color"] { padding: 2px; height: 35px; }
-.prop-group input[type="range"] { padding: 0; }
-.btn-danger { width: 100%; background-color: #8b2c2c; border-color: #a33e3e; }
-.btn-danger:hover { background-color: #a33e3e; }
-</style>
+<style scoped> 
+.mind-map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: pointer;
+}
+.mind-map-container:active {
+  cursor: grabbing;
+}
 
+.panel {
+  position: absolute;
+  top: 50px;
+  right: 30px;
+  z-index: 102;
+  background-color: rgba(40, 40, 40, 0.9);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 15px;
+  width: 250px;
+}
+
+.prop-group {
+  margin-bottom: 15px;
+}
+
+/* Общие стили для всех элементов управления */
+.prop-group input[type="text"],
+.prop-group input[type="range"],
+.prop-group select,
+.prop-group textarea {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  background-color: #333;
+  border: 1px solid #555;
+  color: #f0f0f0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.prop-group input[type="range"] {
+  padding: 0;
+}
+
+.prop-group textarea {
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Стили для плейсхолдеров */
+.prop-group input::placeholder,
+.prop-group textarea::placeholder {
+  color: #888;
+}
+
+/* Нижний ряд с элементами управления */
+.controls-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid #555;
+}
+
+.controls-row .prop-group {
+  flex-grow: 1;
+  margin-bottom: 0;
+}
+
+.controls-row input[type="color"] {
+  width: 100%;
+  min-width: 35px;
+  height: 37px;
+  padding: 2px; /* Небольшой внутренний отступ для рамки */
+  border: 1px solid #555; /* Убираем стандартную рамку и ставим свою */
+  border-radius: 4px; /* Добавляем наше закругление */
+  background: transparent;
+}
+
+.btn-delete-compact {
+  flex-shrink: 0;
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px; /* Добавляем наше закругление */
+}
+
+.btn-delete-compact svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Стили кнопки "Удалить" */
+.btn.btn-danger {
+  background-color: #6e2b2b;
+  border-color: #863f3f;
+}
+.btn.btn-danger:hover {
+  background-color: #863f3f;
+}
+</style>
 <style>
 /* Global styles for CSS2DRenderer labels */
 .label { color: #fff; padding: 2px 5px; background: rgba(0, 0, 0, 0.6); border-radius: 4px; font-size: 14px; text-shadow: 0 0 5px black; pointer-events: none; }
