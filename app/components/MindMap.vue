@@ -77,6 +77,8 @@ const intersection = new THREE.Vector3();
 const useCurvedLines = ref(true);
 let potentialTarget = null; 
 const pointerDownTime = ref(0); 
+let lastSelectedNodeRef = null;
+
 // --- Lifecycle Hooks ---
 onMounted(() => {
   init();
@@ -332,6 +334,7 @@ function updateConnections() {
 
 function _selectNode(node) {
     _deselectAll();
+    lastSelectedNodeRef = node;
     selectedNode.value = reactive({
         _ref: node, id: node.id, label: node.label.element.textContent,
         color: '#' + node.mesh.userData.originalColor.getHexString(),
@@ -471,26 +474,25 @@ function clearMap(notify = true) {
     connections = [];
     if (notify) emitMapChangedImmediately();
 }
-
-// --- Exposed API to Parent ---
+// Exposed API to Parent
 function addNode() {
   _deselectAll();
-  const newLabel = nodes.length.toString();
-
-  let newPosition = new THREE.Vector3(0, 5, 0);
-  let isOccupied = true;
-  while (isOccupied) {
-    isOccupied = false;
-    for (const node of nodes) {
-      if (node.mesh.position.distanceTo(newPosition) < 1.0) {
-        newPosition.y += 15;
-        isOccupied = true;
-        break;
-      }
-    }
+  const propertiesReferenceNode = lastSelectedNodeRef;
+  const positionReferenceNode = nodes.length > 0 ? nodes[nodes.length - 1] : null;
+  const options = {};
+  if (propertiesReferenceNode) {
+    options.shape = propertiesReferenceNode.shape;
+    options.size = propertiesReferenceNode.size;
+    options.color = propertiesReferenceNode.mesh.userData.originalColor.clone();
   }
+  if (positionReferenceNode) {
 
-  _createNode({ position: newPosition, label: newLabel });
+    options.position = positionReferenceNode.mesh.position.clone().add(new THREE.Vector3(0, 12, 0));
+  } else {
+    options.position = new THREE.Vector3(0, 12, 0);
+  }
+  options.label = nodes.length.toString();
+  _createNode(options);
   emitMapChangedImmediately();
 }
 
