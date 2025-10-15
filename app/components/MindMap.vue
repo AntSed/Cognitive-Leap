@@ -53,13 +53,14 @@ import { ref, onMounted, onUnmounted, defineEmits, defineExpose, reactive } from
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-
+import { debounce } from '~/utils/debounce'; 
 // --- Component Events & State ---
 const emit = defineEmits(['map-changed', 'ready', 'mode-changed']);
 const selectedNode = ref(null);
 const selectedConnection = ref(null);
 const mountPoint = ref(null);
-
+const emitMapChangedImmediately = () => emit('map-changed', serializeMapData());
+const debouncedEmitMapChanged = debounce(emitMapChangedImmediately, 400);
 // --- Three.js Scene Variables ---
 let scene, camera, renderer, labelRenderer, controls, raycaster;
 let animationFrameId;
@@ -74,7 +75,8 @@ let connectionStartNode = null;
 const plane = new THREE.Plane();
 const intersection = new THREE.Vector3();
 const useCurvedLines = ref(true);
-
+let potentialTarget = null; 
+const pointerDownTime = ref(0); 
 // --- Lifecycle Hooks ---
 onMounted(() => {
   init();
@@ -146,69 +148,98 @@ function onWindowResize() {
   renderer.setSize(mountPoint.value.clientWidth, mountPoint.value.clientHeight);
   labelRenderer.setSize(mountPoint.value.clientWidth, mountPoint.value.clientHeight);
 }
-
 function onPointerDown(event) {
-    if (event.target !== renderer.domElement) return;
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointer, camera);
+  if (event.target !== renderer.domElement) return;
 
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+
+  if (isConnectionMode) {
     const intersectedNodeObj = raycaster.intersectObjects(nodes.map(n => n.mesh), false)[0];
     const targetNode = intersectedNodeObj ? nodes.find(n => n.mesh === intersectedNodeObj.object) : null;
-    
-    if (isConnectionMode) {
-        if (targetNode) {
-            if (!connectionStartNode) {
-                connectionStartNode = targetNode;
-                connectionStartNode.mesh.material.color.set(0x00aaff);
-            } else if (connectionStartNode !== targetNode) {
-                const existing = connections.some(c => (c.start === connectionStartNode && c.end === targetNode) || (c.start === targetNode && c.end === connectionStartNode));
-                if (!existing) {
-                    _createConnection(connectionStartNode, targetNode);
-                    emitMapChanged();
-                }
-                connectionStartNode.mesh.material.color.copy(connectionStartNode.mesh.userData.originalColor);
-                connectionStartNode = null;
-            }
-        } else {
-            toggleConnectionMode(false);
-        }
-        return;
-    }
-
-    const intersectedConnObj = raycaster.intersectObjects(connections.map(c => c.line))[0];
-    const targetConn = intersectedConnObj ? connections.find(c => c.line === intersectedConnObj.object) : null;
 
     if (targetNode) {
-        controls.enabled = false;
-        isDragging = true;
-        _selectNode(targetNode);
-    } else if (targetConn) {
-        _selectConnection(targetConn);
+      if (!connectionStartNode) {
+        connectionStartNode = targetNode;
+        connectionStartNode.mesh.material.color.set(0x00aaff);
+      } else if (connectionStartNode !== targetNode) {
+        const existing = connections.some(c => (c.start === connectionStartNode && c.end === targetNode) || (c.start === targetNode && c.end === connectionStartNode));
+        if (!existing) {
+          _createConnection(connectionStartNode, targetNode);
+          emitMapChangedImmediately();
+        }
+        connectionStartNode.mesh.material.color.copy(connectionStartNode.mesh.userData.originalColor);
+        connectionStartNode = null; 
+      }
     } else {
-        _deselectAll();
+      if (connectionStartNode) {
+        connectionStartNode.mesh.material.color.copy(connectionStartNode.mesh.userData.originalColor);
+        connectionStartNode = null;
+      }
+      toggleConnectionMode(false);
     }
+    return; 
+  }
+
+  _deselectAll();
+
+  const intersectedNodeObj = raycaster.intersectObjects(nodes.map(n => n.mesh), false)[0];
+  const targetNode = intersectedNodeObj ? nodes.find(n => n.mesh === intersectedNodeObj.object) : null;
+  
+  if (targetNode) {
+    potentialTarget = { type: 'node', object: targetNode };
+    controls.enabled = false;
+    isDragging = true;
+    pointerDownTime.value = Date.now();
+  } else {
+    const intersectedConnObj = raycaster.intersectObjects(connections.map(c => c.line))[0];
+    const targetConn = intersectedConnObj ? connections.find(c => c.line === intersectedConnObj.object) : null;
+    if (targetConn) {
+      potentialTarget = { type: 'connection', object: targetConn };
+      pointerDownTime.value = Date.now();
+    }
+  }
 }
 
 function onPointerMove(event) {
-    if (!isDragging || !selectedNode.value) return;
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointer, camera);
-    plane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(plane.normal), selectedNode.value._ref.mesh.position);
-    
-    if (raycaster.ray.intersectPlane(plane, intersection)) {
-        selectedNode.value._ref.mesh.position.copy(intersection);
-        _updateNodeConnections(selectedNode.value._ref);
-    }
+  if (!isDragging || !potentialTarget || potentialTarget.type !== 'node') return;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  
+  plane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(plane.normal), potentialTarget.object.mesh.position);
+  if (raycaster.ray.intersectPlane(plane, intersection)) {
+    potentialTarget.object.mesh.position.copy(intersection);
+    _updateNodeConnections(potentialTarget.object);
+  }
 }
 
 function onPointerUp() {
-    if (isDragging) emitMapChanged();
-    controls.enabled = true;
-    isDragging = false;
+  // Если было долгое нажатие (перетаскивание), сохраняем изменения
+  if (isDragging) {
+    emitMapChangedImmediately();
+  }
+
+  // Проверяем, был ли это короткий "тап"
+  if (potentialTarget) {
+    const pressDuration = Date.now() - pointerDownTime.value;
+    if (pressDuration < 200) {
+      if (potentialTarget.type === 'node') {
+        _selectNode(potentialTarget.object);
+      } else if (potentialTarget.type === 'connection') {
+        _selectConnection(potentialTarget.object);
+      }
+    }
+  }
+
+  // Сбрасываем все временные состояния
+  isDragging = false;
+  controls.enabled = true;
+  potentialTarget = null;
 }
 
 // --- Object Creation & Manipulation ---
@@ -341,7 +372,7 @@ function updateNodeProperties() {
         node.mesh.geometry = createGeometry(node.shape, node.size);
         node.label.position.set(0, node.size + 2, 0);
     }
-    emitMapChanged();
+    debouncedEmitMapChanged();
 }
 
 function updateConnectionProperties() {
@@ -355,10 +386,10 @@ function updateConnectionProperties() {
     
     if (conn.width !== data.width) {
         conn.width = data.width;
-        _updateSingleConnectionGeometry(conn); // <-- Точечное обновление
+        _updateSingleConnectionGeometry(conn); 
     }
     
-    emitMapChanged();
+    debouncedEmitMapChanged();
 }
 
 function serializeMapData() {
@@ -374,7 +405,6 @@ function serializeMapData() {
     };
 }
 
-const emitMapChanged = () => emit('map-changed', serializeMapData());
 
 
 function deleteSelected() {
@@ -384,7 +414,7 @@ function deleteSelected() {
         _deleteConnectionByIds(selectedConnection.value.startId, selectedConnection.value.endId);
     }
     _deselectAll();
-    emitMapChanged();
+    emitMapChangedImmediately();
 }
 
 function _deleteNodeById(nodeId) {
@@ -439,7 +469,7 @@ function clearMap(notify = true) {
     });
     nodes = [];
     connections = [];
-    if (notify) emitMapChanged();
+    if (notify) emitMapChangedImmediately();
 }
 
 // --- Exposed API to Parent ---
@@ -461,7 +491,7 @@ function addNode() {
   }
 
   _createNode({ position: newPosition, label: newLabel });
-  emitMapChanged();
+  emitMapChangedImmediately();
 }
 
 function toggleConnectionMode(forceState) {
@@ -477,9 +507,10 @@ function toggleConnectionMode(forceState) {
 }
 
 function toggleLineStyle() {
-    useCurvedLines.value = !useCurvedLines.value;
-    updateConnections();
-    return useCurvedLines.value;
+  useCurvedLines.value = !useCurvedLines.value;
+  updateConnections();
+  emitMapChangedImmediately(); 
+  return useCurvedLines.value;
 }
 
 function loadNewMap(data) {
@@ -493,7 +524,7 @@ function loadNewMap(data) {
         });
     }
     updateConnections();
-    emitMapChanged();
+    emitMapChangedImmediately();
 }
 
 defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serializeMapData, toggleLineStyle });

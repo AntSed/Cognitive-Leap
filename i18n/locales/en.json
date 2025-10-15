@@ -101,6 +101,7 @@
   "error_linking_account": "Failed to link account: ",
   "profile_hubInvitation": "Teachers and parents! Help us make Cognitive Leap better by adding the best videos and interactive materials to {link}.",
   "profile_hubLinkText": "our Hub",
+  "ui.buttons.share": "Share",
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm"
@@ -135,18 +136,23 @@
       }
     }
   },
-  "ui": {
+"ui": {
     "buttons": {
       "newMap": "New Map",
       "addNode": "Add Node",
       "addConnection": "Add Connection",
       "save": "Save",
+      "share": "Share",
       "load": "Load",
       "deleteMap": "Delete Map",
       "close": "Close",
-      "confirm": "Confirm",
       "cancel": "Cancel",
-      "ok": "OK"
+      "confirm": "Confirm",
+      "copy": "Copy",
+      "ok": "OK",
+      "delete": "Delete",
+      "unpin": "Unpin",
+      "restore": "Restore"
     },
     "tooltips": {
       "switchToStraight": "Switch to Straight Lines",
@@ -158,33 +164,42 @@
     "noMapsFound": "No saved maps found."
   },
   "defaultMap": {
-    "welcomeNode": "Welcome!",
-    "name": "New Map",
-    "unknownName": "Unknown Map"
+    "welcomeNode": "Welcome! Click a node to edit.",
+    "name": "My Mind Map"
+  },
+  "notifications": {
+    "success": {
+      "restored": "Unsaved changes have been restored.",
+      "mapSaved": "Map '{name}' saved successfully!",
+      "linkCopied": "Share link copied to clipboard!",
+      "publicMapLoaded": "Loaded shared map '{name}'. Saving will create your own copy.",
+      "mapDeleted": "Map was successfully deleted."
+    },
+    "errors": {
+      "restoreFailed": "Failed to restore session. The backup data might be corrupted.",
+      "noDataToSave": "There is no map data to save.",
+      "saveFailed": "Error saving map: {message}",
+      "saveBeforeShare": "Please save the map before sharing.",
+      "shareFailed": "Failed to generate share link: {message}",
+      "fetchListFailed": "Failed to load map list: {message}",
+      "loadFailed": "Failed to load map: {message}",
+      "mapNotFound": "Shared map not found or is no longer available.",
+      "deleteFailed": "Failed to delete map: {message}"
+    },
+    "info": {
+      "copyManually": "Please copy the link manually:"
+    }
   },
   "confirmations": {
-    "restoreUnsaved": "Unsaved changes detected. Restore them?",
+    "restoreUnsaved": "Unsaved changes from a previous session were found.",
     "loseUnsavedChanges": "You have unsaved changes that will be lost. Are you sure you want to continue?",
-    "deleteMap": "Are you sure you want to delete the map “{name}”? This action is irreversible.",
-    "startNewMap": "Are you sure you want to create a new map? All unsaved changes will be lost."
+    "deleteMap": "Are you sure you want to permanently delete the map '{name}'?",
+    "startNewMap": "You have unsaved changes that will be lost. Start a new map anyway?"
   },
   "prompts": {
     "enterMapName": "Enter a name for your map:"
   },
-  "notifications": {
-    "errors": {
-      "noDataToSave": "Error: No data to save.",
-      "saveFailed": "Error saving map: {message}",
-      "fetchListFailed": "Error fetching maps list: {message}",
-      "loadFailed": "Error loading map: {message}",
-      "deleteFailed": "Error deleting map: {message}"
-    },
-    "success": {
-      "mapSaved": "Map “{name}” saved successfully!",
-      "mapDeleted": "Map deleted successfully."
-    }
-  },
-  "modals": {
+"modals": {
     "confirm": {
       "title": "Confirmation Required"
     },

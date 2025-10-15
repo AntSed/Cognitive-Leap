@@ -101,6 +101,7 @@
   "error_linking_account": "No se pudo vincular la cuenta: ",
   "profile_hubInvitation": "¡Profesores y padres! Ayúdanos a mejorar Cognitive Leap añadiendo los mejores videos y materiales interactivos a {link}.",
   "profile_hubLinkText": "nuestro Hub",
+  "ui.buttons.share": "Compartir",
   "common": {
     "cancel": "Cancelar",
     "confirm": "Confirmar"
@@ -133,24 +134,28 @@
         "title": "Confirmar Desanclaje",
         "message": "¿Estás seguro de que quieres desanclar “{materialName}” de esta lección?"
       }
-    }
   },
-  "ui": {
+"ui": {
     "buttons": {
       "newMap": "Nuevo Mapa",
       "addNode": "Añadir Nodo",
       "addConnection": "Añadir Conexión",
       "save": "Guardar",
+      "share": "Compartir",
       "load": "Cargar",
-      "deleteMap": "Eliminar Mapa",
+      "deleteMap": "Borrar Mapa",
       "close": "Cerrar",
-      "confirm": "Confirmar",
-      "cancel": "Cancelar",
-      "ok": "OK"
+      "restore": "Restaurar",
+              "cancel": "Cancelar",
+        "confirm": "Confirmar",
+        "copy": "Copiar",
+        "ok": "OK",
+        "delete": "Eliminar",
+        "unpin": "Desanclar"
     },
     "tooltips": {
-      "switchToStraight": "Cambiar a Líneas Rectas",
-      "switchToCurved": "Cambiar a Líneas Curvas"
+      "switchToStraight": "Cambiar a líneas rectas",
+      "switchToCurved": "Cambiar a líneas curvas"
     }
   },
   "loadPanel": {
@@ -158,32 +163,42 @@
     "noMapsFound": "No se encontraron mapas guardados."
   },
   "defaultMap": {
-    "welcomeNode": "¡Bienvenido!",
-    "name": "Nuevo Mapa",
-    "unknownName": "Mapa Desconocido"
+    "welcomeNode": "¡Bienvenido! Haz clic en un nodo para editarlo.",
+    "name": "Mi Mapa Mental"
+  },
+  "notifications": {
+    "success": {
+      "restored": "Los cambios no guardados han sido restaurados.",
+      "mapSaved": "¡Mapa '{name}' guardado con éxito!",
+      "linkCopied": "¡Enlace para compartir copiado al portapapeles!",
+      "publicMapLoaded": "Mapa compartido '{name}' cargado. Al guardar se creará tu propia copia.",
+      "mapDeleted": "El mapa fue eliminado exitosamente."
+    },
+    "errors": {
+      "restoreFailed": "No se pudo restaurar la sesión. Los datos podrían estar corruptos.",
+      "noDataToSave": "No hay datos del mapa para guardar.",
+      "saveFailed": "Error al guardar el mapa: {message}",
+      "saveBeforeShare": "Por favor, guarda el mapa antes de compartir.",
+      "shareFailed": "No se pudo generar el enlace para compartir: {message}",
+      "fetchListFailed": "No se pudo cargar la lista de mapas: {message}",
+      "loadFailed": "Error al cargar el mapa: {message}",
+      "mapNotFound": "El mapa compartido no se encontró o ya no está disponible.",
+      "deleteFailed": "No se pudo borrar el mapa: {message}"
+    },
+    "info": {
+      "copyManually": "Por favor, copia el enlace manualmente:"
+    }
   },
   "confirmations": {
-    "restoreUnsaved": "Se detectaron cambios no guardados. ¿Restaurarlos?",
-    "loseUnsavedChanges": "Tienes cambios no guardados que se perderán. ¿Estás seguro de que quieres continuar?",
-    "deleteMap": "¿Estás seguro de que quieres eliminar el mapa “{name}”? Esta acción es irreversible.",
-    "startNewMap": "¿Estás seguro de que quieres crear un nuevo mapa? Todos los cambios no guardados se perderán."
+    "restoreUnsaved": "Se encontraron cambios no guardados de una sesión anterior.",
+    "loseUnsavedChanges": "Tienes cambios sin guardar que se perderán. ¿Estás seguro de continuar?",
+    "deleteMap": "¿Estás seguro de que quieres eliminar permanentemente el mapa '{name}'?",
+    "startNewMap": "Tienes cambios sin guardar que se perderán. ¿Empezar un nuevo mapa de todos modos?"
   },
   "prompts": {
     "enterMapName": "Introduce un nombre para tu mapa:"
   },
-  "notifications": {
-    "errors": {
-      "noDataToSave": "Error: No hay datos para guardar.",
-      "saveFailed": "Error al guardar el mapa: {message}",
-      "fetchListFailed": "Error al cargar la lista de mapas: {message}",
-      "loadFailed": "Error al cargar el mapa: {message}",
-      "deleteFailed": "Error al eliminar el mapa: {message}"
-    },
-    "success": {
-      "mapSaved": "¡Mapa “{name}” guardado con éxito!",
-      "mapDeleted": "Mapa eliminado con éxito."
-    }
-  },
+
   "modals": {
     "confirm": {
       "title": "Se Requiere Confirmación"
@@ -192,4 +207,5 @@
       "title": "Se Requiere Entrada"
     }
   }
+}
 }

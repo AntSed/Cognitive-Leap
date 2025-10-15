@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSupabaseClient, useSupabaseUser } from '#imports';
-
+import { debounce } from '~/utils/debounce';
 export function useProfile() {
   const { locale, setLocale } = useI18n();
   const supabase = useSupabaseClient();
@@ -87,18 +87,24 @@ const avatarUrl = computed(() => {
   };
   
   // Auto-saving watchers
-  watch(profile, async (newProfile, oldProfile) => {
-    if (!newProfile || !oldProfile || loading.value || isAnonymous.value) return;
-    const { id, created_at, user_id, ...updates } = newProfile;
-    const { error } = await supabase.from('user_profiles').update(updates).eq('user_id', user.value.id);
-    if (error) console.error('Error auto-saving profile:', error);
-  }, { deep: true });
+const debouncedProfileUpdate = debounce(async (updates, userId) => {
+  const { error } = await supabase.from('user_profiles').update(updates).eq('user_id', userId);
+  if (error) console.error('Error auto-saving profile:', error);
+}, 700); 
 
-  watch(avatarConfig, async (newConfig) => {
-    if (loading.value || isAnonymous.value || !profile.value) return;
-    const { error } = await supabase.from('user_profiles').update({ avatar_config: newConfig }).eq('user_id', user.value.id);
-    if (error) console.error('Error auto-saving avatar config:', error);
-  }, { deep: true });
+watch(profile, (newProfile, oldProfile) => {
+  if (!newProfile || !oldProfile || loading.value || isAnonymous.value) return;
+  const { id, created_at, user_id, ...updates } = newProfile;
+  debouncedProfileUpdate(updates, user.value.id);
+}, { deep: true });
+const debouncedAvatarUpdate = debounce(async (newConfig, userId) => {
+  const { error } = await supabase.from('user_profiles').update({ avatar_config: newConfig }).eq('user_id', userId);
+  if (error) console.error('Error auto-saving avatar config:', error);
+}, 500);
+watch(avatarConfig, (newConfig) => {
+  if (loading.value || isAnonymous.value || !profile.value) return;
+  debouncedAvatarUpdate(newConfig, user.value.id);
+}, { deep: true });
 
   watch(locale, async (newLocale, oldLocale) => {
     if (newLocale && newLocale !== oldLocale && user.value && !isAnonymous.value) {
