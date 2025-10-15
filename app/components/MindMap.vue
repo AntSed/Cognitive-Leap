@@ -1,7 +1,7 @@
 <template>
 <div ref="mountPoint" class="mind-map-container">
 
-  <div v-if="selectedNode" class="panel properties-panel">
+  <div v-if="selectedNode" class="panel properties-panel" :class="{ 'is-locked': isPanelLocked }">
     <div class="prop-group">
       <input type="text" v-model="selectedNode.label" @input="updateNodeProperties" placeholder="Name">
     </div>
@@ -34,8 +34,7 @@
       </button>
     </div>
   </div>
-  
-  <div v-if="selectedConnection" class="panel connection-properties-panel">
+  <div v-if="selectedConnection" class="panel connection-properties-panel":class="{ 'is-locked': isPanelLocked }">
     <div class="prop-group">
       <input type="text" v-model="selectedConnection.label" @input="updateConnectionProperties" placeholder="Name">
     </div>
@@ -67,6 +66,7 @@ const selectedConnection = ref(null);
 const mountPoint = ref(null);
 const emitMapChangedImmediately = () => emit('map-changed', serializeMapData());
 const debouncedEmitMapChanged = debounce(emitMapChangedImmediately, 400);
+const isPanelLocked = ref(false);
 // --- Three.js Scene Variables ---
 let scene, camera, renderer, labelRenderer, controls, raycaster;
 let animationFrameId;
@@ -340,6 +340,9 @@ function updateConnections() {
 
 function _selectNode(node) {
     _deselectAll();
+    isPanelLocked.value = true;
+    setTimeout(() => { isPanelLocked.value = false; }, 200);
+
     lastSelectedNodeRef = node;
     selectedNode.value = reactive({
         _ref: node, id: node.id, label: node.label.element.textContent,
@@ -351,6 +354,8 @@ function _selectNode(node) {
 
 function _selectConnection(conn) {
     _deselectAll();
+    isPanelLocked.value = true;
+    setTimeout(() => { isPanelLocked.value = false; }, 200);
     selectedConnection.value = reactive({
         _ref: conn, startId: conn.start.id, endId: conn.end.id,
         label: conn.label.element.textContent, color: '#' + conn.line.material.color.getHexString(),
@@ -552,7 +557,7 @@ defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serial
 
 .panel {
   position: absolute;
-  top: 50px;
+  top: 60px;
   right: 30px;
   z-index: 102;
   background-color: rgba(40, 40, 40, 0.9);
@@ -645,6 +650,9 @@ defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serial
 }
 .btn.btn-danger:hover {
   background-color: #863f3f;
+}
+.panel.is-locked {
+  pointer-events: none;
 }
 </style>
 <style>
