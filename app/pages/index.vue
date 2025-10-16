@@ -2,11 +2,11 @@
   <div class="page-wrapper">
     <main class="main-content">
       <div v-if="skins.head" class="view-container">
-        <Transition name="fade">
-          <div v-show="activeComponent === 1" class="text-page-wrapper">
-            <TextPage />
-          </div>
-        </Transition>
+<Transition name="fade">
+  <div v-show="activeComponent === 1" class="text-page-wrapper">
+    <TextPage />
+  </div>
+</Transition>
         <Transition name="fade">
           <div v-show="activeComponent === 2" class="scenekit-wrapper">
             <ClientOnly>
@@ -20,16 +20,16 @@
             </ClientOnly>
           </div>
         </Transition>
-        <Transition name="fade">
-          <div v-show="activeComponent === 3" class="profile-wrapper">
-              <ClientOnly>
-                <TheProfile />
-                <template #fallback>
-                  <div class="component-placeholder"></div>
-                </template>
-            </ClientOnly>
-          </div>
-        </Transition>
+<Transition name="fade">
+  <div v-show="activeComponent === 3" class="profile-wrapper">
+      <ClientOnly>
+        <TheProfile />
+        <template #fallback>
+          <div class="component-placeholder"></div>
+        </template>
+    </ClientOnly>
+  </div>
+</Transition>
       </div>
       <div v-else class="component-placeholder"></div>
     </main>
@@ -57,18 +57,18 @@
 </template>
 
 <script setup>
-// Скриптовая часть остается БЕЗ ИЗМЕНЕНИЙ
 import { ref, onMounted, onUnmounted, watch, watchEffect } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { useModalStore } from '~/composables/useModalStore';
-import SceneKit from '~/components/SceneKit.client.vue';
-import TheProfile from '~/components/TheProfile.client.vue';
-import TextPage from '~/components/TextPage.client.vue';
+import { useI18nService } from '~/composables/useI18nService';
+
+// Мы УДАЛЯЕМ все `import ... from '~/components/...'`
+// Nuxt найдет их сам благодаря auto-imports.
+// Мы УДАЛЯЕМ все `defineAsyncComponent`.
 
 const router = useRouter();
 const route = useRoute();
-const { locale, setLocale } = useI18n();
+const { locale, setLocale } = useI18nService();
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
 const activeComponent = ref(2);
@@ -81,6 +81,7 @@ watch(activeComponent, (newVal) => {
   const viewName = Object.keys(viewMap).find(key => viewMap[key] === newVal);
   if (viewName && route.query.view !== viewName) { router.push({ query: { view: viewName } }); }
 });
+
 const setVh = () => { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); };
 const languages = ['en', 'ru', 'es'];
 const cycleLanguage = () => {
@@ -88,12 +89,14 @@ const cycleLanguage = () => {
   const nextIndex = (currentIndex + 1) % languages.length;
   setLocale(languages[nextIndex]);
 };
+
 watchEffect(() => {
   if (isInitialized.value && activeComponent.value === 2 && !initialTipShown.value && modalStore.quickTip) {
     modalStore.open('modals/InfoModal', modalStore.quickTip, { history: false });
     initialTipShown.value = true;
   }
 });
+
 onMounted(async () => {
   setVh();
   window.addEventListener('resize', setVh);
@@ -110,6 +113,7 @@ onMounted(async () => {
   }
   isInitialized.value = true;
 });
+
 onUnmounted(() => { window.removeEventListener('resize', setVh); });
 </script>
 

@@ -41,11 +41,10 @@
   "settings": "Configuración",
   "profile_addStudent": "Añadir Estudiante",
   "profile_userEmail": "Correo del Usuario",
-  "profile_studentEmailPlaceholder": "usuario{'@'}ejemplo.com",
+  "profile_studentEmailPlaceholder": "user{'@'}example.com",
   "profile_relationType": "Tipo de Relación",
   "profile_relationParent": "Padre/Madre",
   "profile_relationTeacher": "Profesor(a)",
-  "cancel": "Cancelar",
   "profile_sendInvite": "Enviar Invitación",
   "profile_roleAndConnections": "Rol y Conexiones",
   "loadingLesson": "Cargando lección...",
@@ -81,27 +80,22 @@
   "enterEmailForReset": "Ingresa tu correo para restablecer la contraseña.",
   "error_weak_password": "Esta contraseña es demasiado simple. Por favor, crea una más compleja.",
   "error_unknown": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
-  "about_intro_1": "Hace 70.000 años, la Revolución Cognitiva nos hizo humanos. Hoy, en la era de la IA, es el momento del segundo Salto Cognitivo.",
-  "about_intro_2": "Olvida los 11 años en un pupitre. Nuestra plataforma de juegos te permite dominar el plan de estudios escolar en 2-3 años a través de atractivos juegos 2D, así como mundos de Minecraft y Roblox.",
-  "about_body_1": "La escuela tradicional es una cadena de montaje que trata a todos por igual, matando la alegría del descubrimiento. Cognitive Leap es la alternativa. Reemplazamos la cadena de montaje con un GPS personal para el conocimiento. En lugar de clases, tenemos un mapa de 260 temas conectados por la lógica, no por un horario. Nuestro sistema construye un camino de aprendizaje único y rápido para cada estudiante.",
-  "about_body_2": "No creamos lecciones desde cero; seleccionamos el mejor contenido educativo de todo el mundo, desde conferencias de YouTube hasta simulaciones interactivas.",
-  "about_text_educators": "Os liberáis de la rutina. Dejad que nuestra plataforma se encargue de lo básico para que podáis centraros en lo que realmente importa: mentorear e inspirar a los estudiantes. {link}.",
+  "about_intro_1": "Hace 70,000 años, la Revolución Cognitiva nos hizo humanos. Hoy, en la era de la IA, es hora del segundo Salto Cognitivo.",
+  "about_intro_2": "Olvídate de 11 años en un escritorio. Nuestra plataforma de juegos te permite dominar el plan de estudios escolar en 2-3 años a través de atractivos juegos 2D, así como mundos de Minecraft y Roblox.",
+  "about_body_1": "La escuela tradicional es una cinta transportadora que trata a todos por igual, matando la alegría del descubrimiento. Cognitive Leap es la alternativa. Reemplazamos la cinta transportadora con un GPS personal para el conocimiento. En lugar de clases, tenemos un mapa de 260 temas vinculados por la lógica, no por un horario. Nuestro sistema construye una ruta de aprendizaje única y rápida para cada estudiante.",
+  "about_body_2_part1": "No creamos lecciones desde cero; seleccionamos el",
+  "about_body_2_part2": "de todo el mundo, desde conferencias de YouTube hasta simulaciones interactivas.",
   "about_body_2LinkText": "mejor contenido educativo",
-  "about_text_educatorsLinkText": "Conviértete en un curador líder en tu materia",
-  "about_title": "Una Invitación al Salto",
+  "about_title": "Una invitación al Salto",
   "about_invitation_intro": "La educación es un ecosistema, y te invitamos a construirlo con nosotros.",
-  "about_subtitle_parents": "Para Padres:",
-  "about_text_parents": "Ayúdanos a convertir el aprendizaje en una aventura emocionante encontrando el mejor contenido para liberar el potencial de tu hijo.",
-  "about_subtitle_educators": "Para Educadores:",
-  "about_conclusion": "Demos juntos este salto cognitivo y construyamos la educación que nuestros hijos merecen.",
-  "about_project": "Sobre el Proyecto",
-  "profile_identityExistsTitle": "La Cuenta Ya Existe",
-  "profile_identityExistsHint": "Parece que ya tienes una cuenta con este correo. Por favor, inicia sesión con tu contraseña o la opción '¿Olvidaste la contraseña?'. Después de iniciar sesión, puedes vincular tu cuenta de Google en la configuración de tu perfil.",
-  "profile_linkGoogle": "Vincular Cuenta de Google",
-  "error_linking_account": "No se pudo vincular la cuenta: ",
-  "profile_hubInvitation": "¡Profesores y padres! Ayúdanos a mejorar Cognitive Leap añadiendo los mejores videos y materiales interactivos a {link}.",
-  "profile_hubLinkText": "nuestro Hub",
-  "ui.buttons.share": "Compartir",
+  "about_subtitle_parents": "Para los padres:",
+  "about_text_parents": "Ayúdanos a convertir el aprendizaje en una aventura emocionante encontrando el mejor contenido para desbloquear el potencial de tu hijo.",
+  "about_subtitle_educators": "Para los educadores:",
+  "about_text_educators_part1": "Libérate de la rutina. Deja que nuestra plataforma se encargue de lo básico para que puedas concentrarte en lo que realmente importa: ser mentor e inspirar a los estudiantes.",
+  "about_text_educators_part2": "",
+  "about_text_educatorsLinkText": "¡Conviértete en un curador líder en tu materia!",
+  "about_conclusion": "¡Demos juntos este salto cognitivo y construyamos la educación que nuestros hijos merecen!",
+  "about_project": "sobre el proyecto",
   "common": {
     "cancel": "Cancelar",
     "confirm": "Confirmar"
@@ -134,8 +128,9 @@
         "title": "Confirmar Desanclaje",
         "message": "¿Estás seguro de que quieres desanclar “{materialName}” de esta lección?"
       }
+    }
   },
-"ui": {
+  "ui": {
     "buttons": {
       "newMap": "Nuevo Mapa",
       "addNode": "Añadir Nodo",
@@ -146,12 +141,12 @@
       "deleteMap": "Borrar Mapa",
       "close": "Cerrar",
       "restore": "Restaurar",
-              "cancel": "Cancelar",
-        "confirm": "Confirmar",
-        "copy": "Copiar",
-        "ok": "OK",
-        "delete": "Eliminar",
-        "unpin": "Desanclar"
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "copy": "Copiar",
+      "ok": "OK",
+      "delete": "Eliminar",
+      "unpin": "Desanclar"
     },
     "tooltips": {
       "switchToStraight": "Cambiar a líneas rectas",
@@ -198,7 +193,6 @@
   "prompts": {
     "enterMapName": "Introduce un nombre para tu mapa:"
   },
-
   "modals": {
     "confirm": {
       "title": "Se Requiere Confirmación"
@@ -207,5 +201,4 @@
       "title": "Se Requiere Entrada"
     }
   }
-}
 }

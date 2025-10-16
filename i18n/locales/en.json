@@ -45,7 +45,6 @@
   "profile_relationType": "Relationship Type",
   "profile_relationParent": "Parent",
   "profile_relationTeacher": "Teacher",
-  "cancel": "Cancel",
   "profile_sendInvite": "Send Invite",
   "profile_roleAndConnections": "Role & Connections",
   "loadingLesson": "Loading lesson...",
@@ -84,15 +83,17 @@
   "about_intro_1": "70,000 years ago, the Cognitive Revolution made us human. Today, in the age of AI, it's time for the second Cognitive Leap.",
   "about_intro_2": "Forget 11 years at a desk. Our gaming platform allows you to master the school curriculum in 2-3 years through engaging 2D games, as well as Minecraft and Roblox worlds.",
   "about_body_1": "Traditional school is a conveyor belt that treats everyone the same, killing the joy of discovery. Cognitive Leap is the alternative. We replace the conveyor belt with a personal GPS for knowledge. Instead of classes, we have a map of 260 topics linked by logic, not a schedule. Our system builds a unique and fast learning path for each student.",
-  "about_body_2": "We don't create lessons from scratch; we curate the best educational content from around the world, from YouTube lectures to interactive simulations.",
-  "about_text_educators": "Break free from routine. Let our platform handle the basics so you can focus on what truly matters: mentoring and inspiring students. {link}.",
+  "about_body_2_part1": "We don't create lessons from scratch; we curate the",
+  "about_body_2_part2": "from around the world, from YouTube lectures to interactive simulations.",
   "about_body_2LinkText": "best educational content",
-  "about_text_educatorsLinkText": "Become a leading curator in your subject",
   "about_title": "An Invitation to Leap",
   "about_invitation_intro": "Education is an ecosystem, and we invite you to build it with us.",
   "about_subtitle_parents": "For Parents:",
   "about_text_parents": "Help us turn learning into an exciting adventure by finding the best content to unlock your child's potential.",
   "about_subtitle_educators": "For Educators:",
+  "about_text_educators_part1": "Break free from routine. Let our platform handle the basics so you can focus on what truly matters: mentoring and inspiring students.",
+  "about_text_educators_part2": "",
+  "about_text_educatorsLinkText": "Become a leading curator in your subject!",
   "about_conclusion": "Let's make this cognitive leap together and build the education our children deserve.",
   "about_project": "About the Project",
   "profile_identityExistsTitle": "Account Already Exists",
@@ -101,7 +102,6 @@
   "error_linking_account": "Failed to link account: ",
   "profile_hubInvitation": "Teachers and parents! Help us make Cognitive Leap better by adding the best videos and interactive materials to {link}.",
   "profile_hubLinkText": "our Hub",
-  "ui.buttons.share": "Share",
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm"
@@ -136,7 +136,7 @@
       }
     }
   },
-"ui": {
+  "ui": {
     "buttons": {
       "newMap": "New Map",
       "addNode": "Add Node",
@@ -146,13 +146,13 @@
       "load": "Load",
       "deleteMap": "Delete Map",
       "close": "Close",
+      "restore": "Restore",
       "cancel": "Cancel",
       "confirm": "Confirm",
       "copy": "Copy",
       "ok": "OK",
       "delete": "Delete",
-      "unpin": "Unpin",
-      "restore": "Restore"
+      "unpin": "Unpin"
     },
     "tooltips": {
       "switchToStraight": "Switch to Straight Lines",
@@ -199,7 +199,7 @@
   "prompts": {
     "enterMapName": "Enter a name for your map:"
   },
-"modals": {
+  "modals": {
     "confirm": {
       "title": "Confirmation Required"
     },

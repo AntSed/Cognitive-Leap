@@ -198,22 +198,18 @@
   </div>
 </template>
 
-// Profile.vue
-// Profile.vue
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useSupabaseUser } from '#imports';
-import { useI18n } from 'vue-i18n';
+import { useI18nService } from '~/composables/useI18nService';
 import RelationList from '~/components/RelationList.vue';
 
-// Import our composables
 import { useAuth } from '~/composables/useAuth';
 import { useProfile } from '~/composables/useProfile';
 import { useRelations } from '~/composables/useRelations';
 
-// --- COMPOSABLES ---
-const { locale } = useI18n();
 const user = useSupabaseUser();
+const { locale } = useI18nService();
 
 const {
   authEmail, authPassword, authMessage, authMessageType,
@@ -222,37 +218,38 @@ const {
 } = useAuth();
 
 const {
-  loading, profile, curators, students, newPassword, passwordUpdateMessage,
+  loadingProfile, profile, newPassword, passwordUpdateMessage,
   avatarConfig, isAnonymous, avatarUrl,
-  fetchProfileAndRelations, updatePassword, randomizeAvatar
+  init: initProfile, updatePassword, randomizeAvatar, fetchProfile
 } = useProfile();
 
 const {
-  showModal, modalTitle, inviteEmail, inviteType, relationType,
-  openModal, closeModal, sendInvitation, acceptInvitation, deleteRelation
-} = useRelations(profile, fetchProfileAndRelations); // Pass fetch callback here
+  loadingRelations, curators, students, showModal, modalTitle, 
+  inviteEmail, inviteType, relationType,
+  fetchRelations, openModal, closeModal, sendInvitation, acceptInvitation, deleteRelation
+} = useRelations();
 
-// --- STATE & MISC (that belongs to the component) ---
+const loading = computed(() => loadingProfile.value || loadingRelations.value);
+
 const activeTab = ref('student');
-const showIdentityExistsError = ref(false); // This state is purely for the view
+const showIdentityExistsError = ref(false);
 const avatarStyles = ['adventurer', 'bottts', 'micah', 'miniavs', 'pixel-art', 'lorelei'];
 const countries = ref([
-    { code: 'RU', name: 'Россия' }, { code: 'US', name: 'США' }, { code: 'KZ', name: 'Казахстан' },
-    { code: 'DE', name: 'Германия' }, { code: 'FR', name: 'Франция' }, { code: 'ES', name: 'Испания' },
+    { code: 'RU', name: 'Russia' }, { code: 'US', name: 'USA' }, { code: 'KZ', name: 'Kazakhstan' },
+    { code: 'DE', name: 'Germany' }, { code: 'FR', name: 'France' }, { code: 'ES', name: 'Spain' },
 ]);
 
-// --- LIFECYCLE & WATCHERS (for component logic) ---
-onMounted(() => {
+onMounted(async () => {
   const hash = window.location.hash;
   if (hash.includes('error_code=identity_already_exists')) {
     showIdentityExistsError.value = true;
     history.pushState("", document.title, window.location.pathname + window.location.search);
   }
+  await initProfile();
+  if (!isAnonymous.value) {
+    await fetchRelations();
+  }
 });
-
-watch(user, () => {
-  fetchProfileAndRelations();
-}, { immediate: true });
 </script>
 
 <style scoped>

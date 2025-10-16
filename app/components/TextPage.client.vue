@@ -5,13 +5,13 @@
         <p class="intro">{{ $t('about_intro_1') }}</p>
         <p>{{ $t('about_intro_2') }}</p>
         <p>{{ $t('about_body_1') }}</p>
-        <i18n-t keypath="about_body_2" tag="p">
-          <template #link>
-            <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
-              {{ $t('about_body_2LinkText') }}
-            </router-link>
-          </template>
-        </i18n-t>
+        <p>
+          {{ $t('about_body_2_part1') }}
+          <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
+            {{ $t('about_body_2LinkText') }}
+          </router-link>
+          {{ $t('about_body_2_part2') }}
+        </p>
       </section>
 
       <section class="invitation-section">
@@ -25,13 +25,13 @@
         
         <div class="card">
           <h2>{{ $t('about_subtitle_educators') }}</h2>
-          <i18n-t keypath="about_text_educators" tag="p">
-            <template #link>
-              <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
-                {{ $t('about_text_educatorsLinkText') }}
-              </router-link>
-            </template>
-          </i18n-t>
+          <p>
+            {{ $t('about_text_educators_part1') }}
+            <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
+              {{ $t('about_text_educatorsLinkText') }}
+            </router-link>
+            {{ $t('about_text_educators_part2') }}
+          </p>
         </div>
 
         <p class="conclusion">{{ $t('about_conclusion') }}</p>
@@ -39,12 +39,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-// Скрипты здесь не нужны, но секция оставлена для будущего
-import { useI18n } from 'vue-i18n';
-const { t } = useI18n();
-</script>
 
 <style scoped>
 /* :root можно было бы вынести в глобальные стили для будущего переключателя тем */

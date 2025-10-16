@@ -29,9 +29,14 @@
           <option value="torusKnot">Torus Knot</option>
         </select>
       </div>
-      <button @click="deleteSelected" class="btn btn-danger btn-delete-compact" title="Delete Node">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-      </button>
+    <button @click="handleDeleteClick" 
+            class="btn btn-danger btn-delete-compact" 
+            :class="{ 'is-armed': isDeleteArmed }" 
+            title="Delete Node">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
     </div>
   </div>
   <div v-if="selectedConnection" class="panel connection-properties-panel":class="{ 'is-locked': isPanelLocked }">
@@ -45,9 +50,14 @@
       <div class="prop-group">
         <input type="color" v-model="selectedConnection.color" @input="updateConnectionProperties" title="Color">
       </div>
-      <button @click="deleteSelected" class="btn btn-danger btn-delete-compact" title="Delete Connection">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-      </button>
+    <button @click="handleDeleteClick" 
+            class="btn btn-danger btn-delete-compact" 
+            :class="{ 'is-armed': isDeleteArmed }" 
+            title="Delete Connection">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
     </div>
   </div>
 </div>
@@ -67,6 +77,7 @@ const mountPoint = ref(null);
 const emitMapChangedImmediately = () => emit('map-changed', serializeMapData());
 const debouncedEmitMapChanged = debounce(emitMapChangedImmediately, 400);
 const isPanelLocked = ref(false);
+const isDeleteArmed = ref(false);
 // --- Three.js Scene Variables ---
 let scene, camera, renderer, labelRenderer, controls, raycaster;
 let animationFrameId;
@@ -369,6 +380,7 @@ function _deselectAll() {
     if (selectedConnection.value) selectedConnection.value._ref.line.material.emissive.setHex(0x000000);
     selectedNode.value = null;
     selectedConnection.value = null;
+    isDeleteArmed.value = false;
 }
 
 function updateNodeProperties() {
@@ -420,7 +432,15 @@ function serializeMapData() {
     };
 }
 
-
+function handleDeleteClick() {
+  if (!isDeleteArmed.value) {
+    // Первый клик: "взводим" кнопку
+    isDeleteArmed.value = true;
+  } else {
+    // Второй клик: удаляем
+    deleteSelected();
+  }
+}
 
 function deleteSelected() {
     if (selectedNode.value) {
@@ -571,7 +591,6 @@ defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serial
   margin-bottom: 15px;
 }
 
-/* Общие стили для всех элементов управления */
 .prop-group input[type="text"],
 .prop-group input[type="range"],
 .prop-group select,
@@ -596,13 +615,11 @@ defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serial
   min-height: 80px;
 }
 
-/* Стили для плейсхолдеров */
 .prop-group input::placeholder,
 .prop-group textarea::placeholder {
   color: #888;
 }
 
-/* Нижний ряд с элементами управления */
 .controls-row {
   display: flex;
   align-items: flex-end;
@@ -621,9 +638,9 @@ defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serial
   width: 100%;
   min-width: 35px;
   height: 37px;
-  padding: 2px; /* Небольшой внутренний отступ для рамки */
-  border: 1px solid #555; /* Убираем стандартную рамку и ставим свою */
-  border-radius: 4px; /* Добавляем наше закругление */
+  padding: 2px; 
+  border: 1px solid #555; 
+  border-radius: 4px; 
   background: transparent;
 }
 
@@ -635,7 +652,7 @@ defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serial
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px; /* Добавляем наше закругление */
+  border-radius: 4px;
 }
 
 .btn-delete-compact svg {
@@ -643,13 +660,20 @@ defineExpose({ addNode, deleteSelected, toggleConnectionMode, loadNewMap, serial
   height: 20px;
 }
 
-/* Стили кнопки "Удалить" */
 .btn.btn-danger {
-  background-color: #6e2b2b;
-  border-color: #863f3f;
+  background-color: #555; 
+  border-color: #777;
 }
 .btn.btn-danger:hover {
-  background-color: #863f3f;
+  background-color: #666;
+}
+
+.btn.btn-danger.is-armed {
+  background-color: #8b2c2c; 
+  border-color: #a33e3e;
+}
+.btn.btn-danger.is-armed:hover {
+  background-color: #a33e3e;
 }
 .panel.is-locked {
   pointer-events: none;

@@ -21,7 +21,13 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: false },
+  devtools: {
+    enabled: true,
+
+    timeline: {
+      enabled: true,
+    },
+  },
   css: [
       '~/assets/css/app.css'
   ],
@@ -35,7 +41,7 @@ export default defineNuxtConfig({
 
   supabase: {
    redirectOptions: {
-      login: '/profile', 
+      login: '/?view=profile', 
       callback: '/',
       exclude: ['/confirm-invitation'],
     }

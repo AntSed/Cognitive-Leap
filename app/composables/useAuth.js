@@ -1,10 +1,9 @@
 // composables/useAuth.js
 import { ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useSupabaseClient } from '#imports';
-
+import { navigateTo, useSupabaseClient } from '#imports';
+import { useI18nService } from '~/composables/useI18nService';
 export function useAuth() {
-  const { t, locale } = useI18n();
+  const { t, locale, setLocale } = useI18nService();
   const supabase = useSupabaseClient();
 
   const authEmail = ref('');
@@ -12,70 +11,87 @@ export function useAuth() {
   const authMessage = ref('');
   const authMessageType = ref('error');
 
+  const _setAuthMessage = (type, messageKey, details = '') => {
+    authMessageType.value = type;
+    authMessage.value = t(messageKey) + (details ? `: ${details}` : '');
+  };
+
   const handleEmailPasswordUpgrade = async () => {
-    authMessage.value = '';
-    if (!authEmail.value || !authPassword.value) {
-      authMessage.value = t('error_fill_fields');
-      return;
+    try {
+      _setAuthMessage('error', '');
+      if (!authEmail.value || !authPassword.value) {
+        return _setAuthMessage('error', 'error_fill_fields');
+      }
+      const { error } = await supabase.auth.updateUser({ email: authEmail.value, password: authPassword.value });
+      if (error) throw error;
+    } catch (error) {
+      _setAuthMessage('error', 'error_generic', error.message);
     }
-    const { error } = await supabase.auth.updateUser({ email: authEmail.value, password: authPassword.value });
-    if (error) { authMessage.value = error.message; }
   };
 
   const handleEmailPasswordSignIn = async () => {
-    authMessage.value = '';
-    if (!authEmail.value || !authPassword.value) {
-      authMessage.value = t('error_fill_fields');
-      return;
-    }
-    await supabase.auth.signOut();
-    const { error } = await supabase.auth.signInWithPassword({ email: authEmail.value, password: authPassword.value });
-    if (error) {
-      authMessage.value = t('invalidLogin');
-      await supabase.auth.signInAnonymously();
+    try {
+      _setAuthMessage('error', '');
+      if (!authEmail.value || !authPassword.value) {
+        return _setAuthMessage('error', 'error_fill_fields');
+      }
+      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signInWithPassword({ email: authEmail.value, password: authPassword.value });
+      if (error) {
+        await supabase.auth.signInAnonymously();
+        throw new Error(t('invalidLogin'));
+      }
+    } catch (error) {
+       authMessage.value = error.message;
+       authMessageType.value = 'error';
     }
   };
 
   const handleGoogleSignIn = async () => {
-    authMessage.value = '';
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/?view=profile` }
-    });
-    if (error) { authMessage.value = error.message; }
+    try {
+      _setAuthMessage('error', '');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/?view=profile` }
+      });
+      if (error) throw error;
+    } catch (error) {
+       _setAuthMessage('error', 'error_generic', error.message);
+    }
   };
 
   const handleLinkGoogleInProfile = async () => {
-    const { error } = await supabase.auth.linkIdentity({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/?view=profile` }
-    });
-    if (error) {
-      // NOTE: We will replace this with a toast notification in the next step
+    try {
+      const { error } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/?view=profile` }
+      });
+      if (error) throw error;
+    } catch (error) {
       alert(t('error_linking_account') + error.message);
     }
   };
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error('Error signing out:', error);
-    else window.location.reload();
+    try {
+      await supabase.auth.signOut();
+      await navigateTo('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const handlePasswordReset = async () => {
-    authMessage.value = '';
-    if (!authEmail.value) {
-      authMessageType.value = 'error';
-      authMessage.value = t('enterEmailForReset');
-      return;
-    }
-    const { error } = await supabase.functions.invoke('send-magic-link', { body: { email: authEmail.value, locale: locale.value } });
-    if (error) {
-      authMessageType.value = 'error';
-      authMessage.value = error.message;
-    } else {
-      authMessageType.value = 'success';
-      authMessage.value = t('resetLinkSent');
+    try {
+      _setAuthMessage('error', '');
+      if (!authEmail.value) {
+        return _setAuthMessage('error', 'enterEmailForReset');
+      }
+      const { error } = await supabase.functions.invoke('send-magic-link', { body: { email: authEmail.value, locale: locale.value } });
+      if (error) throw error;
+      _setAuthMessage('success', 'resetLinkSent');
+    } catch (error) {
+      _setAuthMessage('error', 'error_generic', error.message);
     }
   };
 

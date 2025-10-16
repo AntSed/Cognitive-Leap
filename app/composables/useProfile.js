@@ -1,32 +1,31 @@
 // composables/useProfile.js
 import { ref, watch, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
-import { useSupabaseClient, useSupabaseUser } from '#imports';
+import { useSupabaseClient, useSupabaseUser, useNuxtApp } from '#imports';
 import { debounce } from '~/utils/debounce';
+import { useI18nService } from '~/composables/useI18nService';
+
 export function useProfile() {
-  const { locale, setLocale } = useI18n();
+  const { t, locale, setLocale } = useI18nService();
   const supabase = useSupabaseClient();
   const user = useSupabaseUser();
-  
+  const { $auth } = useNuxtApp();
+
   const loading = ref(true);
   const profile = ref(null);
-  const curators = ref([]);
-  const students = ref([]);
   const newPassword = ref('');
   const passwordUpdateMessage = ref('');
   const avatarConfig = ref({ style: 'adventurer', seed: 'cognitive-leap' });
   const isAnonymous = computed(() => user.value?.is_anonymous ?? true);
-  
-const avatarUrl = computed(() => {
+
+  const avatarUrl = computed(() => {
     if (!user.value) return '';
     const seed = isAnonymous.value ? user.value.id : (avatarConfig.value.seed || user.value.id);
     const style = avatarConfig.value.style || 'adventurer';
-    
-    // Указываем на наш собственный API-эндпоинт
     return `/api/avatar?seed=${encodeURIComponent(seed)}&style=${encodeURIComponent(style)}`;
-});
+  });
 
-  const fetchProfileAndRelations = async () => {
+  const fetchProfile = async () => {
+    // This function now assumes user.value definitely exists.
     if (!user.value || isAnonymous.value) {
       loading.value = false;
       return;
@@ -35,40 +34,55 @@ const avatarUrl = computed(() => {
     try {
       loading.value = true;
       const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles').select('*').eq('user_id', user.value.id).single();
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.value.id)
+        .single();
 
       if (profileError && profileError.code !== 'PGRST116') throw profileError;
       
       if (profileData) {
         profile.value = profileData;
         if (profileData.avatar_config) avatarConfig.value = profileData.avatar_config;
-        if (profileData.language) setLocale(profileData.language);
+        if (profileData.language && profileData.language !== locale.value) {
+          await setLocale(profileData.language);
+        }
       } else {
         const { data: newProfile, error: insertError } = await supabase
           .from('user_profiles')
           .insert({ user_id: user.value.id, full_name: user.value.user_metadata?.full_name || 'New User', language: locale.value })
-          .select().single();
+          .select()
+          .single();
         if (insertError) throw insertError;
         profile.value = newProfile;
       }
-
-      const { data: relationsData, error: relationsError } = await supabase
-        .from('student_curator_relations')
-        .select(`*, student:user_profiles!student_curator_relations_student_id_fkey(full_name, user_id), curator:user_profiles!student_curator_relations_curator_id_fkey(full_name, user_id)`)
-        .or(`student_id.eq.${user.value.id},curator_id.eq.${user.value.id},invitee_email.eq.${user.value.email}`);
-      
-      if (relationsError) throw relationsError;
-
-      curators.value = relationsData.filter(rel => rel.student_id === user.value.id || (rel.invitee_email === user.value.email && rel.student_id === null));
-      students.value = relationsData.filter(rel => rel.curator_id === user.value.id || (rel.invitee_email === user.value.email && rel.curator_id === null));
-
     } catch (error) {
-      console.error("Error fetching profile and relations:", error);
+      console.error("Error fetching user profile:", error);
     } finally {
       loading.value = false;
     }
   };
 
+  const init = async () => {
+    // 1. Ждем глобальный сигнал, что аутентификация в принципе проверена
+    await $auth.waitForAuth();
+
+    // 2. "ВТОРОЙ РУБЕЖ": Лично ждем, пока useSupabaseUser() получит данные.
+    // Это решает проблему с аватаром анонима.
+    if (!user.value) {
+      await new Promise(resolve => {
+        const unwatch = watch(user, (newValue) => {
+          if (newValue) {
+            unwatch();
+            resolve();
+          }
+        });
+      });
+    }
+
+    // 3. Только теперь, когда мы уверены, что `user.value` существует, запускаем загрузку профиля.
+    await fetchProfile();
+  };
   const updatePassword = async () => {
     if (!newPassword.value) return;
     passwordUpdateMessage.value = '';
@@ -83,28 +97,30 @@ const avatarUrl = computed(() => {
   };
 
   const randomizeAvatar = () => {
+    if (!avatarConfig.value) return;
     avatarConfig.value.seed = Math.random().toString(36).substring(7);
   };
   
-  // Auto-saving watchers
-const debouncedProfileUpdate = debounce(async (updates, userId) => {
-  const { error } = await supabase.from('user_profiles').update(updates).eq('user_id', userId);
-  if (error) console.error('Error auto-saving profile:', error);
-}, 700); 
+  const debouncedProfileUpdate = debounce(async (updates, userId) => {
+    const { error } = await supabase.from('user_profiles').update(updates).eq('user_id', userId);
+    if (error) console.error('Error auto-saving profile:', error);
+  }, 700); 
 
-watch(profile, (newProfile, oldProfile) => {
-  if (!newProfile || !oldProfile || loading.value || isAnonymous.value) return;
-  const { id, created_at, user_id, ...updates } = newProfile;
-  debouncedProfileUpdate(updates, user.value.id);
-}, { deep: true });
-const debouncedAvatarUpdate = debounce(async (newConfig, userId) => {
-  const { error } = await supabase.from('user_profiles').update({ avatar_config: newConfig }).eq('user_id', userId);
-  if (error) console.error('Error auto-saving avatar config:', error);
-}, 500);
-watch(avatarConfig, (newConfig) => {
-  if (loading.value || isAnonymous.value || !profile.value) return;
-  debouncedAvatarUpdate(newConfig, user.value.id);
-}, { deep: true });
+  const debouncedAvatarUpdate = debounce(async (newConfig, userId) => {
+    const { error } = await supabase.from('user_profiles').update({ avatar_config: newConfig }).eq('user_id', userId);
+    if (error) console.error('Error auto-saving avatar config:', error);
+  }, 500);
+  
+  watch(profile, (newProfile, oldProfile) => {
+    if (!newProfile || !oldProfile || loading.value || isAnonymous.value) return;
+    const { id, created_at, user_id, ...updates } = newProfile;
+    debouncedProfileUpdate(updates, user.value.id);
+  }, { deep: true });
+  
+  watch(avatarConfig, (newConfig) => {
+    if (loading.value || isAnonymous.value || !profile.value) return;
+    debouncedAvatarUpdate(newConfig, user.value.id);
+  }, { deep: true });
 
   watch(locale, async (newLocale, oldLocale) => {
     if (newLocale && newLocale !== oldLocale && user.value && !isAnonymous.value) {
@@ -113,18 +129,22 @@ watch(avatarConfig, (newConfig) => {
     }
   });
 
+  const init = async () => {
+    await $auth.waitForAuth();
+    await fetchProfile();
+  };
+
   return {
-    loading,
+    loadingProfile: loading,
     profile,
-    curators,
-    students,
     newPassword,
     passwordUpdateMessage,
     avatarConfig,
     isAnonymous,
     avatarUrl,
-    fetchProfileAndRelations,
+    fetchProfile,
     updatePassword,
-    randomizeAvatar
+    randomizeAvatar,
+    init,
   };
 }

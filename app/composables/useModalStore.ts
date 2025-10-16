@@ -27,7 +27,7 @@ interface QuickTip {
 }
 
 const modalComponents = import.meta.glob('~/components/**/*.vue');
-
+let isInitialized = false;
 export const useModalStore = defineStore('modal', () => {
   // --- STATE ---
   
@@ -40,7 +40,7 @@ export const useModalStore = defineStore('modal', () => {
   const isOpen = computed(() => stack.value.length > 0);
   const currentStack = computed(() => stack.value);
 
-  // --- ACTIONS (управление стеком модальных окон) ---
+  // --- ACTIONS  ---
 
   const open = <T = any>(componentPath: string, componentProps: Record<string, any> = {}, options: ModalOptions = {}): Promise<T | undefined> => {
     return new Promise<T | undefined>(async (resolve) => {
@@ -91,7 +91,7 @@ export const useModalStore = defineStore('modal', () => {
     close(); 
   };
 
-  // --- ACTIONS (бизнес-логика) ---
+  // --- ACTIONS ---
   
   const openLesson = (lessonId: string) => open('modals/LessonDetails', { lessonId });
   const openPlayer = (material: Record<string, any>) => open('modals/PlayerModal', { material }, { history: false });
@@ -122,8 +122,10 @@ export const useModalStore = defineStore('modal', () => {
     }
   };
 
+const initializeModalListeners = () => {
+    if (isInitialized) return; // Защита от повторного вызова
+    isInitialized = true;
 
-  if (import.meta.client) {
     const handleHashChange = () => {
       if (window.location.hash === '' && stack.value.length > 0) {
         const topHistoryModalIndex = stack.value.findIndex(m => m.options.history !== false);
@@ -145,11 +147,10 @@ export const useModalStore = defineStore('modal', () => {
     window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('keydown', handleKeyDown);
 
-    // Очистка стека при перезагрузке страницы
     if (window.location.hash !== '#modal') {
       stack.value = [];
     }
-  }
+  };
 
   return {
     isOpen,
@@ -163,5 +164,6 @@ export const useModalStore = defineStore('modal', () => {
     setQuickTip,
     showQuickTipShell,
     hideQuickTip,
+    initializeModalListeners,
   };
 });

@@ -192,9 +192,8 @@ import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
 import HubMaterialCard from '~/components/hub/MaterialCard.vue';
 import EditablePosition from '~/components/hub/EditablePosition.vue';
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'auth' // <-- Указываем имя нашего middleware
 });
-
 // --- STATE ---
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
@@ -653,6 +652,7 @@ onMounted(async () => {
   }
   await fetchAllHubData(); 
 });
+
 </script>
 
 <style scoped>
