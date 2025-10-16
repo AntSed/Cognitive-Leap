@@ -129,12 +129,7 @@ export function useProfile() {
     }
   });
 
-  const init = async () => {
-    await $auth.waitForAuth();
-    await fetchProfile();
-  };
-
-  return {
+return {
     loadingProfile: loading,
     profile,
     newPassword,

@@ -13,23 +13,34 @@
     />
   </template>
 </template>
-
+// layouts/default.vue
 <script setup>
-import { onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
-import { useI18nService } from '~/composables/useI18nService'; // <-- ПРАВИЛЬНЫЙ ИМПОРТ
+import { useI18nService } from '~/composables/useI18nService';
 import ModalWrapper from '~/components/ModalWrapper.vue';
 import PlayerModal from '~/components/modals/PlayerModal.vue';
 
-const { isAuthReady } = useNuxtApp().$auth;
+// --- УНИВЕРСАЛЬНОЕ РЕШЕНИЕ ДЛЯ SSR и КЛИЕНТА ---
+
+// 1. Проверяем, где мы находимся.
+const isServer = process.server;
+
+// 2. Создаем isAuthReady в зависимости от окружения.
+//    - На сервере: isAuthReady ВСЕГДА false. Сервер не должен ждать клиентский плагин.
+//      Он просто покажет загрузчик и отправит страницу браузеру.
+//    - На клиенте: Берем настоящее реактивное состояние из нашего плагина.
+const isAuthReady = isServer ? ref(false) : useNuxtApp().$auth.isAuthReady;
+
+
 const modalStore = useModalStore();
 
+// 3. Вся логика, которая зависит от браузера и плагинов, остается в onMounted.
+//    onMounted выполняется ТОЛЬКО на клиенте, поэтому здесь все безопасно.
 onMounted(() => {
-  // Инициализируем слушатели модальных окон
   modalStore.initializeModalListeners();
 
-  // Получаем i18n из нашего единого сервиса
-  const { locale, setLocale } = useI18nService(); // <-- ПРАВИЛЬНЫЙ ВЫЗОВ
+  const { locale, setLocale } = useI18nService();
 
   watch(locale, () => {
     if (modalStore.isOpen) {
@@ -50,4 +61,3 @@ onMounted(() => {
   });
 });
 </script>
-
