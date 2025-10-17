@@ -75,9 +75,13 @@ export function useAuth() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      await navigateTo('/');
+      // Immediately sign in a new anonymous user to prevent a "no user" state
+      // and ensure the anonymous avatar is shown right away.
+      await supabase.auth.signInAnonymously();
+      // We can navigate to the root, the profile view will be shown by default for anon.
+      await navigateTo('/?view=profile'); 
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error during sign-out process:', error);
     }
   };
 

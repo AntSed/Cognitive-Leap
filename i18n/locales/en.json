@@ -100,7 +100,8 @@
   "profile_identityExistsHint": "It seems you already have an account with this email. Please sign in using your password or the 'Forgot Password' option. After signing in, you can link your Google account in your profile settings.",
   "profile_linkGoogle": "Link Google Account",
   "error_linking_account": "Failed to link account: ",
-  "profile_hubInvitation": "Teachers and parents! Help us make Cognitive Leap better by adding the best videos and interactive materials to {link}.",
+  "profile_hubInvitation_part1": "Teachers and parents! Help us make Cognitive Leap better by adding the best videos and interactive materials to ",
+  "profile_hubInvitation_part2": ".",
   "profile_hubLinkText": "our Hub",
   "common": {
     "cancel": "Cancel",

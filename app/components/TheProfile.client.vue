@@ -55,13 +55,13 @@
     <div v-else class="bg-[#1f2937] p-4 sm:p-8 rounded-2xl border border-[#374151] shadow-2xl">
       <section class="mb-8">
         <div class="text-center bg-gray-800/50 p-4 rounded-lg mb-6 border border-gray-700">
-          <i18n-t keypath="profile_hubInvitation" tag="p" class="text-gray-300">
-            <template #link>
-              <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
-                {{ $t('profile_hubLinkText') }}
-              </router-link>
-            </template>
-          </i18n-t>
+          <p class="text-gray-300">
+            {{ $t('profile_hubInvitation_part1') }}
+            <router-link to="/hub" class="font-semibold text-blue-400 hover:underline">
+              {{ $t('profile_hubLinkText') }}
+            </router-link>
+            {{ $t('profile_hubInvitation_part2') }}
+          </p>
         </div>
         <div class="relative w-24 h-24 mx-auto mb-6">
           <img :src="avatarUrl" alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-[#3b82f6] bg-gray-700">

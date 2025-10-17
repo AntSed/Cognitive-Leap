@@ -100,7 +100,8 @@
   "profile_identityExistsHint": "Похоже, у вас уже есть аккаунт с этим email. Пожалуйста, войдите, используя ваш пароль или опцию 'Забыли пароль'. После входа вы сможете привязать Google в настройках профиля.",
   "profile_linkGoogle": "Привязать аккаунт Google",
   "error_linking_account": "Не удалось привязать аккаунт: ",
-  "profile_hubInvitation": "Учителя и родители! Помогите нам сделать Cognitive Leap лучше, добавляя лучшие видео и интерактивные материалы в {link}.",
+  "profile_hubInvitation_part1": "Учителя и родители! Помогите нам сделать Cognitive Leap лучше, добавляя лучшие видео и интерактивные материалы в ",
+  "profile_hubInvitation_part2": ".",
   "profile_hubLinkText": "наш Хаб",
   "common": {
     "cancel": "Отмена",

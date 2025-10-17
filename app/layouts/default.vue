@@ -1,6 +1,6 @@
 <template>
   <div v-if="!isAuthReady" class="initial-loader">
-    <p>Cognitive Leap</p>
+
   </div>
 
   <template v-else>

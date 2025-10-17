@@ -1,5 +1,5 @@
 // composables/useProfile.js
-import { ref, watch, computed } from 'vue';
+import { ref, watch, watchEffect, computed } from 'vue';
 import { useSupabaseClient, useSupabaseUser, useNuxtApp } from '#imports';
 import { debounce } from '~/utils/debounce';
 import { useI18nService } from '~/composables/useI18nService';
@@ -17,11 +17,16 @@ export function useProfile() {
   const avatarConfig = ref({ style: 'adventurer', seed: 'cognitive-leap' });
   const isAnonymous = computed(() => user.value?.is_anonymous ?? true);
 
-  const avatarUrl = computed(() => {
-    if (!user.value) return '';
+  const avatarUrl = ref('');
+  watchEffect(() => {
+    if (!user.value) {
+      avatarUrl.value = ''; 
+      return;
+    }
+
     const seed = isAnonymous.value ? user.value.id : (avatarConfig.value.seed || user.value.id);
     const style = avatarConfig.value.style || 'adventurer';
-    return `/api/avatar?seed=${encodeURIComponent(seed)}&style=${encodeURIComponent(style)}`;
+    avatarUrl.value = `/api/avatar?seed=${encodeURIComponent(seed)}&style=${encodeURIComponent(style)}`;
   });
 
   const fetchProfile = async () => {
@@ -64,23 +69,7 @@ export function useProfile() {
   };
 
   const init = async () => {
-    // 1. Ждем глобальный сигнал, что аутентификация в принципе проверена
     await $auth.waitForAuth();
-
-    // 2. "ВТОРОЙ РУБЕЖ": Лично ждем, пока useSupabaseUser() получит данные.
-    // Это решает проблему с аватаром анонима.
-    if (!user.value) {
-      await new Promise(resolve => {
-        const unwatch = watch(user, (newValue) => {
-          if (newValue) {
-            unwatch();
-            resolve();
-          }
-        });
-      });
-    }
-
-    // 3. Только теперь, когда мы уверены, что `user.value` существует, запускаем загрузку профиля.
     await fetchProfile();
   };
   const updatePassword = async () => {
