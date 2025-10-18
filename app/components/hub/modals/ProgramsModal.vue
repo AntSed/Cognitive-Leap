@@ -1,12 +1,12 @@
 <template>
   <div class="programs-modal">
     <header class="modal-header">
-      <h2>Manage Programs</h2>
-      <button class="modal-close-button" @click="onClose">&times;</button>
+      <h2>{{ t('hub.modals.programs.title') }}</h2>
+      <button class="modal-close-button" @click="modalStore.close()">&times;</button>
     </header>
 
     <main class="modal-body">
-      <div v-if="isLoading" class="state-indicator">Loading programs...</div>
+      <div v-if="isLoading" class="state-indicator">{{ t('common.loading') }}...</div>
 
       <div v-else>
         <ul class="programs-list">
@@ -15,7 +15,7 @@
             :class="{ active: !activeProgram }"
             @click="handleSelectProgram(null)"
           >
-            <span class="program-title">Default School Program</span>
+            <span class="program-title">{{ t('hub.defaultProgram') }}</span>
           </li>
 
           <li
@@ -31,26 +31,26 @@
                 class="action-button share-button"
                 @click.stop="handleShareProgram($event, program)"
               >
-                Share
+                {{ t('common.share') }}
               </button>
-                  <button
-                    class="action-button edit-button"
-                    @click.stop="handleEditProgram(program)"
-                  >
-                    Edit
-                  </button>
+              <button
+                class="action-button edit-button"
+                @click.stop="handleEditProgram(program)"
+              >
+                {{ t('common.edit') }}
+              </button>
               <button
                 class="action-button delete-button"
                 @click.stop="handleDeleteProgram(program)"
               >
-                Delete
+                {{ t('common.delete') }}
               </button>
             </div>
           </li>
         </ul>
 
         <div v-if="programs.length === 0" class="state-indicator" style="padding-top: 1rem; font-size: 0.9rem;">
-          <p>You haven't created any programs yet.</p>
+          <p>{{ t('hub.modals.programs.noPrograms') }}</p>
         </div>
       </div>
     </main>
@@ -60,11 +60,11 @@
         <input
           v-model="newProgramTitle"
           type="text"
-          placeholder="Enter new program title..."
+          :placeholder="t('hub.modals.programs.createPlaceholder')"
           required
         />
         <button type="submit" :disabled="isCreating">
-          {{ isCreating ? 'Creating...' : 'Create Program' }}
+          {{ isCreating ? t('common.creating') : t('hub.modals.programs.createButton') }}
         </button>
       </form>
     </footer>
@@ -73,18 +73,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useSupabaseClient, useSupabaseUser } from '#imports';
+import { useSupabaseClient, useSupabaseUser, useI18n } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 
+// FIX: The 'onClose' prop is no longer needed, as the component closes itself.
 const props = defineProps({
   activeProgram: { type: Object, default: null },
   onSelect: { type: Function, required: true },
-  onClose: { type: Function, required: true }
 });
 
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const modalStore = useModalStore();
+const { t } = useI18n(); // i18n hook
 
 const programs = ref([]);
 const isLoading = ref(true);
@@ -124,7 +125,7 @@ const handleCreateProgram = async () => {
     handleSelectProgram(data);
   } catch (error) {
     console.error('Error creating program:', error);
-    alert('Failed to create program.');
+    alert(t('hub.errors.createProgramFailed'));
   } finally {
     isCreating.value = false;
   }
@@ -139,13 +140,14 @@ const handleDeleteProgram = (programToDelete) => {
       try {
         const { error } = await supabase.from('programs').delete().eq('id', programToDelete.id);
         if (error) throw error;
+        // If the deleted program was active, switch to the default program.
         if (props.activeProgram?.id === programToDelete.id) {
           handleSelectProgram(null);
         }
         await fetchUserPrograms();
       } catch (error) {
         console.error('Error deleting program:', error);
-        alert('Failed to delete program.');
+        alert(t('hub.errors.deleteProgramFailed'));
       }
     }
   });
@@ -153,7 +155,8 @@ const handleDeleteProgram = (programToDelete) => {
 
 const handleSelectProgram = (program) => {
   props.onSelect(program);
-  props.onClose();
+  // FIX: The component now closes itself directly using the modal store.
+  modalStore.close();
 };
 
 const handleShareProgram = async (event, program) => {
@@ -162,7 +165,7 @@ const handleShareProgram = async (event, program) => {
     await navigator.clipboard.writeText(shareUrl);
     const button = event.target;
     const originalText = button.textContent;
-    button.textContent = 'Copied!';
+    button.textContent = t('common.copied');
     button.disabled = true;
     setTimeout(() => {
       button.textContent = originalText;
@@ -176,9 +179,7 @@ const handleShareProgram = async (event, program) => {
 const handleEditProgram = (programToEdit) => {
   modalStore.open('hub/modals/EditProgramModal', {
     program: programToEdit,
-    onUpdateSuccess: () => {
-      fetchUserPrograms(); // Refresh the list after a successful edit
-    }
+    onUpdateSuccess: fetchUserPrograms
   });
 };
 onMounted(() => {

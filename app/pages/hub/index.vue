@@ -3,24 +3,20 @@
     <aside class="hub-sidebar hide-scrollbar">
       <div class="tree-controls">
         <button @click="selectLesson(null)" :class="{ active: !selectedLesson }">
-          Show All Materials
+          {{ t('hub.sidebar.showAll') }}
         </button>
       </div>
 
       <div v-if="isProgramOwner" class="add-controls">
-        <input v-model="newSubjectName" placeholder="New subject name..." @keyup.enter="handleAddSubject" />
+        <input v-model="newSubjectName" :placeholder="t('hub.sidebar.newSubjectPlaceholder')" @keyup.enter="handleAddSubject" />
         <button @click="handleAddSubject">+</button>
       </div>
 
       <div v-for="subject in subjects" :key="subject.id" class="subject-group">
         <div class="subject-header" @click="toggleSubject(subject.id)">
-          <h3 class="subject-title">{{ subject.name_translations?.en || 'Unnamed Subject' }}</h3>
+          <h3 class="subject-title">{{ subject.name_translations?.en || t('hub.unnamedSubject') }}</h3>
           <div class="sidebar-actions">
-            <svg
-              class="subject-chevron"
-              :class="{ 'is-expanded': expandedSubjects.has(subject.id) }"
-              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"
-            >
+            <svg class="subject-chevron" :class="{ 'is-expanded': expandedSubjects.has(subject.id) }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
             </svg>
             <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditSubject(subject)">
@@ -37,38 +33,19 @@
         <draggable
           v-if="expandedSubjects.has(subject.id)" tag="ul"
           :list="lessonsBySubject[subject.id] || []"
-          :delay="250"
-          :delay-on-touch-only="true"
-          :disabled="isInlineEditing" 
-          class="lesson-list"
-          group="materials"
-          item-key="id"
+          :delay="250" :delay-on-touch-only="true" :disabled="isInlineEditing"
+          class="lesson-list" group="materials" item-key="id"
           @add="onDrop"
           @end="hoveredLesson = null"
           :sort="false"
           :ghost-class="'ghost-item'"
         >
           <template #item="{ element: lesson }">
-            <li
-              :class="{
-                'drop-target': hoveredLesson?.id === lesson.id,
-                'drop-error': errorLessonId === lesson.id
-              }"
-            >
-              <a 
-                @click="selectLesson(lesson)" 
-                :class="{ active: selectedLesson?.id === lesson.id }"
-                @dragenter.prevent="hoveredLesson = lesson"
-              >
-                <EditablePosition
-                  v-if="isProgramOwner"
-                  :model-value="lesson.position"
-                  @update:modelValue="newPosition => handleLessonPositionUpdate(lesson, newPosition)"
-                />
+            <li :class="{ 'drop-target': hoveredLesson?.id === lesson.id, 'drop-error': errorLessonId === lesson.id }">
+              <a @click="selectLesson(lesson)" :class="{ active: selectedLesson?.id === lesson.id }" @dragenter.prevent="hoveredLesson = lesson">
+                <EditablePosition v-if="isProgramOwner" :model-value="lesson.position" @update:modelValue="newPosition => handleLessonPositionUpdate(lesson, newPosition)" />
                 <span v-else class="lesson-position">{{ lesson.position }}.</span>
-                
-                <span class="lesson-title">{{ lesson.topic_translations?.en || 'Untitled Lesson' }}</span>
-                
+                <span class="lesson-title">{{ lesson.topic_translations?.en || t('hub.untitledLesson') }}</span>
                 <div class="sidebar-actions">
                   <span class="material-count">{{ lesson.material_count }}</span>
                   <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditLesson(lesson)">
@@ -86,65 +63,55 @@
         </draggable>
 
         <div v-if="isProgramOwner && expandedSubjects.has(subject.id)" class="add-controls lesson-add">
-          <input 
-            v-model="newLessonTopics[subject.id]" 
-            placeholder="New lesson topic..." 
-            @keyup.enter="handleAddLesson(subject)" 
-          />
+          <input v-model="newLessonTopics[subject.id]" :placeholder="t('hub.sidebar.newLessonPlaceholder')" @keyup.enter="handleAddLesson(subject)" />
           <button @click="handleAddLesson(subject)">+</button>
         </div>
       </div>
     </aside>
 
-    <div
-      v-if="isSidebarOpen"
-      class="sidebar-overlay"
-      @click="isSidebarOpen = false">
-    </div>
+    <div v-if="isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false"></div>
 
     <main class="hub-main-content">
       <div class="sidebar-toggle">
-        <button @click="isSidebarOpen = !isSidebarOpen">
-          ☰
-        </button>
+        <button @click="isSidebarOpen = !isSidebarOpen">☰</button>
       </div>
       <header class="hub-header">
-        <h1>Content Hub</h1>
+        <h1>{{ t('hub.title') }}</h1>
         <div class="program-selector" @click="openProgramsModal">
-          <span class="program-name">{{ activeProgram?.title || 'Default School Program' }}</span>
+          <span class="program-name">{{ activeProgram?.title || t('hub.defaultProgram') }}</span>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
           </svg>
         </div>
         <p v-if="selectedLesson">
-          Showing materials for: <strong>{{ selectedLesson.topic_translations?.en }}</strong>
+          {{ t('hub.showingMaterialsFor') }} <strong>{{ selectedLesson.topic_translations?.en }}</strong>
         </p>
-        <p v-else>A central library for all learning materials.</p>
+        <p v-else>{{ t('hub.centralLibrary') }}</p>
       </header>
 
       <div class="filters-container">
         <div class="filter-group">
-          <label for="search">Search by Title</label>
+          <label for="search">{{ t('hub.filters.search') }}</label>
           <input id="search" v-model="searchQuery" type="text" placeholder="e.g., Photosynthesis" />
         </div>
         <div class="filter-group">
-          <label for="status">Status</label>
+          <label for="status">{{ t('hub.filters.status') }}</label>
           <select id="status" v-model="statusFilter">
-            <option value="">All</option>
-            <option value="draft">Draft</option>
-            <option value="in_review">In Review</option>
-            <option value="published">Published</option>
-            <option value="rejected">Rejected</option>
+            <option value="">{{ t('hub.filters.all') }}</option>
+            <option value="draft">{{ t('statuses.draft') }}</option>
+            <option value="in_review">{{ t('statuses.in_review') }}</option>
+            <option value="published">{{ t('statuses.published') }}</option>
+            <option value="rejected">{{ t('statuses.rejected') }}</option>
           </select>
         </div>
         <div class="filter-group">
-          <label for="type">Material Type</label>
+          <label for="type">{{ t('hub.filters.type') }}</label>
           <select id="type" v-model="typeFilter">
-            <option value="">All</option>
-            <option value="video">Video</option>
-            <option value="game">Game</option>
-            <option value="presentation">Presentation</option>
-            <option value="article">Article</option>
+            <option value="">{{ t('hub.filters.all') }}</option>
+            <option value="video">{{ t('types.video') }}</option>
+            <option value="game">{{ t('types.game') }}</option>
+            <option value="presentation">{{ t('types.presentation') }}</option>
+            <option value="article">{{ t('types.article') }}</option>
           </select>
         </div>
       </div>
@@ -153,13 +120,10 @@
         <draggable
           class="draggable-container"
           :list="displayedMaterials"
-          :disabled="isInlineEditing" 
-          :delay="250"
-          :delay-on-touch-only="true"
+          :disabled="isInlineEditing"
+          :delay="250" :delay-on-touch-only="true"
           :group="{ name: 'materials', pull: 'clone', put: false }"
-          item-key="id"
-          :sort="false"
-          :drag-class="'dragging-card'"
+          item-key="id" :sort="false" :drag-class="'dragging-card'"
         >
           <template #item="{ element: material }">
             <template v-if="material.isAddNewCard">
@@ -179,6 +143,7 @@
         </draggable>
       </div>
     </main>
+
     <ModalWrapper />
   </div>
 </template>
@@ -188,36 +153,64 @@ import { ref, onMounted, watch, computed, provide } from 'vue';
 import draggable from 'vuedraggable';
 import { useSupabaseUser, useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
-import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
-import HubMaterialCard from '~/components/hub/MaterialCard.vue';
-import EditablePosition from '~/components/hub/EditablePosition.vue';
-definePageMeta({
-  middleware: 'auth' // <-- Указываем имя нашего middleware
-});
-// --- STATE ---
+import { useI18n } from 'vue-i18n';
+
+// Import the new composables
+import { useHubSidebarLogic } from '~/composables/useHubSidebarLogic';
+import { useHubMaterialsLogic } from '~/composables/useHubMaterialsLogic';
+
+// --- COMPONENT SETUP & PAGE META ---
+definePageMeta({ middleware: 'auth' });
+
+// --- CORE SERVICES ---
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
+const { t } = useI18n();
 
+// --- PAGE-LEVEL STATE ---
 const currentUserProfile = ref(null);
-const materials = ref([]);
-const isLoading = ref(true);
-const error = ref(null);
-const searchQuery = ref('');
-const statusFilter = ref('');
-const typeFilter = ref('');
-const subjects = ref([]);
-const lessons = ref([]);
-const isInlineEditing = ref(false);
-const newLessonTopics = ref({}); 
-const newSubjectName = ref('');
-const selectedLesson = ref(null);
-const expandedSubjects = ref(new Set());
+const activeProgram = ref(null);
 const isSidebarOpen = ref(false);
-const hoveredLesson = ref(null);
-const errorLessonId = ref(null);
-const activeProgram = ref(null); 
-// --- PROGRAM MANAGEMENT ---
+const isInlineEditing = ref(false); // Used by both sidebar and main content to disable dragging
+
+// --- LOGIC FROM COMPOSABLES ---
+
+// Sidebar logic is now encapsulated. We pass it the active program to work with.
+const {
+  subjects, lessonsBySubject, expandedSubjects, selectedLesson, newSubjectName,
+  newLessonTopics, hoveredLesson, errorLessonId, fetchTreeData, toggleSubject,
+  selectLesson, handleAddSubject, handleEditSubject, handleDeleteSubject,
+  handleAddLesson, handleEditLesson, handleDeleteLesson, handleLessonPositionUpdate, onDrop
+} = useHubSidebarLogic(activeProgram);
+
+// Materials logic is also encapsulated. We pass it the selected lesson and active program.
+const {
+  materials, isLoading, searchQuery, statusFilter, typeFilter,
+  displayedMaterials, fetchMaterials, handlePositionUpdate
+} = useHubMaterialsLogic(selectedLesson, activeProgram);
+
+// --- ORCHESTRATION & PAGE-SPECIFIC LOGIC ---
+
+/**
+ * Checks if the current user is the owner of the active program.
+ * This remains in the main component as it's a top-level permission check.
+ */
+const isProgramOwner = computed(() => {
+  if (!user.value || !activeProgram.value) return false;
+  return user.value.id === activeProgram.value.creator_id;
+});
+
+const fetchUserProfile = async () => {
+  if (!user.value) return;
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('user_id, hub_role')
+    .eq('user_id', user.value.id)
+    .single();
+  currentUserProfile.value = data;
+};
+
 const selectProgram = (program) => {
   activeProgram.value = program;
   if (program) {
@@ -226,387 +219,18 @@ const selectProgram = (program) => {
     localStorage.removeItem('activeProgramId');
   }
 };
-const handleAddSubject = async () => {
-  if (!newSubjectName.value.trim() || !isProgramOwner.value) return;
 
-  try {
-    const prefix = newSubjectName.value.trim().toLowerCase().slice(0, 4) + Math.random().toString(36).slice(-4);
-    
-    // TODO: The skin_id should be dynamically retrieved from the program's settings.
-    // For now, we hardcode the default 'head' skin ID.
-    const skinIdForStyle = '38c24e69-24f9-4a7c-a003-84d298280c14';
-
-    const { error } = await supabase.rpc('create_subject_with_style', {
-      p_program_id: activeProgram.value.id,
-      p_name_en: newSubjectName.value.trim(),
-      p_prefix: prefix,
-      p_skin_id: skinIdForStyle
-    });
-
-    if (error) throw error;
-    
-    newSubjectName.value = '';
-    await fetchTreeData();
-  } catch (error) {
-    console.error('Error adding subject:', error);
-    alert('Failed to add subject.');
-  }
-};
-const setInlineEditingState = (isEditing) => {
-  isInlineEditing.value = isEditing;
-};
-provide('setInlineEditingState', setInlineEditingState);
-
-const handleEditSubject = (subject) => {
-  const skinId = activeProgram.value?.skin_id || '38c24e69-24f9-4a7c-a003-84d298280c14'; // Fallback to default head skin
-  modalStore.open('hub/modals/EditSubjectModal', {
-    subjectId: subject.id,
-    skinId: skinId,
-    onUpdateSuccess: () => {
-      fetchTreeData();
-    }
-  });
-};
-const handleDeleteSubject = (subject) => {
-  modalStore.open('hub/modals/ConfirmDeleteModal', {
-    titleKey: 'hub.modals.deleteSubject.title',
-    messageKey: 'hub.modals.deleteSubject.message',
-    messageParams: { subjectName: subject.name_translations?.en || 'this subject' },
-    onConfirm: async () => {
-      try {
-        const { error } = await supabase.from('subjects').delete().eq('id', subject.id);
-        if (error) throw error;
-        await fetchTreeData(); // Refresh the sidebar
-      } catch (error) {
-        console.error('Error deleting subject:', error);
-        alert('Failed to delete subject.');
-      }
-    }
-  });
-};
-const handleAddLesson = async (subject) => {
-  const topic = newLessonTopics.value[subject.id]?.trim();
-  if (!topic || !isProgramOwner.value) return;
-
-  try {
-    const currentLessons = lessonsBySubject.value[subject.id] || [];
-    const newPosition = currentLessons.length + 1;
-    const slug = topic.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).slice(-4);
-
-    // TODO: The skin_id should be dynamically retrieved from the program's settings.
-    const skinIdForLayout = '38c24e69-24f9-4a7c-a003-84d298280c14';
-
-    const { error } = await supabase.rpc('create_lesson_with_layout', {
-      p_program_id: activeProgram.value.id,
-      p_subject_id: subject.id,
-      p_topic_en: topic,
-      p_position: newPosition,
-      p_slug: slug,
-      p_skin_id: skinIdForLayout
-    });
-
-    if (error) throw error;
-    
-    newLessonTopics.value[subject.id] = '';
-    await fetchTreeData();
-  } catch (error) {
-    console.error('Error adding lesson:', error);
-    alert('Failed to add lesson.');
-  }
-};
-const handleEditLesson = (lesson) => {
-  const skinId = activeProgram.value?.skin_id;
-  modalStore.open('hub/modals/EditLessonModal', {
-    lessonId: lesson.id,
-    skinId: skinId,
-    onUpdateSuccess: () => {
-      fetchTreeData(); // Refresh sidebar to show new lesson name
-    }
-  });
-};
-const handleDeleteLesson = (lesson) => {
-  modalStore.open('hub/modals/ConfirmDeleteModal', {
-    titleKey: 'hub.modals.deleteLesson.title',
-    messageKey: 'hub.modals.deleteLesson.message',
-    messageParams: { lessonName: lesson.topic_translations?.en || 'this lesson' },
-    onConfirm: async () => {
-      try {
-        // Use our new "smart" delete function
-        const { error } = await supabase.rpc('delete_lesson_and_reorder', {
-          p_lesson_id: lesson.id
-        });
-        if (error) throw error;
-        await fetchTreeData();
-      } catch (error) {
-        console.error('Error deleting lesson:', error);
-        alert('Failed to delete lesson.');
-      }
-    }
-  });
-};
-const handleLessonPositionUpdate = async (lesson, newPosition) => {
-  // Add a guard to prevent invalid position numbers
-  if (!newPosition || newPosition < 1) {
-    alert("Please enter a valid position number.");
-    return;
-  }
-
-  try {
-    const { error } = await supabase.rpc('reorder_lessons', {
-      p_lesson_id: lesson.id,
-      p_new_position: newPosition
-    });
-    if (error) throw error;
-    
-    // Refresh the entire tree to reflect the new order
-    await fetchTreeData();
-  } catch (error) {
-    console.error('Failed to reorder lesson:', error);
-    alert('Failed to reorder lesson.');
-    await fetchTreeData(); // Re-fetch to revert UI
-  }
-};
 const openProgramsModal = () => {
   modalStore.open('hub/modals/ProgramsModal', {
     activeProgram: activeProgram.value,
     onSelect: selectProgram,
-    onClose: () => modalStore.close()
   });
 };
-const applyProgramScope = (query) => {
-  if (activeProgram.value) {
-    return query.eq('program_id', activeProgram.value.id);
-  } else {
-    return query.is('program_id', null);
-  }
-};
-// --- COMPUTED ---
-const isProgramOwner = computed(() => {
-  // The user must be logged in and a custom program must be active
-  if (!user.value || !activeProgram.value) {
-    return false;
-  }
-  // The logged-in user's ID must match the program's creator_id
-  return user.value.id === activeProgram.value.creator_id;
-});
-const displayedMaterials = computed(() => {
-  // Display logic: Prepend an "Add New" card when a lesson is selected.
-  if (selectedLesson.value) {
-    const addNewCard = { isAddNewCard: true, id: 'add-new' };
-    return [addNewCard, ...materials.value];
-  }
-  return materials.value;
-});
 
-const lessonsBySubject = computed(() => {
-  if (!lessons.value) return {};
-  return lessons.value.reduce((acc, lesson) => {
-    if (!acc[lesson.subject_id]) {
-      acc[lesson.subject_id] = [];
-    }
-    acc[lesson.subject_id].push(lesson);
-    return acc;
-  }, {});
-});
-
-// --- METHODS ---
-const toggleSubject = (subjectId) => {
-  if (expandedSubjects.value.has(subjectId)) {
-    expandedSubjects.value.delete(subjectId);
-  } else {
-    expandedSubjects.value.add(subjectId);
-  }
-};
-
-const selectLesson = (lesson) => {
-  selectedLesson.value = lesson;
-  isSidebarOpen.value = false;
-};
-
-const fetchUserProfile = async () => {
-  if (user.value) {
-    const { data, error: fetchError } = await supabase
-      .from('user_profiles')
-      .select('user_id, hub_role')
-      .eq('user_id', user.value.id)
-      .single();
-
-    if (fetchError) {
-      console.error("Error fetching user profile:", fetchError.message);
-    } else {
-      currentUserProfile.value = data;
-    }
-  }
-};
-
-const fetchTreeData = async () => {
-  try {
-    let subjectsQuery = supabase.from('subjects').select('*').order('name_translations->>en');
-    // Apply program scope to the subjects query
-    subjectsQuery = applyProgramScope(subjectsQuery);
-
-    const [subjectsRes, lessonsRes] = await Promise.all([
-      subjectsQuery,
-      // Pass the program ID to the RPC function
-      supabase.rpc('get_lessons_with_material_count', {
-        p_program_id: activeProgram.value ? activeProgram.value.id : null
-      })
-    ]);
-
-    if (subjectsRes.error) throw subjectsRes.error;
-    if (lessonsRes.error) throw lessonsRes.error;
-
-    subjects.value = subjectsRes.data;
-    lessons.value = lessonsRes.data;
-
-  } catch (e) {
-    console.error("Error fetching tree data:", e);
-    error.value = e;
-  }
-};
-const handleMaterialUpdate = async () => {
-  // This function refreshes both the main content and the sidebar.
-  await fetchMaterials();
-  await fetchTreeData();
-};
-const fetchMaterials = async () => {
-  isLoading.value = true;
-  error.value = null;
-  try {
-    let query;
-
-    if (selectedLesson.value) {
-      // Fetch materials for the selected lesson, ordered by position.
-      query = supabase
-        .from('lesson_materials')
-        .select('position, learning_apps ( * )')
-        .eq('lesson_id', selectedLesson.value.id);
-
-      if (statusFilter.value) query = query.eq('learning_apps.status', statusFilter.value);
-      if (typeFilter.value) query = query.eq('learning_apps.material_type', typeFilter.value);
-      if (searchQuery.value) query = query.ilike('learning_apps.title_translations->>en', `%${searchQuery.value}%`);
-
-      query = query.order('position', { ascending: true });
-    } else {
-      // Fetch all materials if no lesson is selected.
-      query = supabase.from('learning_apps').select('*');
-
-      if (statusFilter.value) query = query.eq('status', statusFilter.value);
-      if (typeFilter.value) query = query.eq('material_type', typeFilter.value);
-      if (searchQuery.value) query = query.ilike('title_translations->>en', `%${searchQuery.value}%`);
-
-      query = query.order('created_at', { ascending: false });
-    }
-
-    const { data, error: fetchError } = await query;
-    if (fetchError) throw fetchError;
-
-    if (selectedLesson.value) {
-      // Map the RPC result, combining the material data with its position.
-      materials.value = data.map(item => ({
-        ...item.learning_apps,
-        position: item.position
-      })).filter(Boolean);
-    } else {
-      materials.value = data;
-    }
-
-  } catch (e) {
-    error.value = e;
-    console.error("Error fetching materials:", e);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const handlePositionUpdate = async ({ materialId, newPosition }) => {
-  // Handles reordering materials via manual input on the card component.
-  if (!selectedLesson.value) return;
-
-  try {
-    const { error: rpcError } = await supabase.rpc('reorder_lesson_materials', {
-      p_lesson_id: selectedLesson.value.id,
-      p_material_id: materialId,
-      p_new_position: newPosition
-    });
-
-    if (rpcError) throw rpcError;
-    await fetchMaterials();
-
-  } catch (e) {
-    console.error('Failed to reorder materials by input:', e);
-    await fetchMaterials();
-  }
-};
-
-const onDrop = async (event) => {
-  // Handles dropping a material onto a lesson in the sidebar.
-  const { newIndex } = event;
-  const droppedMaterial = event.item.__draggable_context.element;
-  const targetLesson = hoveredLesson.value;
-
-  // Immediately remove the item vuedraggable adds to the lesson list to prevent UI glitches.
-  if (targetLesson) {
-    const lessonList = lessonsBySubject.value[targetLesson.subject_id];
-    if (lessonList) {
-      lessonList.splice(newIndex, 1);
-    }
-  }
-
-  if (!droppedMaterial || !targetLesson || droppedMaterial.isAddNewCard) {
-    hoveredLesson.value = null;
-    return;
-  }
-
-  try {
-    const { data: existingLink, error: checkError } = await supabase
-      .from('lesson_materials')
-      .select('lesson_id')
-      .match({ material_id: droppedMaterial.id, lesson_id: targetLesson.id })
-      .maybeSingle();
-
-    if (checkError) throw checkError;
-
-    if (existingLink) {
-      errorLessonId.value = targetLesson.id;
-      setTimeout(() => { errorLessonId.value = null; }, 1500);
-      return;
-    }
-
-    const { count, error: countError } = await supabase
-      .from('lesson_materials')
-      .select('*', { count: 'exact', head: true })
-      .eq('lesson_id', targetLesson.id);
-
-    if (countError) throw countError;
-    const newPosition = (count ?? 0) + 1;
-
-    const { error: insertError } = await supabase
-      .from('lesson_materials')
-      .insert({
-        lesson_id: targetLesson.id,
-        material_id: droppedMaterial.id,
-        position: newPosition
-      });
-
-    if (insertError) throw insertError;
-
-    // Optimistically update the material count in the UI.
-    const lessonInUI = lessons.value.find(l => l.id === targetLesson.id);
-    if (lessonInUI) {
-      lessonInUI.material_count = (lessonInUI.material_count || 0) + 1;
-    }
-
-    await fetchTreeData();
-
-  } catch (e) {
-    console.error("Error linking material:", e);
-  } finally {
-    hoveredLesson.value = null;
-  }
-};
-
-// This new function will be our main data loader.
+/**
+ * A central function to refresh all data for the hub.
+ * It's orchestrated here in the parent component.
+ */
 const fetchAllHubData = async () => {
   isLoading.value = true;
   await fetchTreeData();
@@ -614,35 +238,47 @@ const fetchAllHubData = async () => {
   isLoading.value = false;
 };
 
+/**
+ * A central update handler passed down to child components.
+ * Ensures both the materials grid and the sidebar's lesson counts are refreshed.
+ */
+const handleMaterialUpdate = async () => {
+  await fetchMaterials();
+  await fetchTreeData();
+};
+
+// Provides a way for child components (like InlineEditor) to disable drag-and-drop globally.
+provide('setInlineEditingState', (isEditing) => {
+  isInlineEditing.value = isEditing;
+});
+
+// --- WATCHERS & LIFECYCLE HOOKS ---
+
+// The main watcher that triggers a data refresh when the context (lesson or program) changes.
 watch([selectedLesson, activeProgram], (newValue, oldValue) => {
   const oldProgramId = oldValue[1]?.id;
   const newProgramId = newValue[1]?.id;
 
-  // If the program has changed, we must reset the selected lesson
-  // to avoid showing a lesson that doesn't belong to the new program.
   if (oldProgramId !== newProgramId) {
-    selectedLesson.value = null;
+    selectedLesson.value = null; // Reset selection if program changes
   }
-
-  // Refetch all data whenever the lesson or program changes.
+  
   fetchAllHubData();
-}, {
-  deep: true // Use deep watch for objects
-});
+}, { deep: true });
 
 onMounted(async () => {
   await fetchUserProfile();
   const savedProgramId = localStorage.getItem('activeProgramId');
+
   if (savedProgramId) {
     try {
-      const { data: savedProgram, error } = await supabase
+      const { data: savedProgram } = await supabase
         .from('programs')
         .select('*')
         .eq('id', savedProgramId)
         .single();
-      
-      if (error) throw error;
       if (savedProgram) {
+        // Устанавливаем программу, но не ждем реакции watch
         activeProgram.value = savedProgram;
       }
     } catch (e) {
@@ -650,9 +286,10 @@ onMounted(async () => {
       localStorage.removeItem('activeProgramId');
     }
   }
-  await fetchAllHubData(); 
-});
 
+  // Гарантированно запускаем полную загрузку данных ПОСЛЕ всех манипуляций
+  await fetchAllHubData();
+});
 </script>
 
 <style scoped>

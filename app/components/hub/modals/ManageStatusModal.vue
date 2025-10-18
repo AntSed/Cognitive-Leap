@@ -1,17 +1,17 @@
 <template>
   <div class="manage-modal-content">
     <header class="modal-header">
-      <h3 class="modal-title">Manage Material: {{ material.title_translations?.en }}</h3>
+      <h3 class="modal-title">{{ t('hub.modals.manageStatus.title') }}: {{ material.title_translations?.en }}</h3>
       <button class="modal-close-button" @click="modalStore.close()">&times;</button>
     </header>
     
     <div v-if="isLoading" class="loading-state">
-      <p>Loading lesson data...</p>
+      <p>{{ t('common.loading') }}...</p>
     </div>
     
     <form v-else class="manage-form" @submit.prevent="handleSubmit">
       <div class="form-section">
-        <label for="status-select">Status</label>
+        <label for="status-select">{{ t('hub.filters.status') }}</label>
         <select id="status-select" v-model="currentStatus" class="form-input">
           <option value="draft">Draft</option>
           <option value="in_review">In Review</option>
@@ -21,7 +21,7 @@
       </div>
 
       <div class="form-section">
-        <label>Attached to Lessons</label>
+        <label>{{ t('hub.modals.manageStatus.attachedLessons') }}</label>
         
         <div class="lessons-accordion">
           <div v-for="subject in groupedLessons" :key="subject.id" class="subject-group">
@@ -42,44 +42,46 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="button secondary" @click="modalStore.close()">Cancel</button>
-        <button type="submit" class="button primary" :disabled="isSaving">
-          {{ isSaving ? 'Saving...' : 'Save Changes' }}
-        </button>
+        <button type="button" class="button secondary" @click="modalStore.close()">{{ t('common.cancel') }}</button>
+          <button type="submit" class="button primary" :disabled="isSaving">
+            {{ isSaving ? t('common.saving') : t('common.saveChanges') }}
+          </button>
       </div>
     </form>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, defineEmits } from 'vue';
-import { useSupabaseClient } from '#imports'; // Added missing import
+import { ref, onMounted, computed } from 'vue';
+import { useSupabaseClient, useI18n } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 
 const props = defineProps({
   material: { type: Object, required: true },
-  activeProgramId: { type: String, default: null }, // Corrected type to String
-  onUpdateSuccess: { type: Function, default: () => {} } // Corrected type to Function
+  activeProgramId: { type: String, default: null },
+  // Принимаем новый "набор инструментов"
+  updateTools: { type: Object, required: true }
 });
-const emit = defineEmits(['update-success']);
+
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
+const { t } = useI18n();
 
 // --- STATE ---
 const isLoading = ref(true);
 const isSaving = ref(false);
 const currentStatus = ref(props.material.status);
 const allLessons = ref([]);
-const attachedLessonIds = ref([]);
+const attachedLessonIds = ref(new Set()); // Используем Set для производительности
+const initialAttachedLessonIds = ref(new Set()); // Сохраняем начальное состояние
 const expandedSubjects = ref(new Set());
 
-// --- LOGIC ---
+// --- COMPUTED ---
 const groupedLessons = computed(() => {
   const groups = {};
   if (!allLessons.value) return [];
   
   allLessons.value.forEach(lesson => {
-    // Ensure lesson.subjects exists and is not null
     const subject = lesson.subjects;
     if (!subject) return;
 
@@ -91,10 +93,10 @@ const groupedLessons = computed(() => {
     groups[subjectId].lessons.push(lesson);
   });
 
-  const sortedGroups = Object.values(groups);
-  sortedGroups.sort((a, b) => a.name.localeCompare(b.name));
-  return sortedGroups;
+  return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 });
+
+// --- METHODS ---
 
 const toggleSubject = (subjectId) => {
   if (expandedSubjects.value.has(subjectId)) {
@@ -107,42 +109,62 @@ const toggleSubject = (subjectId) => {
 const handleSubmit = async () => {
   isSaving.value = true;
   try {
-    const { error: statusError } = await supabase
-      .from('learning_apps')
-      .update({ status: currentStatus.value })
-      .eq('id', props.material.id);
-    if (statusError) throw statusError;
+    const promises = [];
 
-    const { error: deleteError } = await supabase
-      .from('lesson_materials')
-      .delete()
-      .eq('material_id', props.material.id);
-    if (deleteError) throw deleteError;
+    // 1. Обновляем статус, если он изменился
+    if (currentStatus.value !== props.material.status) {
+      promises.push(
+        supabase
+          .from('learning_apps')
+          .update({ status: currentStatus.value })
+          .eq('id', props.material.id)
+      );
+    }
 
-    if (attachedLessonIds.value.length > 0) {
-      // We need to re-fetch lesson positions to order correctly,
-      // but for now, a simple index-based position is a placeholder.
-      const newLinks = attachedLessonIds.value.map((lessonId, index) => ({
+    // 2. Вычисляем разницу в привязках
+    const lessonsToPin = [...attachedLessonIds.value].filter(id => !initialAttachedLessonIds.value.has(id));
+    const lessonsToUnpin = [...initialAttachedLessonIds.value].filter(id => !attachedLessonIds.value.has(id));
+
+    // 3. Создаем запросы на открепление
+    if (lessonsToUnpin.length > 0) {
+      promises.push(
+        ...lessonsToUnpin.map(lessonId => 
+          supabase.rpc('unpin_material_and_reorder', {
+            p_lesson_id: lessonId,
+            p_material_id: props.material.id
+          })
+        )
+      );
+    }
+    
+    // 4. Создаем запросы на прикрепление (логика определения position остается упрощенной)
+    if (lessonsToPin.length > 0) {
+       const newLinks = lessonsToPin.map((lessonId, index) => ({
         material_id: props.material.id,
         lesson_id: lessonId,
-        position: index + 1,
+        position: 999, // Placeholder, reordering is a separate task
       }));
-      const { error: insertError } = await supabase
-        .from('lesson_materials')
-        .insert(newLinks);
-      if (insertError) throw insertError;
+      promises.push(supabase.from('lesson_materials').insert(newLinks));
     }
 
+    // 5. Выполняем все запросы параллельно
+    const results = await Promise.all(promises);
+    results.forEach(res => {
+      if (res.error) throw res.error;
+    });
+
+    // 6. Оптимистично обновляем счетчики, используя наши инструменты
+    lessonsToPin.forEach(lessonId => props.updateTools.increment(lessonId));
+    lessonsToUnpin.forEach(lessonId => props.updateTools.decrement(lessonId));
+    
+    // 7. Обновляем список материалов, чтобы увидеть новый статус
+    props.updateTools.refreshMaterials();
+
     modalStore.close();
-    // Use the prop function if it exists, otherwise emit
-    if (props.onUpdateSuccess) {
-        props.onUpdateSuccess();
-    } else {
-        emit('update-success');
-    }
+
   } catch (error) {
     console.error("Error saving changes:", error);
-    alert("Failed to save changes.");
+    alert(t('hub.errors.saveFailed'));
   } finally {
     isSaving.value = false;
   }
@@ -152,28 +174,29 @@ const handleSubmit = async () => {
 onMounted(async () => {
   isLoading.value = true;
   try {
-    let lessonsQuery = supabase
+    const lessonsQuery = supabase
       .from('lessons')
-      .select('id, position, topic_translations, subjects (id, name_translations)');
+      .select('id, position, topic_translations, subjects (id, name_translations)')
+      .order('position', { ascending: true }); // <<-- ДОБАВЛЕНА СОРТИРОВКА
     
-    // Apply program scope to the lessons query
     if (props.activeProgramId) {
-      lessonsQuery = lessonsQuery.eq('program_id', props.activeProgramId);
+      lessonsQuery.eq('program_id', props.activeProgramId);
     } else {
-      lessonsQuery = lessonsQuery.is('program_id', null);
+      lessonsQuery.is('program_id', null);
     }
 
-    const { data: lessonsData, error: lessonsError } = await lessonsQuery;
-    if (lessonsError) throw lessonsError;
-    allLessons.value = lessonsData;
-
-    // Fetch existing links for this material
-    const { data: linksData, error: linksError } = await supabase
-      .from('lesson_materials')
-      .select('lesson_id')
-      .eq('material_id', props.material.id);
-    if (linksError) throw linksError;
-    attachedLessonIds.value = linksData.map(link => link.lesson_id);
+    const [lessonsRes, linksRes] = await Promise.all([
+      lessonsQuery,
+      supabase.from('lesson_materials').select('lesson_id').eq('material_id', props.material.id)
+    ]);
+    
+    if (lessonsRes.error) throw lessonsRes.error;
+    if (linksRes.error) throw linksRes.error;
+    
+    allLessons.value = lessonsRes.data;
+    const linkedIds = new Set(linksRes.data.map(link => link.lesson_id));
+    attachedLessonIds.value = linkedIds;
+    initialAttachedLessonIds.value = new Set(linkedIds);
 
   } catch (error) {
     console.error("Error loading data for ManageStatusModal:", error);
