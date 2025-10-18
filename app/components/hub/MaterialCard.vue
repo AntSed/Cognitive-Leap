@@ -1,3 +1,4 @@
+// app\components\hub\MaterialCard.vue
 <template>
   <div class="material-card" :class="`status-${material.status}`">
     <EditablePosition

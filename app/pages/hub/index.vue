@@ -1,3 +1,4 @@
+// app\pages\hub\index.vue
 <template>
   <div class="hub-layout" :class="{ 'sidebar-is-open': isSidebarOpen }">
     <aside class="hub-sidebar hide-scrollbar">
@@ -161,28 +162,26 @@ import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
 import HubMaterialCard from '~/components/hub/MaterialCard.vue';
 import EditablePosition from '~/components/hub/EditablePosition.vue';
 import ModalWrapper from '~/components/ModalWrapper.vue';
-// Import the new composables
+// Logic Composables
 import { useHubSidebarLogic } from '~/composables/useHubSidebarLogic';
 import { useHubMaterialsLogic } from '~/composables/useHubMaterialsLogic';
 
-// --- COMPONENT SETUP & PAGE META ---
+// --- Page Meta & Middleware ---
 definePageMeta({ middleware: 'auth' });
 
-// --- CORE SERVICES ---
+// --- Core Services ---
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
 const { t } = useI18n();
 
-// --- PAGE-LEVEL STATE ---
+// --- Page-Level State ---
 const currentUserProfile = ref(null);
 const activeProgram = ref(null);
 const isSidebarOpen = ref(false);
-const isInlineEditing = ref(false); // Used by both sidebar and main content to disable dragging
+const isInlineEditing = ref(false); // Disables draggable when an input is focused
 
-// --- LOGIC FROM COMPOSABLES ---
-
-// Sidebar logic is now encapsulated. We pass it the active program to work with.
+// --- Logic from Composables ---
 const {
   lessons, subjects, lessonsBySubject, expandedSubjects, selectedLesson, newSubjectName,
   newLessonTopics, hoveredLesson, errorLessonId, fetchTreeData, toggleSubject,
@@ -191,23 +190,20 @@ const {
   incrementMaterialCount, decrementMaterialCount
 } = useHubSidebarLogic(activeProgram);
 
-// Materials logic is also encapsulated. We pass it the selected lesson and active program.
 const {
   materials, isLoading, searchQuery, statusFilter, typeFilter,
   displayedMaterials, fetchMaterials, handlePositionUpdate
 } = useHubMaterialsLogic(selectedLesson, activeProgram);
 
-// ИЗМЕНЕНИЕ №1: Добавляем fetchTreeData в наш набор инструментов.
-// Теперь любой дочерний компонент может обновить не только материалы, но и дерево уроков.
+// Provide child components with a toolkit to refresh parent state
 const hubUpdateTools = {
   increment: incrementMaterialCount,
   decrement: decrementMaterialCount,
   refreshMaterials: fetchMaterials,
-  refreshTree: fetchTreeData // <-- ВОТ КЛЮЧЕВОЕ ДОПОЛНЕНИЕ
+  refreshTree: fetchTreeData
 };
 
-// --- ORCHESTRATION & PAGE-SPECIFIC LOGIC ---
-
+// --- Page-Specific Methods & Computed ---
 const isProgramOwner = computed(() => {
   if (!user.value || !activeProgram.value) return false;
   return user.value.id === activeProgram.value.creator_id;
@@ -224,7 +220,11 @@ const fetchUserProfile = async () => {
 };
 
 const selectProgram = (program) => {
-  activeProgram.value = program;
+  if (activeProgram.value?.id === program?.id) return;
+  
+  selectedLesson.value = null; // Reset lesson selection before program change
+  activeProgram.value = program; // Set new program, which will trigger the watcher
+
   if (program) {
     localStorage.setItem('activeProgramId', program.id);
   } else {
@@ -241,32 +241,35 @@ const openProgramsModal = () => {
 
 const fetchAllHubData = async () => {
   isLoading.value = true;
-  // Порядок важен: сначала дерево, потом материалы, которые могут от него зависеть.
+  // Fetch tree first, then materials which might depend on the selected lesson
   await fetchTreeData();
   await fetchMaterials();
   isLoading.value = false;
 };
 
-// ИЗМЕНЕНИЕ №2: Эта функция больше не нужна, так как вся ее логика
-// теперь передается через hubUpdateTools. Удаляем ее.
-// const handleMaterialUpdate = async () => { ... };
-
+// Provide a way for child components to disable dragging globally
 provide('setInlineEditingState', (isEditing) => {
   isInlineEditing.value = isEditing;
 });
 
-// --- WATCHERS & LIFECYCLE HOOKS ---
+// --- Watchers & Lifecycle Hooks ---
+watch(
+  [activeProgram, selectedLesson], 
+  ([newProgram, newLesson], [oldProgram, oldLesson]) => {
+    // Scenario 1: The program has changed. This requires a full data reload.
+    if (newProgram?.id !== oldProgram?.id) {
+      fetchAllHubData();
+      return; // Exit to prevent the next condition from running unnecessarily
+    }
 
-watch([selectedLesson, activeProgram], (newValue, oldValue) => {
-  const oldProgramId = oldValue[1]?.id;
-  const newProgramId = newValue[1]?.id;
-
-  if (oldProgramId !== newProgramId) {
-    selectedLesson.value = null; // Reset selection if program changes
-  }
-  
-  fetchAllHubData();
-}, { deep: true });
+    // Scenario 2: The program is the same, but the lesson has changed.
+    // This only requires the materials grid to be reloaded.
+    if (newLesson?.id !== oldLesson?.id) {
+      fetchMaterials();
+    }
+  }, 
+  { deep: true }
+);
 
 onMounted(async () => {
   await fetchUserProfile();
@@ -281,7 +284,8 @@ onMounted(async () => {
         .eq('id', savedProgramId)
         .single();
       if (savedProgram) {
-        activeProgram.value = savedProgram;
+        // Setting activeProgram here triggers the watcher to fetch all data
+        activeProgram.value = savedProgram; 
         programLoaded = true;
       }
     } catch (e) {
@@ -290,11 +294,12 @@ onMounted(async () => {
     }
   }
 
+  // If no program was restored from storage (e.g., first visit),
+  // fetch the default view (e.g., central material library).
   if (!programLoaded) {
-    await fetchAllHubData();
+    fetchAllHubData();
   }
 });
-
 </script>
 
 <style scoped>
@@ -446,7 +451,7 @@ onMounted(async () => {
 .edit-btn {
   background: none; border: none; color: #9ca3af; margin-left: 0.2rem;
  cursor: pointer; border-radius: 4px;
-  display: flex; align-items: right; justify-content: right;
+  display: flex; align-items: center; justify-content: center;
 }
 .edit-btn:hover {
   background-color: #1F2937;
@@ -460,7 +465,7 @@ onMounted(async () => {
   background: none; border: none; color: #9ca3af;
   font-size: 1.5rem; line-height: 1; padding: 0 0.2rem;
   cursor: pointer; border-radius: 4px;
-  display: flex; align-items: right; justify-content: right;
+  display: flex; align-items: center; justify-content: center;
 }
 .delete-btn:hover {
   background-color: #ef4444;

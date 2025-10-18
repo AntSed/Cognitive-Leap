@@ -1,3 +1,4 @@
+// app\composables\useMaterialManagement.js
 import { useModalStore } from '~/composables/useModalStore';
 import { useSupabaseClient } from '#imports';
 import { useI18n } from 'vue-i18n';

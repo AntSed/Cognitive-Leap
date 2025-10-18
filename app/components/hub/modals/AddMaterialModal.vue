@@ -1,3 +1,4 @@
+// app\components\hub\modals\AddMaterialModal.vue
 <template>
   <div class="add-material-modal">
     <form @submit.prevent="handleSubmit" class="add-form">
@@ -104,7 +105,14 @@ import { useSupabaseClient, useSupabaseUser } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 
 const props = defineProps({
-  lessonId: { type: String, default: null }
+  lessonIds: {
+    type: Array,
+    default: () => []
+  },
+  onSuccess: {
+    type: Function,
+    required: true
+  }
 });
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
@@ -137,7 +145,6 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
 
   try {
-    // Helper to remove empty translation fields before submitting
     const cleanTranslations = (trans) => {
       return Object.entries(trans).reduce((acc, [lang, value]) => {
         if (value && value.trim()) acc[lang] = value.trim();
@@ -145,15 +152,11 @@ const handleSubmit = async () => {
       }, {});
     };
 
-    // Map the form's selectedType to the database material_type
     const materialTypeMap = {
-      'external_link': 'external_link',
-      'internal_video': 'video',
-      'upload_app': 'app',
-      'upload_presentation': 'presentation',
+      'external_link': 'external_link', 'internal_video': 'video',
+      'upload_app': 'app', 'upload_presentation': 'presentation',
     };
 
-    // Construct the core data payload for the 'learning_apps' table
     const coreMaterialData = {
       developer_id: user.value.id,
       material_type: materialTypeMap[selectedType.value],
@@ -165,35 +168,32 @@ const handleSubmit = async () => {
       status: 'draft',
     };
 
-    // Handle URL-based submissions (External and Internal Video)
     if (['external_link', 'internal_video'].includes(selectedType.value)) {
-      if (!formData.url) throw new Error('A URL is required for this material type.');
+      if (!formData.url) throw new Error('A URL is required.');
       
-      const { error } = await supabase.rpc('create_material_and_link_to_lesson', {
+      const { error } = await supabase.rpc('create_material_and_link', {
         core_data: coreMaterialData,
         link_url: formData.url,
-        lesson_uuid: props.lessonId
+        // Убедись, что эта строка на месте!
+        lesson_uuids: props.lessonIds
       });
       if (error) throw error;
-    } 
-    // Handle file-based submissions (App and Presentation)
-    else if (selectedType.value.startsWith('upload_')) {
-      if (!formData.file) throw new Error('A file is required for this material type.');
+
+    } else if (selectedType.value.startsWith('upload_')) {
+      if (!formData.file) throw new Error('A file is required.');
       
       const body = new FormData();
       body.append('file', formData.file);
       body.append('coreData', JSON.stringify(coreMaterialData));
-      if (props.lessonId) {
-        body.append('lessonId', props.lessonId);
-      }
+      body.append('lessonIds', JSON.stringify(props.lessonIds));
 
       const { data, error } = await supabase.functions.invoke('upload-and-sanitize-app', { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
     }
 
+    props.onSuccess();
     modalStore.close();
-    window.location.reload(); // Simple refresh for now to update the hub
 
   } catch (error) {
     console.error('Error submitting material:', error);

@@ -1,39 +1,42 @@
-// composables/useMaterialPlayer.js
-
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
 
+// Вспомогательная функция для проверки, является ли URL ссылкой на YouTube
+function isYouTubeUrl(url) {
+  if (!url) return false;
+  const regExp = /^(?:https?:\/\/)?(?:www\.)?(?:m\.)?(?:youtube\.com|youtu\.be)/;
+  return regExp.test(url);
+}
+
 export function useMaterialPlayer() {
   const modalStore = useModalStore();
-  const { t } = useI18n(); // Получаем функцию для перевода
+  const { t } = useI18n();
 
-  /**
-   * Определяет, какой текст должен быть на кнопке в зависимости от типа материала.
-   * @param {object} material - Объект материала.
-   * @returns {string} Локализованный текст для кнопки.
-   */
   const getButtonText = (material) => {
+    // Логика для текста кнопки остается той же
     const key = {
       'presentation': 'study',
       'video': 'watch',
       'game': 'play',
       'app': 'play'
     }[material.material_type] || 'open';
-    return t(key); // Используем i18n для перевода
+    return t(key);
   };
 
-  /**
-   * Запускает материал.
-   * @param {object} material - Объект материала, который нужно открыть.
-   */
   const playMaterial = (material) => {
-    // Список типов, которые открываются во встроенном плеере
-    const playerTypes = ['app', 'game', 'presentation', 'video'];
+    const playerTypes = ['app', 'game', 'presentation']; // Убираем 'video', так как YouTube обрабатывается отдельно
 
-    if (playerTypes.includes(material.material_type)) {
+    // Ключевая логика: проверяем, является ли материал ссылкой на YouTube
+    if (isYouTubeUrl(material.url)) {
+      // Если да, открываем наш новый специализированный плеер
+      modalStore.open('modals/YouTubePlayerModal', { material });
+
+    } else if (playerTypes.includes(material.material_type)) {
+      // Иначе, для интерактивного контента, открываем старый плеер
       modalStore.openPlayer(material);
+
     } else {
-      // Все остальные типы (например, 'article') открываются в новой вкладке
+      // Все остальное (статьи, другие ссылки) открывается в новой вкладке
       window.open(material.url, '_blank', 'noopener,noreferrer');
     }
   };

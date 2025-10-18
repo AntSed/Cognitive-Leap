@@ -1,3 +1,4 @@
+// app\components\hub\AddNewMaterialCard.vue
 <template>
   <div class="add-new-card" @click="openAddFlow">
     <div class="plus-icon">
@@ -46,16 +47,11 @@ const openAddFlow = () => {
         // Now, open the final modal, passing the lessons selected by the user
         modalStore.open('hub/modals/AddMaterialModal', {
           lessonIds: selectedIds,
-          onSuccess: () => {
-            // After adding, refresh both materials and lesson counts
-            props.updateTools.refreshMaterials();
-            // We need the full tree data to update counts
-            // A bit heavy, but ensures consistency.
-            // Let's assume we need to get fetchTreeData here.
-            // This suggests updateTools should also contain fetchTreeData.
-            // For now, we'll just refresh materials.
-            // TODO: Consider adding fetchTreeData to updateTools.
-          }
+            onSuccess: () => {
+              // Now we can refresh both, ensuring lesson counts are updated
+              props.updateTools.refreshMaterials();
+              props.updateTools.refreshTree(); 
+            }
         });
       }
     });

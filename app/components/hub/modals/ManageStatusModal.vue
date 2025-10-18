@@ -1,3 +1,4 @@
+// app\components\hub\modals\ManageStatusModal.vue
 <template>
   <div class="manage-modal-content">
     <header class="modal-header">

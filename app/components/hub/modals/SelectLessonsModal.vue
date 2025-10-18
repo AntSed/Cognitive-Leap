@@ -1,3 +1,4 @@
+// app\components\hub\modals\SelectLessonsModal.vue
 <template>
   <div class="select-lessons-modal-content">
     <header class="modal-header">

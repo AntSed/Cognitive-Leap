@@ -1,5 +1,3 @@
-// supabase/functions/upload-and-sanitize-app/index.ts
-
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import JSZip from 'https://esm.sh/jszip@3.10.1';
@@ -26,7 +24,8 @@ serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const coreDataString = formData.get('coreData') as string;
-    const lessonId = formData.get('lessonId') as string | null;
+    // FIX 1: Read 'lessonIds' (plural) which is a JSON string of an array
+    const lessonIdsString = formData.get('lessonIds') as string | null;
     
     if (!file) throw new Error("File not provided.");
     if (!coreDataString) throw new Error("Core data not provided.");
@@ -34,6 +33,7 @@ serve(async (req) => {
     const coreData = JSON.parse(coreDataString);
     const zip = await JSZip.loadAsync(file.arrayBuffer());
     
+    // ... (весь код для работы с ZIP-архивом остается без изменений) ...
     let mainHtmlFile: { relativePath: string; zipEntry: JSZip.JSZipObject } | null = null;
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
       if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.html') && !relativePath.includes('/')) {
@@ -96,40 +96,47 @@ serve(async (req) => {
 
     const finalHtmlContent = dom.serialize();
     
+    // FIX 2: Manually construct the insert payload to format 'languages' correctly
+    const materialToInsert = {
+      id: materialId,
+      developer_id: coreData.developer_id,
+      material_type: coreData.material_type,
+      title_translations: coreData.title_translations,
+      description_translations: coreData.description_translations,
+      // This formats ['en', 'es'] into '{en,es}' for Postgres
+      languages: `{${coreData.languages.join(',')}}`,
+      recommended_age_min: coreData.recommended_age_min,
+      recommended_age_max: coreData.recommended_age_max,
+      status: coreData.status,
+      url: `${storagePath}/${mainHtmlFile.relativePath}`,
+      html_content: finalHtmlContent,
+    };
 
     const { data: dbData, error: dbError } = await supabaseClient
       .from('learning_apps')
-      .insert({
-        ...coreData, 
-        id: materialId,
-        url: `${storagePath}/${mainHtmlFile.relativePath}`,
-        html_content: finalHtmlContent,
-      })
+      .insert(materialToInsert)
       .select()
       .single();
       
     if (dbError) throw dbError;
 
-    if (lessonId) {
-      const { count, error: countError } = await supabaseClient
-            .from('lesson_materials')
-            .select('*', { count: 'exact', head: true })
-            .eq('lesson_id', lessonId);
+    // FIX 3: Handle multiple lesson attachments
+    if (lessonIdsString) {
+      const lessonIds = JSON.parse(lessonIdsString);
+      if (Array.isArray(lessonIds) && lessonIds.length > 0) {
         
-      if (countError) throw countError;
-
-      const newPosition = (count ?? 0) + 1;
-
-      const { error: linkError } = await supabaseClient
+        const linksToInsert = lessonIds.map((lessonId: string) => ({
+          lesson_id: lessonId,
+          material_id: materialId,
+          position: 999, // Use a default high position
+        }));
+        
+        const { error: linkError } = await supabaseClient
             .from('lesson_materials')
-            .insert({
-                lesson_id: lessonId,
-                material_id: materialId,
-                position: newPosition
-            });
+            .insert(linksToInsert);
             
-
-      if (linkError) throw linkError;
+        if (linkError) throw linkError;
+      }
     }
 
     return new Response(JSON.stringify(dbData), {
@@ -147,12 +154,13 @@ serve(async (req) => {
 });
 
 function getMimeType(filename: string): string {
-  if (filename.endsWith('.js')) return 'application/javascript';
-  if (filename.endsWith('.css')) return 'text/css';
-  if (filename.endsWith('.png')) return 'image/png';
-  if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
-  if (filename.endsWith('.gif')) return 'image/gif';
-  if (filename.endsWith('.svg')) return 'image/svg+xml';
-  if (filename.endsWith('.html')) return 'text/html';
-  return 'application/octet-stream';
+    // ... (getMimeType function remains unchanged) ...
+    if (filename.endsWith('.js')) return 'application/javascript';
+    if (filename.endsWith('.css')) return 'text/css';
+    if (filename.endsWith('.png')) return 'image/png';
+    if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
+    if (filename.endsWith('.gif')) return 'image/gif';
+    if (filename.endsWith('.svg')) return 'image/svg+xml';
+    if (filename.endsWith('.html')) return 'text/html';
+    return 'application/octet-stream';
 }

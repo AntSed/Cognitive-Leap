@@ -1,3 +1,4 @@
+// app\components\hub\modals\EditProgramModal.vue
 <template>
   <div class="edit-program-modal">
     <header class="modal-header">

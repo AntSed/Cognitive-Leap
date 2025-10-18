@@ -1,3 +1,4 @@
+// app\components\hub\modals\ProgramsModal.vue
 <template>
   <div class="programs-modal">
     <header class="modal-header">
