@@ -1,6 +1,4 @@
-// app/composables/useHubMaterialsLogic.js
-
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useSupabaseClient } from '#imports';
 import { useI18n } from 'vue-i18n';
 
@@ -17,40 +15,26 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
   const { t } = useI18n();
 
   // --- STATE ---
-
-  /** @type {import('vue').Ref<Array<object>>} */
   const materials = ref([]);
-  
-  /** @type {import('vue').Ref<boolean>} */
   const isLoading = ref(true);
-  
-  /** @type {import('vue').Ref<Error | null>} */
   const error = ref(null);
 
   // Filter state
-  /** @type {import('vue').Ref<string>} */
   const searchQuery = ref('');
-  
-  /** @type {import('vue').Ref<string>} */
   const statusFilter = ref('');
-  
-  /** @type {import('vue').Ref<string>} */
   const typeFilter = ref('');
 
   // --- COMPUTED ---
 
   /**
-   * Prepends an "Add New" card to the materials list when a lesson is selected,
-   * allowing users to add new content to the selected lesson.
+   * Prepends an "Add New" card to the materials list.
+   * This card is now ALWAYS displayed, regardless of whether a lesson is selected.
    * @returns {Array<object>}
    */
   const displayedMaterials = computed(() => {
-    // This logic can be expanded based on user permissions in the future.
-    if (selectedLesson.value) {
-      const addNewCard = { isAddNewCard: true, id: 'add-new-sentinel' };
-      return [addNewCard, ...materials.value];
-    }
-    return materials.value;
+    const addNewCard = { isAddNewCard: true, id: 'add-new-sentinel' };
+    // The logic is now simple: always return the "Add New" card at the beginning of the array.
+    return [addNewCard, ...materials.value];
   });
 
   // --- METHODS ---
@@ -83,9 +67,6 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
 
       } else {
         // Fetch all materials from the central library.
-        // The query must be scoped to the program or be program-agnostic.
-        // NOTE: This assumes that "Show All Materials" displays materials from all programs
-        // unless a specific program-level filter is implemented.
         query = supabase.from('learning_apps').select('*');
         
         if (statusFilter.value) query = query.eq('status', statusFilter.value);
@@ -99,11 +80,11 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
       if (fetchError) throw fetchError;
 
       if (selectedLesson.value) {
-        // Unpack the nested material data and combine it with the position from the join table.
+        // Unpack the nested material data
         materials.value = data.map(item => ({
           ...item.learning_apps,
           position: item.position
-        })).filter(Boolean); // Filter out any potential nulls if a material was deleted
+        })).filter(Boolean);
       } else {
         materials.value = data;
       }
@@ -117,7 +98,7 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
   };
 
   /**
-   * Handles reordering of materials within a lesson via manual position input.
+   * Handles reordering of materials within a lesson.
    * @param {object} payload - The event payload.
    * @param {string} payload.materialId - The ID of the material being moved.
    * @param {number} payload.newPosition - The new position for the material.
@@ -134,29 +115,30 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
 
       if (rpcError) throw rpcError;
       
-      // Refresh the materials list to show the new order.
       await fetchMaterials();
 
     } catch (e) {
       console.error('Failed to reorder materials by input:', e);
       alert(t('hub.errors.reorderMaterialFailed'));
-      // Re-fetch to revert the UI to the correct state from the database.
       await fetchMaterials();
     }
   };
 
+  // Watch for filter changes and refetch materials
+  watch([searchQuery, statusFilter, typeFilter], () => {
+    fetchMaterials();
+  }, { deep: true });
+
   return {
-    // State
     materials,
     isLoading,
     error,
     searchQuery,
     statusFilter,
     typeFilter,
-    // Computed
     displayedMaterials,
-    // Methods
     fetchMaterials,
     handlePositionUpdate,
   };
 }
+

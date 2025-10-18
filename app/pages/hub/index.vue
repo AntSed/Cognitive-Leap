@@ -127,16 +127,19 @@
         >
           <template #item="{ element: material }">
             <template v-if="material.isAddNewCard">
-              <AddNewMaterialCard :lesson-id="selectedLesson?.id" />
+              <AddNewMaterialCard 
+                :selected-lesson-id="selectedLesson?.id"
+                :all-program-lessons="lessons"
+                :update-tools="hubUpdateTools"
+              />
             </template>
             <template v-else>
               <HubMaterialCard
                 :material="material"
                 :current-user="currentUserProfile"
                 :selected-lesson-id="selectedLesson?.id"
-                :on-update="handleMaterialUpdate"
-                :active-program-id="activeProgram?.id"
-                @update-position="handlePositionUpdate"
+                :all-program-lessons="lessons"
+                :update-tools="hubUpdateTools"
               />
             </template>
           </template>
@@ -154,7 +157,10 @@ import draggable from 'vuedraggable';
 import { useSupabaseUser, useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
-
+import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
+import HubMaterialCard from '~/components/hub/MaterialCard.vue';
+import EditablePosition from '~/components/hub/EditablePosition.vue';
+import ModalWrapper from '~/components/ModalWrapper.vue';
 // Import the new composables
 import { useHubSidebarLogic } from '~/composables/useHubSidebarLogic';
 import { useHubMaterialsLogic } from '~/composables/useHubMaterialsLogic';
@@ -178,10 +184,11 @@ const isInlineEditing = ref(false); // Used by both sidebar and main content to 
 
 // Sidebar logic is now encapsulated. We pass it the active program to work with.
 const {
-  subjects, lessonsBySubject, expandedSubjects, selectedLesson, newSubjectName,
+  lessons, subjects, lessonsBySubject, expandedSubjects, selectedLesson, newSubjectName,
   newLessonTopics, hoveredLesson, errorLessonId, fetchTreeData, toggleSubject,
   selectLesson, handleAddSubject, handleEditSubject, handleDeleteSubject,
-  handleAddLesson, handleEditLesson, handleDeleteLesson, handleLessonPositionUpdate, onDrop
+  handleAddLesson, handleEditLesson, handleDeleteLesson, handleLessonPositionUpdate, onDrop,
+  incrementMaterialCount, decrementMaterialCount
 } = useHubSidebarLogic(activeProgram);
 
 // Materials logic is also encapsulated. We pass it the selected lesson and active program.
@@ -190,12 +197,17 @@ const {
   displayedMaterials, fetchMaterials, handlePositionUpdate
 } = useHubMaterialsLogic(selectedLesson, activeProgram);
 
+// ИЗМЕНЕНИЕ №1: Добавляем fetchTreeData в наш набор инструментов.
+// Теперь любой дочерний компонент может обновить не только материалы, но и дерево уроков.
+const hubUpdateTools = {
+  increment: incrementMaterialCount,
+  decrement: decrementMaterialCount,
+  refreshMaterials: fetchMaterials,
+  refreshTree: fetchTreeData // <-- ВОТ КЛЮЧЕВОЕ ДОПОЛНЕНИЕ
+};
+
 // --- ORCHESTRATION & PAGE-SPECIFIC LOGIC ---
 
-/**
- * Checks if the current user is the owner of the active program.
- * This remains in the main component as it's a top-level permission check.
- */
 const isProgramOwner = computed(() => {
   if (!user.value || !activeProgram.value) return false;
   return user.value.id === activeProgram.value.creator_id;
@@ -227,34 +239,24 @@ const openProgramsModal = () => {
   });
 };
 
-/**
- * A central function to refresh all data for the hub.
- * It's orchestrated here in the parent component.
- */
 const fetchAllHubData = async () => {
   isLoading.value = true;
+  // Порядок важен: сначала дерево, потом материалы, которые могут от него зависеть.
   await fetchTreeData();
   await fetchMaterials();
   isLoading.value = false;
 };
 
-/**
- * A central update handler passed down to child components.
- * Ensures both the materials grid and the sidebar's lesson counts are refreshed.
- */
-const handleMaterialUpdate = async () => {
-  await fetchMaterials();
-  await fetchTreeData();
-};
+// ИЗМЕНЕНИЕ №2: Эта функция больше не нужна, так как вся ее логика
+// теперь передается через hubUpdateTools. Удаляем ее.
+// const handleMaterialUpdate = async () => { ... };
 
-// Provides a way for child components (like InlineEditor) to disable drag-and-drop globally.
 provide('setInlineEditingState', (isEditing) => {
   isInlineEditing.value = isEditing;
 });
 
 // --- WATCHERS & LIFECYCLE HOOKS ---
 
-// The main watcher that triggers a data refresh when the context (lesson or program) changes.
 watch([selectedLesson, activeProgram], (newValue, oldValue) => {
   const oldProgramId = oldValue[1]?.id;
   const newProgramId = newValue[1]?.id;
@@ -269,6 +271,7 @@ watch([selectedLesson, activeProgram], (newValue, oldValue) => {
 onMounted(async () => {
   await fetchUserProfile();
   const savedProgramId = localStorage.getItem('activeProgramId');
+  let programLoaded = false;
 
   if (savedProgramId) {
     try {
@@ -278,8 +281,8 @@ onMounted(async () => {
         .eq('id', savedProgramId)
         .single();
       if (savedProgram) {
-        // Устанавливаем программу, но не ждем реакции watch
         activeProgram.value = savedProgram;
+        programLoaded = true;
       }
     } catch (e) {
       console.error('Failed to restore active program, defaulting.', e);
@@ -287,9 +290,11 @@ onMounted(async () => {
     }
   }
 
-  // Гарантированно запускаем полную загрузку данных ПОСЛЕ всех манипуляций
-  await fetchAllHubData();
+  if (!programLoaded) {
+    await fetchAllHubData();
+  }
 });
+
 </script>
 
 <style scoped>

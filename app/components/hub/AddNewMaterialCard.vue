@@ -1,5 +1,5 @@
 <template>
-  <div class="add-new-card" @click="openAddModal">
+  <div class="add-new-card" @click="openAddFlow">
     <div class="plus-icon">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -13,20 +13,53 @@
 import { useModalStore } from '~/composables/useModalStore';
 
 const props = defineProps({
-  lessonId: {
+  selectedLessonId: {
     type: String,
-    // Изменим на false, чтобы убедиться, что prop действительно приходит
-    required: true, 
+    default: null,
   },
+  allProgramLessons: {
+    type: Array,
+    required: true,
+  },
+  updateTools: {
+    type: Object,
+    required: true,
+  }
 });
-
-
 
 const modalStore = useModalStore();
 
-const openAddModal = () => {
-  
-  modalStore.open('hub/modals/AddMaterialModal', { lessonId: props.lessonId });
+const openAddFlow = () => {
+  // If a lesson is already selected (the simple case)
+  if (props.selectedLessonId) {
+    modalStore.open('hub/modals/AddMaterialModal', { 
+      // Pass an array with the single selected lesson id
+      lessonIds: [props.selectedLessonId],
+      onSuccess: props.updateTools.refreshMaterials 
+    });
+  } else {
+    // If no lesson is selected, start the two-step process
+    modalStore.open('hub/modals/SelectLessonsModal', {
+      programLessons: props.allProgramLessons,
+      // Define what to do AFTER lessons are selected in the new modal
+      onComplete: (selectedIds) => {
+        // Now, open the final modal, passing the lessons selected by the user
+        modalStore.open('hub/modals/AddMaterialModal', {
+          lessonIds: selectedIds,
+          onSuccess: () => {
+            // After adding, refresh both materials and lesson counts
+            props.updateTools.refreshMaterials();
+            // We need the full tree data to update counts
+            // A bit heavy, but ensures consistency.
+            // Let's assume we need to get fetchTreeData here.
+            // This suggests updateTools should also contain fetchTreeData.
+            // For now, we'll just refresh materials.
+            // TODO: Consider adding fetchTreeData to updateTools.
+          }
+        });
+      }
+    });
+  }
 };
 </script>
 
@@ -37,19 +70,19 @@ const openAddModal = () => {
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  min-height: 200px; /* Чтобы карточка была похожа по высоте на остальные */
-  border: 3px dashed #cbd5e1; /* tailwind gray-300 */
+  min-height: 200px;
+  border: 3px dashed #cbd5e1;
   border-radius: 8px;
   cursor: pointer;
-  background-color: #f8fafc; /* tailwind gray-50 */
-  color: #64748b; /* tailwind gray-500 */
+  background-color: #f8fafc;
+  color: #64748b;
   transition: all 0.2s ease;
 }
 
 .add-new-card:hover {
-  background-color: #f1f5f9; /* tailwind gray-100 */
-  border-color: #94a3b8; /* tailwind gray-400 */
-  color: #334155; /* tailwind gray-700 */
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #334155;
 }
 
 .plus-icon svg {

@@ -58,8 +58,9 @@ import { useModalStore } from '~/composables/useModalStore';
 
 const props = defineProps({
   material: { type: Object, required: true },
-  activeProgramId: { type: String, default: null },
-  // Принимаем новый "набор инструментов"
+  // Получаем готовый список уроков
+  programLessons: { type: Array, required: true },
+  // Получаем рабочий объект с инструментами
   updateTools: { type: Object, required: true }
 });
 
@@ -68,20 +69,18 @@ const modalStore = useModalStore();
 const { t } = useI18n();
 
 // --- STATE ---
-const isLoading = ref(true);
+const isLoading = ref(true); // Теперь загрузка будет очень быстрой
 const isSaving = ref(false);
 const currentStatus = ref(props.material.status);
-const allLessons = ref([]);
-const attachedLessonIds = ref(new Set()); // Используем Set для производительности
-const initialAttachedLessonIds = ref(new Set()); // Сохраняем начальное состояние
+const attachedLessonIds = ref(new Set());
+const initialAttachedLessonIds = ref(new Set());
 const expandedSubjects = ref(new Set());
 
 // --- COMPUTED ---
 const groupedLessons = computed(() => {
   const groups = {};
-  if (!allLessons.value) return [];
-  
-  allLessons.value.forEach(lesson => {
+  // Работаем с данными из пропсов, а не с `allLessons.value`
+  props.programLessons.forEach(lesson => {
     const subject = lesson.subjects;
     if (!subject) return;
 
@@ -92,11 +91,13 @@ const groupedLessons = computed(() => {
     }
     groups[subjectId].lessons.push(lesson);
   });
-
+  // Сортировка по имени, как и раньше
   return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 });
 
 // --- METHODS ---
+// toggleSubject и handleSubmit остаются БЕЗ ИЗМЕНЕНИЙ.
+// Теперь handleSubmit будет работать, т.к. props.updateTools определен.
 
 const toggleSubject = (subjectId) => {
   if (expandedSubjects.value.has(subjectId)) {
@@ -105,7 +106,6 @@ const toggleSubject = (subjectId) => {
     expandedSubjects.value.add(subjectId);
   }
 };
-
 const handleSubmit = async () => {
   isSaving.value = true;
   try {
@@ -174,32 +174,21 @@ const handleSubmit = async () => {
 onMounted(async () => {
   isLoading.value = true;
   try {
-    const lessonsQuery = supabase
-      .from('lessons')
-      .select('id, position, topic_translations, subjects (id, name_translations)')
-      .order('position', { ascending: true }); // <<-- ДОБАВЛЕНА СОРТИРОВКА
+    // УБИРАЕМ ЗАПРОС ЗА УРОКАМИ!
+    // Просто запрашиваем связи для текущего материала
+    const { data: links, error } = await supabase
+      .from('lesson_materials')
+      .select('lesson_id')
+      .eq('material_id', props.material.id);
+      
+    if (error) throw error;
     
-    if (props.activeProgramId) {
-      lessonsQuery.eq('program_id', props.activeProgramId);
-    } else {
-      lessonsQuery.is('program_id', null);
-    }
-
-    const [lessonsRes, linksRes] = await Promise.all([
-      lessonsQuery,
-      supabase.from('lesson_materials').select('lesson_id').eq('material_id', props.material.id)
-    ]);
-    
-    if (lessonsRes.error) throw lessonsRes.error;
-    if (linksRes.error) throw linksRes.error;
-    
-    allLessons.value = lessonsRes.data;
-    const linkedIds = new Set(linksRes.data.map(link => link.lesson_id));
+    const linkedIds = new Set(links.map(link => link.lesson_id));
     attachedLessonIds.value = linkedIds;
     initialAttachedLessonIds.value = new Set(linkedIds);
 
   } catch (error) {
-    console.error("Error loading data for ManageStatusModal:", error);
+    console.error("Error loading links for ManageStatusModal:", error);
   } finally {
     isLoading.value = false;
   }
