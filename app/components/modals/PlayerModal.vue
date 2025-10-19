@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'; // Добавили nextTick
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
 import { useResizeObserver } from '@vueuse/core';
 import { useGesture } from '@vueuse/gesture';
@@ -54,8 +54,9 @@ const iframeRef = ref(null);
 const iframeSrc = ref('');
 const isFullscreen = ref(false);
 const isTouchDevice = ref(false);
+let initialWindowHeight = 0; // Для хранения начальной высоты окна
 
-// ... computed-свойства остаются без изменений ...
+// ... (все computed-свойства и watch для iframeSrc остаются без изменений) ...
 const isInteractive = computed(() => {
   const interactiveTypes = ['app', 'game', 'presentation'];
   return interactiveTypes.includes(props.material.material_type);
@@ -71,7 +72,6 @@ const viewportStyle = computed(() => ({
   willChange: 'transform',
 }));
 
-// ... watch для iframe остается без изменений ...
 watch(() => props.material, (newMaterial) => {
   const oldSrc = iframeSrc.value;
   if (oldSrc && oldSrc.startsWith('blob:')) {
@@ -86,7 +86,6 @@ watch(() => props.material, (newMaterial) => {
   }
 }, { immediate: true, deep: true });
 
-// ИЗМЕНЕНИЕ 1: Обновляем логику ресайза
 useResizeObserver(scrollerRef, (entries) => {
   if (!isInteractive.value) return;
   const entry = entries[0];
@@ -94,30 +93,73 @@ useResizeObserver(scrollerRef, (entries) => {
   if (containerWidth > 0 && containerHeight > 0) {
     const scaleX = containerWidth / nativeWidth.value;
     const scaleY = containerHeight / nativeHeight.value;
-    
-    // РЕШЕНИЕ 2: Добавляем 10% к масштабу для "воздуха"
-    const PADDING_SCALE_FACTOR = 1.1; 
-    autoScale.value = Math.min(scaleX, scaleY) * PADDING_SCALE_FACTOR;
-
-    // РЕШЕНИЕ 3: Сбрасываем ручной зум при ресайзе/повороте
+    autoScale.value = Math.min(scaleX, scaleY);
     manualZoomLevel.value = 1.0; 
   }
 });
 
-// ИЗМЕНЕНИЕ 2: Добавляем watch для принудительного центрирования
 watch(autoScale, async () => {
-  // Ждем, пока Vue обновит DOM после изменения масштаба
   await nextTick();
   const scroller = scrollerRef.value;
   if (scroller) {
-    // РЕШЕНИЕ 1: Программно выставляем скролл в центр
-    // Это решает проблему "уехавшего" контента при загрузке и повороте
     scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
     scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
   }
 });
 
-// ... остальная часть скрипта (useGesture, onMounted, методы) остается без изменений ...
+// --- НАЧАЛО НОВОЙ ЛОГИКИ ДЛЯ КЛАВИАТУРЫ ---
+
+const handleResizeForKeyboard = () => {
+  const scroller = scrollerRef.value;
+  const iframe = iframeRef.value;
+  if (!scroller || !iframe || document.activeElement !== iframe) {
+    return; // Выходим, если событие не связано с нашим iframe
+  }
+
+  const KEYBOARD_THRESHOLD = 150; // Порог в пикселях, чтобы считать, что это клавиатура
+  const currentWindowHeight = window.innerHeight;
+
+  // Клавиатура появилась
+  if (initialWindowHeight - currentWindowHeight > KEYBOARD_THRESHOLD) {
+    // Прокручиваем вниз, чтобы показать нижнюю часть контента
+    scroller.scrollTop = scroller.scrollHeight * 0.7;
+  } 
+  // Клавиатура исчезла
+  else if (currentWindowHeight > initialWindowHeight - 5) { // с небольшим допуском
+    // Возвращаем скролл в центр
+    scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
+  }
+  
+  initialWindowHeight = currentWindowHeight;
+};
+
+onMounted(() => {
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  initialWindowHeight = window.innerHeight;
+
+  if ('virtualKeyboard' in navigator) {
+    // Современный способ: клавиатура поверх контента
+    navigator.virtualKeyboard.overlaysContent = true;
+  } else {
+    // Эвристика для старых браузеров
+    window.addEventListener('resize', handleResizeForKeyboard);
+  }
+});
+
+onUnmounted(() => {
+  if (iframeSrc.value.startsWith('blob:')) { URL.revokeObjectURL(iframeSrc.value); }
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
+
+  if ('virtualKeyboard' in navigator) {
+    navigator.virtualKeyboard.overlaysContent = false;
+  } else {
+    // Не забываем удалить наш обработчик
+    window.removeEventListener('resize', handleResizeForKeyboard);
+  }
+});
+// --- КОНЕЦ НОВОЙ ЛОГИКИ ДЛЯ КЛАВИАТУРЫ ---
+
 let initialZoomOnPinch = 1.0;
 useGesture({
   onPinchStart: () => { initialZoomOnPinch = manualZoomLevel.value; },
@@ -129,15 +171,6 @@ useGesture({
 });
 
 const onFullscreenChange = () => { isFullscreen.value = !!document.fullscreenElement; };
-onMounted(() => {
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-});
-onUnmounted(() => {
-  if (iframeSrc.value.startsWith('blob:')) { URL.revokeObjectURL(iframeSrc.value); }
-  document.removeEventListener('fullscreenchange', onFullscreenChange);
-});
-
 const zoomIn = () => manualZoomLevel.value = Math.min(4.0, manualZoomLevel.value + 0.2);
 const zoomOut = () => manualZoomLevel.value = Math.max(0.3, manualZoomLevel.value - 0.2);
 const closeOnOverlayClick = (event) => { if (event.target === event.currentTarget) { modalStore.close(); } };
@@ -232,7 +265,7 @@ const toggleFullscreen = async () => {
   height: 100%;
   display: grid;
   place-items: center;
-  overflow: auto;
+  overflow: hidden; 
   cursor: grab;
 }
 .player-scroller:active {
