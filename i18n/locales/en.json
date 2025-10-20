@@ -165,7 +165,7 @@
     "noMapsFound": "No saved maps found."
   },
   "defaultMap": {
-    "welcomeNode": "Welcome! Click a node to edit.",
+    "welcomeNode": "Welcome!",
     "name": "My Mind Map"
   },
   "notifications": {

@@ -290,4 +290,12 @@ const toggleFullscreen = async () => {
   /* Мы больше не управляем transform, браузер сам растягивает scroller */
   /* Но можно добавить специфичные стили при необходимости */
 }
+.player-scroller {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden; /* ИЗМЕНЕНИЕ: Запрещаем полосы прокрутки */
+  cursor: grab;
+}
 </style>

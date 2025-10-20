@@ -161,7 +161,7 @@
     "noMapsFound": "No se encontraron mapas guardados."
   },
   "defaultMap": {
-    "welcomeNode": "¡Bienvenido! Haz clic en un nodo para editarlo.",
+    "welcomeNode": "¡Bienvenido!",
     "name": "Mi Mapa Mental"
   },
   "notifications": {
