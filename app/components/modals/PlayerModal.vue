@@ -22,13 +22,8 @@
             <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"></path></svg>
           </button>
 
-          <div class="separator"></div>
-
           <button @click="zoomOut" title="Zoom Out">-</button>
-          <span>{{ (manualZoomLevel * 100).toFixed(0) }}%</span>
           <button @click="zoomIn" title="Zoom In">+</button>
-
-          <div class="separator"></div>
 
           <button v-if="isTouchDevice" @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Native Fullscreen & Rotate'">
             <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
@@ -199,6 +194,18 @@ onUnmounted(() => {
   width: 24px; 
   height: 24px; 
 }
+
+/* НОВЫЙ КОНТЕЙНЕР, который будет уходить в фуллскрин */
+.fullscreen-wrapper {
+  position: relative; /* Чтобы хедер позиционировался относительно него */
+  width: 100%;
+  height: 100%;
+  display: flex; /* Используем flex для простоты */
+  align-items: center;
+  justify-content: center;
+}
+
+/* Хедер теперь позиционируется абсолютно внутри fullscreen-wrapper */
 .player-header {
   position: absolute;
   top: 0;
@@ -217,21 +224,22 @@ onUnmounted(() => {
 }
 .player-header h3 {
   font-weight: 600;
-  margin-right: auto; /* Заголовок занимает все свободное место слева */
+  margin-right: auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .player-controls {
   display: flex;
   align-items: center;
-  gap: .5rem; /* Уменьшаем отступы */
+  gap: .5rem;
   font-weight: 500;
-  flex-shrink: 0; /* Панель не будет сжиматься */
+  flex-shrink: 0;
   margin-left: 1rem;
 }
 .player-controls button {
-  width: 32px; /* Увеличиваем размер кнопок для удобства */
+  width: 32px;
   height: 32px;
   border-radius: 50%;
   background-color: rgba(63,63,70,.8);
@@ -246,12 +254,14 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
 }
+
 .separator {
   width: 1px;
   height: 20px;
   background-color: rgba(255, 255, 255, 0.2);
   margin: 0 0.5rem;
 }
+
 .close-button {
   background: none;
   border: none;
@@ -262,16 +272,20 @@ onUnmounted(() => {
   margin-left: 1.5rem;
   padding: 0;
 }
+
 .player-modal-overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0,0,0,.9);
   z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Убираем flex-свойства отсюда, они теперь в .fullscreen-wrapper */
 }
+
+/* Скроллер теперь занимает все пространство своего родителя (.fullscreen-wrapper) */
 .player-scroller {
+  position: absolute;
+  inset: 0;
+  z-index: 1; 
   width: 100%;
   height: 100%;
   display: grid;
@@ -283,8 +297,10 @@ onUnmounted(() => {
 .player-scroller:active {
   cursor: grabbing;
 }
+
 .player-viewport {
   position: relative;
+  z-index: 1;
   background-color: #000;
   transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   flex-shrink: 0;
@@ -296,5 +312,15 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+/* Дополнительное правило для медиа-запросов */
+@media (max-width: 480px) {
+  .player-controls {
+    gap: 0.25rem;
+  }
+  .separator {
+    margin: 0 0.25rem;
+  }
 }
 </style>
