@@ -6,7 +6,6 @@
     <div ref="scrollerRef" class="player-scroller" @click.stop>
       
       <header class="player-header">
-        <h3>{{ material.title_translations?.en || 'Player' }}</h3>
         <div class="player-controls">
           
           <button @click="pan('left')" title="Pan Left">
@@ -25,7 +24,7 @@
           <button @click="zoomOut" title="Zoom Out">-</button>
           <button @click="zoomIn" title="Zoom In">+</button>
 
-          <button v-if="isTouchDevice" @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Native Fullscreen & Rotate'">
+          <button @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Native Fullscreen & Rotate'">
             <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
             <svg v-else class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg>
           </button>
@@ -195,17 +194,15 @@ onUnmounted(() => {
   height: 24px; 
 }
 
-/* НОВЫЙ КОНТЕЙНЕР, который будет уходить в фуллскрин */
 .fullscreen-wrapper {
-  position: relative; /* Чтобы хедер позиционировался относительно него */
+  position: relative;
   width: 100%;
   height: 100%;
-  display: flex; /* Используем flex для простоты */
+  display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Хедер теперь позиционируется абсолютно внутри fullscreen-wrapper */
 .player-header {
   position: absolute;
   top: 0;
@@ -214,6 +211,7 @@ onUnmounted(() => {
   z-index: 10;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   padding: .75rem 1.5rem;
   color: #e4e4e7;
   background: linear-gradient(to bottom, rgba(0,0,0,.6), transparent);
@@ -222,13 +220,7 @@ onUnmounted(() => {
 .player-header > * {
   pointer-events: auto;
 }
-.player-header h3 {
-  font-weight: 600;
-  margin-right: auto;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
 
 .player-controls {
   display: flex;
@@ -278,14 +270,12 @@ onUnmounted(() => {
   inset: 0;
   background-color: rgba(0,0,0,.9);
   z-index: 2000;
-  /* Убираем flex-свойства отсюда, они теперь в .fullscreen-wrapper */
 }
 
-/* Скроллер теперь занимает все пространство своего родителя (.fullscreen-wrapper) */
 .player-scroller {
   position: absolute;
   inset: 0;
-  z-index: 1; 
+  z-index: 1;
   width: 100%;
   height: 100%;
   display: grid;
@@ -314,7 +304,6 @@ onUnmounted(() => {
   border: 0;
 }
 
-/* Дополнительное правило для медиа-запросов */
 @media (max-width: 480px) {
   .player-controls {
     gap: 0.25rem;
