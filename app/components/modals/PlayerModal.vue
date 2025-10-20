@@ -1,20 +1,43 @@
 <template>
-  <div class="player-modal-overlay" @click="closeOnOverlayClick">
-    <header class="player-header">
-      <h3>{{ material.title_translations?.en || 'Player' }}</h3>
-      <div class="player-controls">
-        <button @click="zoomOut" title="Zoom Out">-</button>
-        <span>{{ (manualZoomLevel * 100).toFixed(0) }}%</span>
-        <button @click="zoomIn" title="Zoom In">+</button>
-        <button v-if="isTouchDevice" @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen & Rotate'">
-          <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
-          <svg v-else class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg>
-        </button>
-      </div>
-      <button class="close-button" @click="modalStore.close()">×</button>
-    </header>
-    
+  <div
+    class="player-modal-overlay"
+    @click="closeOnOverlayClick"
+  >
     <div ref="scrollerRef" class="player-scroller" @click.stop>
+      
+      <header class="player-header">
+        <h3>{{ material.title_translations?.en || 'Player' }}</h3>
+        <div class="player-controls">
+          
+          <button @click="pan('left')" title="Pan Left">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"></path></svg>
+          </button>
+          <button @click="pan('up')" title="Pan Up">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8l-6 6h12z"></path></svg>
+          </button>
+          <button @click="pan('down')" title="Pan Down">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-6-6h12z"></path></svg>
+          </button>
+          <button @click="pan('right')" title="Pan Right">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"></path></svg>
+          </button>
+
+          <div class="separator"></div>
+
+          <button @click="zoomOut" title="Zoom Out">-</button>
+          <span>{{ (manualZoomLevel * 100).toFixed(0) }}%</span>
+          <button @click="zoomIn" title="Zoom In">+</button>
+
+          <div class="separator"></div>
+
+          <button v-if="isTouchDevice" @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Native Fullscreen & Rotate'">
+            <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
+            <svg v-else class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg>
+          </button>
+        </div>
+        <button class="close-button" @click="modalStore.close()">×</button>
+      </header>
+      
       <div 
         ref="viewportRef"
         class="player-viewport" 
@@ -33,7 +56,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
@@ -54,9 +76,11 @@ const iframeRef = ref(null);
 const iframeSrc = ref('');
 const isFullscreen = ref(false);
 const isTouchDevice = ref(false);
-let initialWindowHeight = 0; // Для хранения начальной высоты окна
 
-// ... (все computed-свойства и watch для iframeSrc остаются без изменений) ...
+// НОВЫЕ REFS для хранения смещения при панорамировании
+const panX = ref(0);
+const panY = ref(0);
+
 const isInteractive = computed(() => {
   const interactiveTypes = ['app', 'game', 'presentation'];
   return interactiveTypes.includes(props.material.material_type);
@@ -64,10 +88,12 @@ const isInteractive = computed(() => {
 const nativeWidth = computed(() => props.material.player_options?.width || 1280);
 const nativeHeight = computed(() => props.material.player_options?.height || 720);
 const combinedScale = computed(() => autoScale.value * manualZoomLevel.value);
+
+// ИЗМЕНЕНИЕ: Добавляем смещение (translate) в transform
 const viewportStyle = computed(() => ({
   width: `${nativeWidth.value}px`,
   height: `${nativeHeight.value}px`,
-  transform: `scale(${combinedScale.value})`,
+  transform: `translate(${panX.value}px, ${panY.value}px) scale(${combinedScale.value})`,
   transformOrigin: 'center',
   willChange: 'transform',
 }));
@@ -100,65 +126,16 @@ useResizeObserver(scrollerRef, (entries) => {
 
 watch(autoScale, async () => {
   await nextTick();
+  // При ресайзе сбрасываем панораму в центр
+  panX.value = 0;
+  panY.value = 0;
+  
   const scroller = scrollerRef.value;
   if (scroller) {
     scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
     scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
   }
 });
-
-// --- НАЧАЛО НОВОЙ ЛОГИКИ ДЛЯ КЛАВИАТУРЫ ---
-
-const handleResizeForKeyboard = () => {
-  const scroller = scrollerRef.value;
-  const iframe = iframeRef.value;
-  if (!scroller || !iframe || document.activeElement !== iframe) {
-    return; // Выходим, если событие не связано с нашим iframe
-  }
-
-  const KEYBOARD_THRESHOLD = 150; // Порог в пикселях, чтобы считать, что это клавиатура
-  const currentWindowHeight = window.innerHeight;
-
-  // Клавиатура появилась
-  if (initialWindowHeight - currentWindowHeight > KEYBOARD_THRESHOLD) {
-    // Прокручиваем вниз, чтобы показать нижнюю часть контента
-    scroller.scrollTop = scroller.scrollHeight * 0.7;
-  } 
-  // Клавиатура исчезла
-  else if (currentWindowHeight > initialWindowHeight - 5) { // с небольшим допуском
-    // Возвращаем скролл в центр
-    scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
-  }
-  
-  initialWindowHeight = currentWindowHeight;
-};
-
-onMounted(() => {
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  initialWindowHeight = window.innerHeight;
-
-  if ('virtualKeyboard' in navigator) {
-    // Современный способ: клавиатура поверх контента
-    navigator.virtualKeyboard.overlaysContent = true;
-  } else {
-    // Эвристика для старых браузеров
-    window.addEventListener('resize', handleResizeForKeyboard);
-  }
-});
-
-onUnmounted(() => {
-  if (iframeSrc.value.startsWith('blob:')) { URL.revokeObjectURL(iframeSrc.value); }
-  document.removeEventListener('fullscreenchange', onFullscreenChange);
-
-  if ('virtualKeyboard' in navigator) {
-    navigator.virtualKeyboard.overlaysContent = false;
-  } else {
-    // Не забываем удалить наш обработчик
-    window.removeEventListener('resize', handleResizeForKeyboard);
-  }
-});
-// --- КОНЕЦ НОВОЙ ЛОГИКИ ДЛЯ КЛАВИАТУРЫ ---
 
 let initialZoomOnPinch = 1.0;
 useGesture({
@@ -169,6 +146,18 @@ useGesture({
 }, { 
   target: scrollerRef,
 });
+
+// ИЗМЕНЕНИЕ: Полностью переписанная функция панорамирования
+const pan = (direction) => {
+  const panStep = 100; // Расстояние для панорамирования в пикселях
+
+  switch (direction) {
+    case 'up':    panY.value -= panStep; break;
+    case 'down':  panY.value += panStep; break;
+    case 'left':  panX.value -= panStep; break;
+    case 'right': panX.value += panStep; break;
+  }
+};
 
 const onFullscreenChange = () => { isFullscreen.value = !!document.fullscreenElement; };
 const zoomIn = () => manualZoomLevel.value = Math.min(4.0, manualZoomLevel.value + 0.2);
@@ -193,6 +182,16 @@ const toggleFullscreen = async () => {
     }
   }
 };
+
+onMounted(() => {
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+});
+
+onUnmounted(() => {
+  if (iframeSrc.value.startsWith('blob:')) { URL.revokeObjectURL(iframeSrc.value); }
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
+});
 </script>
 
 <style scoped>
@@ -205,30 +204,35 @@ const toggleFullscreen = async () => {
   top: 0;
   left: 0;
   width: 100%;
+  z-index: 10;
   display: flex;
   align-items: center;
   padding: .75rem 1.5rem;
   color: #e4e4e7;
-  z-index: 2001;
   background: linear-gradient(to bottom, rgba(0,0,0,.6), transparent);
-  pointer-events: none; /* Чтобы клики проходили сквозь header */
+  pointer-events: none;
 }
 .player-header > * {
-  pointer-events: auto; /* Возвращаем кликабельность для дочерних элементов */
+  pointer-events: auto;
 }
 .player-header h3 {
   font-weight: 600;
-  margin-right: auto;
+  margin-right: auto; /* Заголовок занимает все свободное место слева */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .player-controls {
   display: flex;
   align-items: center;
-  gap: .75rem;
+  gap: .5rem; /* Уменьшаем отступы */
   font-weight: 500;
+  flex-shrink: 0; /* Панель не будет сжиматься */
+  margin-left: 1rem;
 }
 .player-controls button {
-  width: 28px;
-  height: 28px;
+  width: 32px; /* Увеличиваем размер кнопок для удобства */
+  height: 32px;
   border-radius: 50%;
   background-color: rgba(63,63,70,.8);
   border: none;
@@ -237,6 +241,16 @@ const toggleFullscreen = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.player-controls .icon {
+  width: 20px;
+  height: 20px;
+}
+.separator {
+  width: 1px;
+  height: 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 0 0.5rem;
 }
 .close-button {
   background: none;
@@ -250,10 +264,7 @@ const toggleFullscreen = async () => {
 }
 .player-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0,0,0,.9);
   z-index: 2000;
   display: flex;
@@ -267,6 +278,7 @@ const toggleFullscreen = async () => {
   place-items: center;
   overflow: hidden; 
   cursor: grab;
+  touch-action: none;
 }
 .player-scroller:active {
   cursor: grabbing;
@@ -284,18 +296,5 @@ const toggleFullscreen = async () => {
   width: 100%;
   height: 100%;
   border: 0;
-}
-/* В полноэкранном режиме контент растягивается на весь экран */
-.player-scroller:fullscreen .player-viewport {
-  /* Мы больше не управляем transform, браузер сам растягивает scroller */
-  /* Но можно добавить специфичные стили при необходимости */
-}
-.player-scroller {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  overflow: hidden; /* ИЗМЕНЕНИЕ: Запрещаем полосы прокрутки */
-  cursor: grab;
 }
 </style>
