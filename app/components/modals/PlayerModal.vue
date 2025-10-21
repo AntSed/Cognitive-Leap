@@ -1,37 +1,37 @@
+// app\components\modals\PlayerModal.vue
 <template>
   <div
+    ref="playerOverlayRef" 
     class="player-modal-overlay"
     @click="closeOnOverlayClick"
   >
+    <header class="player-header">
+      <div class="player-controls">
+        <button @click="pan('left')" title="Pan Left">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"></path></svg>
+        </button>
+        <button @click="pan('up')" title="Pan Up">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8l-6 6h12z"></path></svg>
+        </button>
+        <button @click="pan('down')" title="Pan Down">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-6-6h12z"></path></svg>
+        </button>
+        <button @click="pan('right')" title="Pan Right">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"></path></svg>
+        </button>
+
+        <button @click="zoomOut" title="Zoom Out">-</button>
+        <button @click="zoomIn" title="Zoom In">+</button>
+
+        <button @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen & Rotate'">
+          <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
+          <svg v-else class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg>
+        </button>
+      </div>
+      <button class="close-button" @click="modalStore.close()">×</button>
+    </header>
+
     <div ref="scrollerRef" class="player-scroller" @click.stop>
-      
-      <header class="player-header">
-        <div class="player-controls">
-          
-          <button @click="pan('left')" title="Pan Left">
-            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"></path></svg>
-          </button>
-          <button @click="pan('up')" title="Pan Up">
-            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8l-6 6h12z"></path></svg>
-          </button>
-          <button @click="pan('down')" title="Pan Down">
-            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-6-6h12z"></path></svg>
-          </button>
-          <button @click="pan('right')" title="Pan Right">
-            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"></path></svg>
-          </button>
-
-          <button @click="zoomOut" title="Zoom Out">-</button>
-          <button @click="zoomIn" title="Zoom In">+</button>
-
-          <button @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Native Fullscreen & Rotate'">
-            <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
-            <svg v-else class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg>
-          </button>
-        </div>
-        <button class="close-button" @click="modalStore.close()">×</button>
-      </header>
-      
       <div 
         ref="viewportRef"
         class="player-viewport" 
@@ -70,11 +70,9 @@ const iframeRef = ref(null);
 const iframeSrc = ref('');
 const isFullscreen = ref(false);
 const isTouchDevice = ref(false);
-
-// НОВЫЕ REFS для хранения смещения при панорамировании
 const panX = ref(0);
 const panY = ref(0);
-
+const playerOverlayRef = ref(null);
 const isInteractive = computed(() => {
   const interactiveTypes = ['app', 'game', 'presentation'];
   return interactiveTypes.includes(props.material.material_type);
@@ -158,8 +156,10 @@ const zoomIn = () => manualZoomLevel.value = Math.min(4.0, manualZoomLevel.value
 const zoomOut = () => manualZoomLevel.value = Math.max(0.3, manualZoomLevel.value - 0.2);
 const closeOnOverlayClick = (event) => { if (event.target === event.currentTarget) { modalStore.close(); } };
 const toggleFullscreen = async () => {
-  const element = scrollerRef.value;
+  // ШАГ 3: Используем ref оверлея вместо ref скроллера
+  const element = playerOverlayRef.value; 
   if (!element) return;
+
   if (!document.fullscreenElement) {
     try {
       await element.requestFullscreen();
