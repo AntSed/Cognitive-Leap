@@ -1,7 +1,7 @@
 {
   "loading": "Cargando...",
   "tree": "Árbol",
-  "head": "Cabeza",
+  "head": "Principal",
   "profile_title": "Perfil",
   "changeLanguage": "Cambiar Idioma",
   "logout": "Cerrar Sesión",
@@ -9,10 +9,10 @@
   "signUp": "Registrarse",
   "or": "O",
   "signInWithGoogle": "Iniciar sesión con Google",
-  "invalidLogin": "Usuario o contraseña no válidos.",
+  "invalidLogin": "Usuario o contraseña inválidos.",
   "profile_saveYourProgress": "Guarda Tu Progreso",
   "profile_createAccountHint": "Crea una cuenta para guardar tus logros y acceder a todas las funciones de la plataforma.",
-  "profile_emailExistsError": "Un usuario con este correo electrónico ya está registrado. Por favor, inicia sesión.",
+  "profile_emailExistsError": "Un usuario con este correo ya está registrado. Por favor, inicia sesión.",
   "profile_avatar": "Avatar",
   "profile_style": "Estilo",
   "profile_seed": "Palabra secreta",
@@ -41,10 +41,10 @@
   "settings": "Configuración",
   "profile_addStudent": "Añadir Estudiante",
   "profile_userEmail": "Correo del Usuario",
-  "profile_studentEmailPlaceholder": "user{'@'}example.com",
+  "profile_studentEmailPlaceholder": "usuario{'@'}ejemplo.com",
   "profile_relationType": "Tipo de Relación",
   "profile_relationParent": "Padre/Madre",
-  "profile_relationTeacher": "Profesor(a)",
+  "profile_relationTeacher": "Profesor",
   "profile_sendInvite": "Enviar Invitación",
   "profile_roleAndConnections": "Rol y Conexiones",
   "loadingLesson": "Cargando lección...",
@@ -56,7 +56,7 @@
   "open": "Abrir",
   "fullName": "Nombre Completo",
   "password": "Contraseña",
-  "checkYourEmail": "Por favor, revisa tu correo electrónico para confirmar tu registro.",
+  "checkYourEmail": "Por favor, revisa tu correo para confirmar tu registro.",
   "processing_invitation": "Procesando invitación...",
   "pending": "Pendiente",
   "active": "Activo",
@@ -75,46 +75,80 @@
   "profile_setPassword": "Establecer Contraseña",
   "complete_registration": "Completar Registro",
   "processing": "Procesando",
-  "forgotPassword": "¿Olvidaste la contraseña?",
+  "forgotPassword": "¿Olvidaste tu contraseña?",
   "resetLinkSent": "Se ha enviado el enlace para restablecer la contraseña.",
-  "enterEmailForReset": "Ingresa tu correo para restablecer la contraseña.",
+  "enterEmailForReset": "Ingresa tu correo para restablecer tu contraseña.",
   "error_weak_password": "Esta contraseña es demasiado simple. Por favor, crea una más compleja.",
   "error_unknown": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
-  "about_intro_1": "Hace 70,000 años, la Revolución Cognitiva nos hizo humanos. Hoy, en la era de la IA, es hora del segundo Salto Cognitivo.",
-  "about_intro_2": "Olvídate de 11 años en un escritorio. Nuestra plataforma de juegos te permite dominar el plan de estudios escolar en 2-3 años a través de atractivos juegos 2D, así como mundos de Minecraft y Roblox.",
-  "about_body_1": "La escuela tradicional es una cinta transportadora que trata a todos por igual, matando la alegría del descubrimiento. Cognitive Leap es la alternativa. Reemplazamos la cinta transportadora con un GPS personal para el conocimiento. En lugar de clases, tenemos un mapa de 260 temas vinculados por la lógica, no por un horario. Nuestro sistema construye una ruta de aprendizaje única y rápida para cada estudiante.",
-  "about_body_2_part1": "No creamos lecciones desde cero; seleccionamos el",
+  "about_intro_1": "Hace 70,000 años, la Revolución Cognitiva nos hizo humanos. Hoy, en la era de la IA, es tiempo para el segundo Salto Cognitivo.",
+  "about_intro_2": "Olvida 11 años en un pupitre. Nuestra plataforma de juegos te permite dominar el currículo escolar en 2-3 años a través de atractivos juegos 2D, así como mundos de Minecraft y Roblox.",
+  "about_body_1": "La escuela tradicional es una cinta transportadora que trata a todos por igual, matando la alegría del descubrimiento. Cognitive Leap es la alternativa. Reemplazamos la cinta transportadora con un GPS personal para el conocimiento. En lugar de clases, tenemos un mapa de 260 temas conectados por lógica, no por un horario. Nuestro sistema construye una ruta de aprendizaje única y rápida para cada estudiante.",
+  "about_body_2_part1": "No creamos lecciones desde cero; curamos el",
   "about_body_2_part2": "de todo el mundo, desde conferencias de YouTube hasta simulaciones interactivas.",
   "about_body_2LinkText": "mejor contenido educativo",
-  "about_title": "Una invitación al Salto",
+  "about_title": "Una Invitación a Saltar",
   "about_invitation_intro": "La educación es un ecosistema, y te invitamos a construirlo con nosotros.",
-  "about_subtitle_parents": "Para los padres:",
-  "about_text_parents": "Ayúdanos a convertir el aprendizaje en una aventura emocionante encontrando el mejor contenido para desbloquear el potencial de tu hijo.",
-  "about_subtitle_educators": "Para los educadores:",
+  "about_subtitle_parents": "Para Padres:",
+  "about_text_parents": "Ayúdanos a convertir el aprendizaje en una aventura emocionante encontrando el mejor contenido para liberar el potencial de tu hijo.",
+  "about_subtitle_educators": "Para Educadores:",
   "about_text_educators_part1": "Libérate de la rutina. Deja que nuestra plataforma se encargue de lo básico para que puedas concentrarte en lo que realmente importa: ser mentor e inspirar a los estudiantes.",
   "about_text_educators_part2": "",
   "about_text_educatorsLinkText": "¡Conviértete en un curador líder en tu materia!",
-  "about_conclusion": "¡Demos juntos este salto cognitivo y construyamos la educación que nuestros hijos merecen!",
-    "profile_hubInvitation_part1": "¡Profesores y padres! Ayúdennos a mejorar Cognitive Leap añadiendo los mejores videos y materiales interactivos a ",
+  "about_conclusion": "Demos este salto cognitivo juntos y construyamos la educación que nuestros hijos merecen.",
+  "about_project": "Sobre el Proyecto",
+  "profile_identityExistsTitle": "La Cuenta Ya Existe",
+  "profile_identityExistsHint": "Parece que ya tienes una cuenta con este correo. Por favor, inicia sesión con tu contraseña o la opción 'Olvidé mi contraseña'. Después de iniciar sesión, puedes vincular tu cuenta de Google en la configuración de tu perfil.",
+  "profile_linkGoogle": "Vincular Cuenta de Google",
+  "error_linking_account": "Error al vincular la cuenta: ",
+  "profile_hubInvitation_part1": "¡Profesores y padres! Ayúdennos a mejorar Cognitive Leap añadiendo los mejores videos y materiales interactivos a ",
   "profile_hubInvitation_part2": ".",
-  "profile_hubLinkText": "nuestro Hub",
-  "about_project": "sobre el proyecto",
+  "profile_hubLinkText": "nuestro Centro",
   "common": {
+    "loading": "Cargando",
+    "creating": "Creando",
+    "saving": "Guardando",
     "cancel": "Cancelar",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "share": "Compartir",
+    "copied": "¡Copiado!",
+    "saveChanges": "Guardar Cambios"
   },
   "hub": {
+    "title": "El Hub",
+    "defaultProgram": "Programa Escolar",
+    "centralLibrary": "Todos los materiales",
+    "showingMaterialsFor": "Mostrando materiales para:",
+    "unnamedSubject": "Materia sin nombre",
+    "untitledLesson": "Lección sin título",
+    "sidebar": {
+      "showAll": "Mostrar Todos los Materiales",
+      "newSubjectPlaceholder": "Título de la nueva materia...",
+      "newLessonPlaceholder": "Tema de la nueva lección..."
+    },
+    "filters": {
+      "search": "Buscar por Título",
+      "status": "Estado",
+      "type": "Tipo",
+      "all": "Todos"
+    },
+    "card": {
+      "manageStatusTooltip": "Gestionar Estado y Adjuntos",
+      "unpinTooltip": "Desvincular de esta lección",
+      "deleteTooltip": "Eliminar material permanentemente"
+    },
     "add": {
       "chooseType": "Elige el tipo de material",
       "typeExternal": "Enlace Externo",
       "typeVideoInternal": "Video (en la app)",
       "typeApp": "Paquete de Aplicación",
       "typePresentation": "Paquete de Presentación",
-      "typeExternal_desc": "Usa esta opción si no estás seguro de que el autor apruebe el uso de su material en nuestra plataforma. El enlace se abrirá en una nueva pestaña.",
-      "typeVideoInternal_desc": "Usa esta opción si estás seguro de que el autor aprueba el uso de su material en nuestra plataforma. El video se abrirá en nuestro reproductor.",
-      "typeApp_desc": "Para contenido interactivo como juegos o simulaciones. Se requiere un archivo .zip con un archivo index.html en la raíz.",
-      "typePresentation_desc": "Para presentaciones interactivas (ej. exportadas de Genially). Se requiere un archivo .zip con un archivo index.html en la raíz.",
-      "provideSource": "Indica la fuente",
+      "typeExternal_desc": "Usa esta opción si no estás seguro de si el autor acepta el uso de su material en nuestra plataforma. El enlace se abrirá en una nueva pestaña.",
+      "typeVideoInternal_desc": "Usa esta opción si estás seguro de que el autor acepta el uso de su material en nuestra plataforma. El video se abrirá en nuestro reproductor.",
+      "typeApp_desc": "Para contenido interactivo como juegos o simulaciones. Requiere un archivo .zip con un archivo index.html en la raíz.",
+      "typePresentation_desc": "Para presentaciones interactivas (ej. exportadas de Genially). Requiere un archivo .zip con un archivo index.html en la raíz.",
+      "provideSource": "Proporciona la fuente",
       "selectedFile": "Archivo seleccionado",
       "addDetails": "Añade detalles",
       "contentLang": "Idiomas del Contenido",
@@ -128,10 +162,61 @@
         "message": "¿Estás seguro de que quieres eliminar permanentemente “{materialName}”? Esta acción no se puede deshacer."
       },
       "unpin": {
-        "title": "Confirmar Desanclaje",
-        "message": "¿Estás seguro de que quieres desanclar “{materialName}” de esta lección?"
+        "title": "Confirmar Desvinculación",
+        "message": "¿Estás seguro de que quieres desvincular “{materialName}” de esta lección?"
+      },
+      "deleteSubject": {
+        "title": "Eliminar Materia",
+        "message": "¿Estás seguro de que quieres eliminar la materia “{subjectName}”? Todas sus lecciones y enlaces a materiales serán eliminados permanentemente."
+      },
+      "deleteLesson": {
+        "title": "Eliminar Lección",
+        "message": "¿Estás seguro de que quieres eliminar la lección “{lessonName}”? Todos sus enlaces a materiales serán eliminados permanentemente."
+      },
+      "deleteProgram": {
+        "title": "Eliminar Programa",
+        "message": "¿Estás seguro de que quieres eliminar el programa “{programName}”? Esto no eliminará las materias o lecciones dentro de él, pero eliminará el programa en sí."
+      },
+      "programs": {
+        "title": "Seleccionar Programa",
+        "noPrograms": "Aún no has creado ningún programa.",
+        "createPlaceholder": "Título del nuevo programa...",
+        "createButton": "Crear Programa"
+      },
+      "manageStatus": {
+        "title": "Gestionar Estado",
+        "attachedLessons": "Lecciones Adjuntas"
       }
+    },
+    "errors": {
+      "programMissingSkin": "El programa activo no tiene una apariencia asignada. Por favor, edita el programa para asignarle una.",
+      "addSubjectFailed": "Error al añadir la materia. Por favor, inténtalo de nuevo.",
+      "deleteSubjectFailed": "Error al eliminar la materia. Por favor, inténtalo de nuevo.",
+      "addLessonFailed": "Error al añadir la lección. Por favor, inténtalo de nuevo.",
+      "deleteLessonFailed": "Error al eliminar la lección. Por favor, inténtalo de nuevo.",
+      "reorderLessonFailed": "Error al reordenar la lección. Por favor, inténtalo de nuevo.",
+      "invalidPosition": "El número de posición ingresado es inválido.",
+      "linkMaterialFailed": "Error al vincular el material a la lección.",
+      "reorderMaterialFailed": "Error al reordenar el material. Por favor, inténtalo de nuevo.",
+      "updateFieldFailed": "Error al actualizar el campo. Por favor, inténtalo de nuevo.",
+      "unpinMaterialFailed": "Error al desvincular el material. Por favor, inténtalo de nuevo.",
+      "deleteMaterialFailed": "Error al eliminar el material. Por favor, inténtalo de nuevo.",
+      "createProgramFailed": "Error al crear el programa. Por favor, inténtalo de nuevo.",
+      "deleteProgramFailed": "Error al eliminar el programa. Por favor, inténtalo de nuevo.",
+      "saveFailed": "Error al guardar los cambios. Por favor, inténtalo de nuevo."
     }
+  },
+  "statuses": {
+    "draft": "Borrador",
+    "in_review": "En Revisión",
+    "published": "Publicado",
+    "rejected": "Rechazado"
+  },
+  "types": {
+    "video": "Video",
+    "game": "Juego",
+    "presentation": "Presentación",
+    "article": "Artículo"
   },
   "ui": {
     "buttons": {
@@ -141,7 +226,7 @@
       "save": "Guardar",
       "share": "Compartir",
       "load": "Cargar",
-      "deleteMap": "Borrar Mapa",
+      "deleteMap": "Eliminar Mapa",
       "close": "Cerrar",
       "restore": "Restaurar",
       "cancel": "Cancelar",
@@ -149,11 +234,11 @@
       "copy": "Copiar",
       "ok": "OK",
       "delete": "Eliminar",
-      "unpin": "Desanclar"
+      "unpin": "Desvincular"
     },
     "tooltips": {
-      "switchToStraight": "Cambiar a líneas rectas",
-      "switchToCurved": "Cambiar a líneas curvas"
+      "switchToStraight": "Cambiar a Líneas Rectas",
+      "switchToCurved": "Cambiar a Líneas Curvas"
     }
   },
   "loadPanel": {
@@ -166,22 +251,22 @@
   },
   "notifications": {
     "success": {
-      "restored": "Los cambios no guardados han sido restaurados.",
+      "restored": "Se han restaurado los cambios no guardados.",
       "mapSaved": "¡Mapa '{name}' guardado con éxito!",
       "linkCopied": "¡Enlace para compartir copiado al portapapeles!",
-      "publicMapLoaded": "Mapa compartido '{name}' cargado. Al guardar se creará tu propia copia.",
-      "mapDeleted": "El mapa fue eliminado exitosamente."
+      "publicMapLoaded": "Se cargó el mapa compartido '{name}'. Al guardar se creará tu propia copia.",
+      "mapDeleted": "El mapa fue eliminado con éxito."
     },
     "errors": {
-      "restoreFailed": "No se pudo restaurar la sesión. Los datos podrían estar corruptos.",
+      "restoreFailed": "Error al restaurar la sesión. Los datos de respaldo podrían estar corruptos.",
       "noDataToSave": "No hay datos del mapa para guardar.",
       "saveFailed": "Error al guardar el mapa: {message}",
       "saveBeforeShare": "Por favor, guarda el mapa antes de compartir.",
-      "shareFailed": "No se pudo generar el enlace para compartir: {message}",
-      "fetchListFailed": "No se pudo cargar la lista de mapas: {message}",
+      "shareFailed": "Error al generar el enlace para compartir: {message}",
+      "fetchListFailed": "Error al cargar la lista de mapas: {message}",
       "loadFailed": "Error al cargar el mapa: {message}",
       "mapNotFound": "El mapa compartido no se encontró o ya no está disponible.",
-      "deleteFailed": "No se pudo borrar el mapa: {message}"
+      "deleteFailed": "Error al eliminar el mapa: {message}"
     },
     "info": {
       "copyManually": "Por favor, copia el enlace manualmente:"
@@ -189,12 +274,12 @@
   },
   "confirmations": {
     "restoreUnsaved": "Se encontraron cambios no guardados de una sesión anterior.",
-    "loseUnsavedChanges": "Tienes cambios sin guardar que se perderán. ¿Estás seguro de continuar?",
+    "loseUnsavedChanges": "Tienes cambios no guardados que se perderán. ¿Estás seguro de que quieres continuar?",
     "deleteMap": "¿Estás seguro de que quieres eliminar permanentemente el mapa '{name}'?",
-    "startNewMap": "Tienes cambios sin guardar que se perderán. ¿Empezar un nuevo mapa de todos modos?"
+    "startNewMap": "Tienes cambios no guardados que se perderán. ¿Empezar un nuevo mapa de todos modos?"
   },
   "prompts": {
-    "enterMapName": "Introduce un nombre para tu mapa:"
+    "enterMapName": "Ingresa un nombre para tu mapa:"
   },
   "modals": {
     "confirm": {

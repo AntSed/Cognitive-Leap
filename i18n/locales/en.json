@@ -104,10 +104,40 @@
   "profile_hubInvitation_part2": ".",
   "profile_hubLinkText": "our Hub",
   "common": {
+    "loading": "Loading",
+    "creating": "Creating",
+    "saving": "Saving",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "share": "Share",
+    "copied": "Copied!",
+    "saveChanges": "Save Changes"
   },
   "hub": {
+    "title": "The Hub",
+    "defaultProgram": "School Curriculum",
+    "centralLibrary": "All Materials:",
+    "showingMaterialsFor": "Showing materials for:",
+    "unnamedSubject": "Unnamed Subject",
+    "untitledLesson": "Untitled Lesson",
+    "sidebar": {
+      "showAll": "Show All Materials",
+      "newSubjectPlaceholder": "New subject title...",
+      "newLessonPlaceholder": "New lesson topic..."
+    },
+    "filters": {
+      "search": "Search by Title",
+      "status": "Status",
+      "type": "Type",
+      "all": "All"
+    },
+    "card": {
+      "manageStatusTooltip": "Manage Status & Attachments",
+      "unpinTooltip": "Unpin from this lesson",
+      "deleteTooltip": "Delete material permanently"
+    },
     "add": {
       "chooseType": "Choose material type",
       "typeExternal": "External Link",
@@ -134,8 +164,59 @@
       "unpin": {
         "title": "Confirm Unpin",
         "message": "Are you sure you want to unpin “{materialName}” from this lesson?"
+      },
+      "deleteSubject": {
+        "title": "Delete Subject",
+        "message": "Are you sure you want to delete the subject “{subjectName}”? All its lessons and material links will be permanently removed."
+      },
+      "deleteLesson": {
+        "title": "Delete Lesson",
+        "message": "Are you sure you want to delete the lesson “{lessonName}”? All its material links will be permanently removed."
+      },
+      "deleteProgram": {
+        "title": "Delete Program",
+        "message": "Are you sure you want to delete the program “{programName}”? This will not delete the subjects or lessons within it, but will remove the program itself."
+      },
+      "programs": {
+        "title": "Select Program",
+        "noPrograms": "You haven't created any programs yet.",
+        "createPlaceholder": "New program title...",
+        "createButton": "Create Program"
+      },
+      "manageStatus": {
+        "title": "Manage Status",
+        "attachedLessons": "Attached Lessons"
       }
+    },
+    "errors": {
+      "programMissingSkin": "The active program does not have a skin assigned. Please edit the program to assign one.",
+      "addSubjectFailed": "Failed to add subject. Please try again.",
+      "deleteSubjectFailed": "Failed to delete subject. Please try again.",
+      "addLessonFailed": "Failed to add lesson. Please try again.",
+      "deleteLessonFailed": "Failed to delete lesson. Please try again.",
+      "reorderLessonFailed": "Failed to reorder lesson. Please try again.",
+      "invalidPosition": "Invalid position number entered.",
+      "linkMaterialFailed": "Failed to link material to the lesson.",
+      "reorderMaterialFailed": "Failed to reorder material. Please try again.",
+      "updateFieldFailed": "Failed to update field. Please try again.",
+      "unpinMaterialFailed": "Failed to unpin material. Please try again.",
+      "deleteMaterialFailed": "Failed to delete material. Please try again.",
+      "createProgramFailed": "Failed to create program. Please try again.",
+      "deleteProgramFailed": "Failed to delete program. Please try again.",
+      "saveFailed": "Failed to save changes. Please try again."
     }
+  },
+  "statuses": {
+    "draft": "Draft",
+    "in_review": "In Review",
+    "published": "Published",
+    "rejected": "Rejected"
+  },
+  "types": {
+    "video": "Video",
+    "game": "Game",
+    "presentation": "Presentation",
+    "article": "Article"
   },
   "ui": {
     "buttons": {
