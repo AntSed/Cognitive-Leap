@@ -1,3 +1,4 @@
+// app/components/modals/InfoModal.vue
 <template>
   <div class="info-modal-content">
     <button class="modal-close-button" @click="close()">&times;</button>

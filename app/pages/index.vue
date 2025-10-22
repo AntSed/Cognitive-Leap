@@ -1,3 +1,4 @@
+// app/pages/index.vue
 <template>
   <div class="page-wrapper">
     <main class="main-content">
@@ -52,19 +53,17 @@
         </button>
       </div>
     </nav>
-        <ModalWrapper />
+    <QuickTip />
+   <ModalWrapper />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, watchEffect } from 'vue';
+import { ref, onMounted, onUnmounted, watch,} from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18nService } from '~/composables/useI18nService';
 
-// Мы УДАЛЯЕМ все `import ... from '~/components/...'`
-// Nuxt найдет их сам благодаря auto-imports.
-// Мы УДАЛЯЕМ все `defineAsyncComponent`.
 
 const router = useRouter();
 const route = useRoute();
@@ -90,12 +89,6 @@ const cycleLanguage = () => {
   setLocale(languages[nextIndex]);
 };
 
-watchEffect(() => {
-  if (isInitialized.value && activeComponent.value === 2 && !initialTipShown.value && modalStore.quickTip) {
-    modalStore.open('modals/InfoModal', modalStore.quickTip, { history: false });
-    initialTipShown.value = true;
-  }
-});
 
 onMounted(async () => {
   setVh();
@@ -118,8 +111,7 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
 </script>
 
 <style scoped>
-/* ФИНАЛЬНЫЕ РАБОЧИЕ СТИЛИ
-*/
+
 .page-wrapper {
   display: flex;
   flex-direction: column;
@@ -128,11 +120,11 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
 
 .main-content {
   flex-grow: 1;
-  position: relative; /* Создаем контекст для .view-container */
+  position: relative; 
 }
 
 .view-container {
-  /* Заставляем контейнер для "видов" занять всё место в main */
+
   position: absolute;
   top: 0;
   left: 0;
@@ -140,9 +132,6 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
   height: 100%;
 }
 
-/* Правила для переключения через v-show, которые мы вынесли из app.css 
-  :deep() нужен, чтобы стили применились к компонентам <Transition>
-*/
 .view-container > :deep(*) {
   position: absolute;
   top: 0;
@@ -157,8 +146,6 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
   visibility: hidden;
 }
 
-/* Оригинальные стили для навигации и оберток
-*/
 .text-page-wrapper,
 .profile-wrapper {
   overflow-y: auto;

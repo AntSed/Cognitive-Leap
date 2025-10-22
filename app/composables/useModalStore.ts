@@ -1,3 +1,4 @@
+// app/composables/useModalStore.ts
 import { defineStore } from 'pinia';
 import { markRaw, computed, ref } from 'vue';
 import type { Component } from 'vue';
@@ -17,14 +18,6 @@ interface ModalInstance {
   result?: any;
 }
 
-interface QuickTip {
-  title: string;
-  message: string;
-  buttonText?: string | null;
-  // Новые поля для управления состоянием
-  show: boolean;
-  loading: boolean;
-}
 
 const modalComponents = import.meta.glob('~/components/**/*.vue');
 let isInitialized = false;
@@ -96,31 +89,6 @@ export const useModalStore = defineStore('modal', () => {
   const openLesson = (lessonId: string) => open('modals/LessonDetails', { lessonId });
   const openPlayer = (material: Record<string, any>) => open('modals/PlayerModal', { material }, { history: false });
 
-  // --- ACTIONS (QuickTip) ---
-  
-  const setQuickTip = (tipData: { title: string; message: string; buttonText?: string | null; }) => {
-    quickTip.value = {
-      ...tipData,
-      show: true,
-      loading: false,
-    };
-  };
-  
-  const showQuickTipShell = () => {
-    quickTip.value = {
-      title: 'Pro-Tip',
-      message: '',
-      show: true,
-      loading: true,
-      buttonText: null,
-    };
-  };
-
-  const hideQuickTip = () => {
-    if (quickTip.value) {
-      quickTip.value.show = false;
-    }
-  };
 
 const initializeModalListeners = () => {
     if (isInitialized) return; // Защита от повторного вызова
@@ -155,15 +123,11 @@ const initializeModalListeners = () => {
   return {
     isOpen,
     currentStack,
-    quickTip,
     open,
     close,
     submit,
     openLesson,
     openPlayer,
-    setQuickTip,
-    showQuickTipShell,
-    hideQuickTip,
     initializeModalListeners,
   };
 });
