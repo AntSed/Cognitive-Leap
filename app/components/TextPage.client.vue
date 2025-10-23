@@ -1,5 +1,5 @@
 <template>
-  <div class="text-page-container">
+  <div class="text-page-container hide-scrollbar">
     <div class="content-wrapper">
       <section>
         <p class="intro">{{ $t('about_intro_1') }}</p>
@@ -41,14 +41,7 @@
 </template>
 
 <style scoped>
-/* :root можно было бы вынести в глобальные стили для будущего переключателя тем */
-:root {
-  --bg-color: #1a1a1a;
-  --text-color: #e0e0e0;
-  --heading-color: #ffffff;
-  --accent-color: #88a4e8;
-  --card-bg-color: #2c2c2c;
-}
+
 
 .text-page-container {
   background-color: var(--bg-color);
@@ -56,7 +49,7 @@
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: 40px 20px;
+  padding: 0 20px;
   box-sizing: border-box;
   font-family: sans-serif;
   line-height: 1.7;
@@ -65,6 +58,7 @@
 .content-wrapper {
   max-width: 800px;
   margin: 0 auto;
+  padding: 40px 0 40px 0;
 }
 
 p {

@@ -1,6 +1,7 @@
+// app/components/QuickTip.vue
 <template>
   <Transition name="tip-fade">
-    <div v-show="!isDismissed && (isLoading || tip)" class="quick-tip-overlay">
+   <div v-show="isVisible" class="quick-tip-overlay">
       <div class="quick-tip-card" ref="quickTipCardRef">
         <div v-if="isLoading" class="spinner"></div>
         <div v-else-if="tip">
@@ -14,52 +15,65 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, watch, computed, nextTick } from 'vue';
 import { useQuickTip } from '~/composables/useQuickTip';
 import { useI18n } from 'vue-i18n';
 
-const route = useRoute();
-const { tip, isLoading, fetchTip } = useQuickTip();
+// --- PROP ---
+const props = defineProps({
+  isPlayActive: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+// --- REFS and COMPOSABLES ---
+const { tip, isLoading, fetchTip } = useQuickTip(); 
 const { locale } = useI18n();
 const isDismissed = ref(false);
 const quickTipCardRef = ref(null);
 
+// --- HANDLER ---
 const handleInteractionOutside = (event) => {
-  if (quickTipCardRef.value && !quickTipCardRef.value.contains(event.target)) {
-    isDismissed.value = true;
-  }
+  if (quickTipCardRef.value && !quickTipCardRef.value.contains(event.target)) {
+    isDismissed.value = true;
+  }
 };
 
-onMounted(() => {
-  document.addEventListener('pointerdown', handleInteractionOutside);
+// --- WATCHER (Отвечает за навигацию) ---
+watch(
+  () => props.isPlayActive, 
+  (isPlayNow) => {
+    if (isPlayNow) {
+      fetchTip(locale.value);
+    }
+  },
+  {
+    immediate: false, 
+  }
+);
+
+// --- COMPUTED (Отвечает за v-show) ---
+const isVisible = computed(() => {
+  // 3. ВОЗВРАЩАЕМ 'isLoading' В ПРОВЕРКУ
+  // Подсказка видна, если ее не закрыли И (она грузится ИЛИ данные загружены)
+  return !isDismissed.value && (isLoading.value || tip.value);
 });
 
-onUnmounted(() => {
-  document.removeEventListener('pointerdown', handleInteractionOutside);
+// --- WATCH (Отвечает за слушатель "клика снаружи") ---
+// (Этот код из прошлого раза у тебя верный, не меняем)
+watch(isVisible, (isNowVisible) => {
+  if (isNowVisible) {
+    nextTick(() => {
+      document.addEventListener('pointerdown', handleInteractionOutside);
+    });
+  } else {
+    document.removeEventListener('pointerdown', handleInteractionOutside);
+  }
 });
-
-
-const hasBeenShownThisSession = () => {
-  if (typeof sessionStorage === 'undefined') return true;
-  return sessionStorage.getItem('quickTipShown') === 'true';
-};
-const markAsShownThisSession = () => {
-  if (typeof sessionStorage === 'undefined') return;
-  sessionStorage.setItem('quickTipShown', 'true');
-};
-watch(() => route.query.view, (currentView) => {
-  const isTargetPage = !currentView || currentView === 'play';
-  if (isTargetPage && !hasBeenShownThisSession()) {
-    fetchTip(locale.value);
-    markAsShownThisSession();
-  }
-}, { immediate: true });
 </script>
+
 <style scoped>
-/* Overlay container for positioning the card.
-  'position: fixed' keeps it in the same spot on the screen even when scrolling.
-*/
 .quick-tip-overlay {
   position: fixed;
   bottom: 60px;

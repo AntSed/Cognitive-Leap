@@ -22,7 +22,7 @@
           </div>
         </Transition>
 <Transition name="fade">
-  <div v-show="activeComponent === 3" class="profile-wrapper">
+  <div v-show="activeComponent === 3" class="profile-wrapper hide-scrollbar">
       <ClientOnly>
         <TheProfile />
         <template #fallback>
@@ -34,7 +34,6 @@
       </div>
       <div v-else class="component-placeholder"></div>
     </main>
-
     <nav v-if="skins.head" class="app-nav">
       <div class="nav-main-actions">
         <button @click="activeComponent = 1" :class="{ active: activeComponent === 1 }" :aria-label="$t('about_project')" :title="$t('about_project')">
@@ -53,32 +52,34 @@
         </button>
       </div>
     </nav>
-    <QuickTip />
-   <ModalWrapper />
+    <ModalWrapper />
+    <ClientOnly>
+      <QuickTip :is-play-active="activeComponent === 2" />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch,} from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18nService } from '~/composables/useI18nService';
-
 
 const router = useRouter();
 const route = useRoute();
 const { locale, setLocale } = useI18nService();
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
-const activeComponent = ref(2);
+
+const activeComponent = ref(2); 
 const skins = ref({ head: null });
-const initialTipShown = ref(false);
-const isInitialized = ref(false);
 const viewMap = { collaborate: 1, play: 2, profile: 3 };
 
 watch(activeComponent, (newVal) => {
   const viewName = Object.keys(viewMap).find(key => viewMap[key] === newVal);
-  if (viewName && route.query.view !== viewName) { router.push({ query: { view: viewName } }); }
+  if (viewName && route.query.view !== viewName) {
+    router.push({ query: { view: viewName } });
+  }
 });
 
 const setVh = () => { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); };
@@ -89,7 +90,6 @@ const cycleLanguage = () => {
   setLocale(languages[nextIndex]);
 };
 
-
 onMounted(async () => {
   setVh();
   window.addEventListener('resize', setVh);
@@ -98,40 +98,38 @@ onMounted(async () => {
     if (error) throw error;
     if (data) { skins.value.head = data.id; }
   } catch (error) { console.error("Could not fetch 'head' skin:", error); }
+  
   const viewFromUrl = route.query.view;
   if (viewFromUrl && viewMap[viewFromUrl]) {
     activeComponent.value = viewMap[viewFromUrl];
   } else {
-    activeComponent.value = 2;
   }
-  isInitialized.value = true;
 });
 
 onUnmounted(() => { window.removeEventListener('resize', setVh); });
 </script>
 
 <style scoped>
-
 .page-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* ИСПОЛЬЗУЕМ --vh, который ты устанавливаешь в setVh() */
+  height: calc(var(--vh, 1vh) * 100);
 }
 
 .main-content {
   flex-grow: 1;
   position: relative; 
+  overflow: hidden; /* Добавлено, чтобы предотвратить случайный скролл */
 }
 
 .view-container {
-
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
 }
-
 .view-container > :deep(*) {
   position: absolute;
   top: 0;
@@ -146,14 +144,15 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
   visibility: hidden;
 }
 
-.text-page-wrapper,
-.profile-wrapper {
+.text-page-wrapper {
   overflow-y: auto;
-  padding-bottom: 50px;
   box-sizing: border-box;
 }
 
 .profile-wrapper {
+  overflow-y: auto;
+  padding-bottom: 50px; 
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -210,7 +209,18 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
   font-size: 14px;
   min-width: 44px;
 }
+.hide-scrollbar {
+  /* Для Firefox */
+  scrollbar-width: none;
+  
+  /* Для Internet Explorer и старых версий Edge */
+  -ms-overflow-style: none;
+}
 
+/* Для Chrome, Safari, Opera и других WebKit-браузеров */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
