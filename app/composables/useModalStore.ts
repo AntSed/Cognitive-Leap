@@ -3,8 +3,6 @@ import { defineStore } from 'pinia';
 import { markRaw, computed, ref } from 'vue';
 import type { Component } from 'vue';
 
-// --- ТИПЫ И ИНТЕРФЕЙСЫ ---
-
 interface ModalOptions {
   history?: boolean;
 }
@@ -22,18 +20,10 @@ interface ModalInstance {
 const modalComponents = import.meta.glob('~/components/**/*.vue');
 let isInitialized = false;
 export const useModalStore = defineStore('modal', () => {
-  // --- STATE ---
-  
   const stack = ref<ModalInstance[]>([]);
-  // QuickTip теперь объект для более гибкого управления
-  const quickTip = ref<QuickTip | null>(null);
-
-  // --- GETTERS ---
 
   const isOpen = computed(() => stack.value.length > 0);
   const currentStack = computed(() => stack.value);
-
-  // --- ACTIONS  ---
 
   const open = <T = any>(componentPath: string, componentProps: Record<string, any> = {}, options: ModalOptions = {}): Promise<T | undefined> => {
     return new Promise<T | undefined>(async (resolve) => {
@@ -84,14 +74,10 @@ export const useModalStore = defineStore('modal', () => {
     close(); 
   };
 
-  // --- ACTIONS ---
-  
-  const openLesson = (lessonId: string) => open('modals/LessonDetails', { lessonId });
-  const openPlayer = (material: Record<string, any>) => open('modals/PlayerModal', { material }, { history: false });
 
 
 const initializeModalListeners = () => {
-    if (isInitialized) return; // Защита от повторного вызова
+    if (isInitialized) return; 
     isInitialized = true;
 
     const handleHashChange = () => {
@@ -126,8 +112,6 @@ const initializeModalListeners = () => {
     open,
     close,
     submit,
-    openLesson,
-    openPlayer,
     initializeModalListeners,
   };
 });

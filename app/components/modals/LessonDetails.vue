@@ -1,76 +1,84 @@
 <template>
-  <div class="lesson-modal-content">
-    <button class="modal-close-button" @click="close()">&times;</button>
-    
-    <div v-if="isLoading" class="loading-state">
-        <p>{{ $t('loadingLesson') }}</p>
-    </div>
+  <div class="lesson-modal-content">
+    <button class="modal-close-button" @click="close()">&times;</button>
+    
+    <div v-if="isLoading" class="loading-state">
+        <p>{{ $t('loadingLesson') }}</p>
+    </div>
 
-    <div v-else-if="lessonData" class="lesson-container">
-      <div class="modal-header">
-        <h2 class="topic-title">{{ lessonData.topic }}</h2>
-        <p class="topic-description" v-if="lessonData.description">{{ lessonData.description }}</p>
-      </div>
+    <div v-else-if="lessonData" class="lesson-container">
+      <div class="modal-header">
+        <h2 class="topic-title">{{ lessonData.topic }}</h2>
+        <p class="topic-description" v-if="lessonData.description">{{ lessonData.description }}</p>
+      </div>
 
-      <div v-if="lessonData.quizzes && lessonData.quizzes.length > 0" class="tests-section" :class="{ 'is-expanded': isTestsSectionExpanded }">
-        <div class="tests-header" @click="toggleTestsSection">
-          <h3>{{ $t('proveYouKnow') }}</h3>
-          <div class="header-right">
-            <div class="progress-bar-container" title="Overall test progress">
-              <div class="progress-bar-inner" :style="{ width: testProgress + '%' }">
-                <span v-if="testProgress > 10">{{ Math.round(testProgress) }}%</span>
-              </div>
-            </div>
-            <svg class="chevron-icon" :class="{ 'is-rotated': isTestsSectionExpanded }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </div>
-        </div>
-        <transition name="slide-fade">
-          <div v-if="isTestsSectionExpanded" class="tests-body">
-            <div class="test-card" v-for="test in lessonData.quizzes" :key="test.id">
-              <div class="test-info">
-                <p class="test-title">{{ test.title }}</p>
-              </div>
-              <button @click="handleToggleTestCompletion(test.id)" class="action-button test-button">
-                  {{ $t('startTest') }}
-              </button>
-            </div>
-          </div>
-        </transition>
-      </div>
+      <div v-if="lessonData.quizzes && lessonData.quizzes.length > 0" class="tests-section" :class="{ 'is-expanded': isTestsSectionExpanded }">
+        <div class="tests-header" @click="toggleTestsSection">
+          <h3>{{ $t('proveYouKnow') }}</h3>
+          <div class="header-right">
+            <div class="progress-bar-container" title="Overall test progress">
+              <div class="progress-bar-inner" :style="{ width: testProgress + '%' }">
+                <span v-if="testProgress > 10">{{ Math.round(testProgress) }}%</span>
+              </div>
+            </div>
+            <svg class="chevron-icon" :class="{ 'is-rotated': isTestsSectionExpanded }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
+        </div>
+        <transition name="slide-fade">
+          <div v-if="isTestsSectionExpanded" class="tests-body">
+            <div class="test-card" v-for="test in lessonData.quizzes" :key="test.id">
+              <div class="test-info">
+                <p class="test-title">{{ test.title }}</p>
+              </div>
+              <button @click="handleToggleTestCompletion(test.id)" class="action-button test-button">
+                  {{ $t('startTest') }}
+              </button>
+            </div>
+          </div>
+        </transition>
+      </div>
 
-      <div class="materials-grid">
-        <div v-for="material in processedMaterials" :key="material.id" class="material-card" :class="{ 'is-locked': material.isLocked }">
-          <span class="material-icon">{{ getIconForType(material.material_type) }}</span>
-          <h3 class="material-title">{{ material.title }}</h3>
-          <p class="material-description">{{ material.description }}</p>
-          
-          <button @click="handleMaterialClick(material)" class="action-button material-button" :disabled="material.isLocked">
-            <span>{{ getButtonTextForType(material.material_type) }}</span>
-            <svg v-if="!['app', 'game', 'presentation', 'video'].includes(material.material_type)" class="external-link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5 0V6M18 6h-6m6 0l-7.5 7.5" />
-            </svg>
-          </button>
+      <div class="materials-grid">
+        <div v-for="material in processedMaterials" :key="material.id" class="material-card" :class="{ 'is-locked': material.isLocked }">
+          <span class="material-icon">{{ getIconForType(material.material_type) }}</span>
+          <h3 class="material-title">{{ material.title }}</h3>
+          <p class="material-description">{{ material.description }}</p>
+          
+          <button @click="handleMaterialClick(material)" class="action-button material-button" :disabled="material.isLocked">
+            <!-- 
+              FIX 1: Call getButtonText(material) from composable.
+              We pass the whole material object, not just the type.
+          -->
+            <span>{{ getButtonText(material) }}</span>
+            
+            <!-- This logic can also be moved to the composable later if we want -->
+            <svg v-if="!['app', 'game', 'presentation', 'video'].includes(material.material_type)" class="external-link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5 0V6M18 6h-6m6 0l-7.5 7.5" />
+            </svg>
+          </button>
 
-          <div v-if="material.isLocked" class="lock-overlay">
-            <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+          <div v-if="material.isLocked" class="lock-overlay">
+            <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
+// FIX 2: Import the composable
+import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
 
 const props = defineProps({
-  lessonId: { type: String, required: true }
+  lessonId: { type: String, required: true }
 });
 
 const isLoading = ref(true);
@@ -81,107 +89,101 @@ const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const { locale, t } = useI18n();
 const modalStore = useModalStore();
+// FIX 3: Instantiate the composable
+const { getButtonText, playMaterial } = useMaterialPlayer();
 
 const close = () => {
-    if (modalStore.closeLesson) {
-        modalStore.closeLesson();
-    } else {
-        modalStore.close();
-    }
+    if (modalStore.closeLesson) {
+        modalStore.closeLesson();
+    } else {
+        modalStore.close();
+    }
 };
 
 const fetchData = async (id) => {
-  if (!id) return;
-  isLoading.value = true;
-  lessonData.value = null;
-  try {
-    const rpcArgs = {
-        p_lesson_id: id,
-        p_user_id: user.value?.id ?? null,
-        p_lang_code: locale.value
-    };
-    const { data, error } = await supabase.rpc('get_lesson_details', rpcArgs);
-    if (error) throw error;
-    lessonData.value = data;
-  } catch (error) {
-    console.error("Error loading lesson data inside component:", error);
-    close();
-  } finally {
-    isLoading.value = false;
-  }
+  if (!id) return;
+  isLoading.value = true;
+  lessonData.value = null;
+  try {
+    const rpcArgs = {
+        p_lesson_id: id,
+        p_user_id: user.value?.id ?? null,
+        p_lang_code: locale.value
+    };
+    const { data, error } = await supabase.rpc('get_lesson_details', rpcArgs);
+    if (error) throw error;
+    lessonData.value = data;
+  } catch (error) {
+    console.error("Error loading lesson data inside component:", error);
+    close();
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 onMounted(() => {
-  fetchData(props.lessonId);
+  fetchData(props.lessonId);
 });
 
 watch(() => lessonData.value, (newData) => {
-  if (newData) {
-    isTestsSectionExpanded.value = false;
-  }
+  if (newData) {
+    isTestsSectionExpanded.value = false;
+  }
 });
 
 const testProgress = computed(() => {
-  const quizzes = lessonData.value?.quizzes;
-  if (!quizzes || quizzes.length === 0) return 0;
-  const completedCount = quizzes.filter(q => q.completed).length;
-  return (completedCount / quizzes.length) * 100;
+  const quizzes = lessonData.value?.quizzes;
+  if (!quizzes || quizzes.length === 0) return 0;
+  const completedCount = quizzes.filter(q => q.completed).length;
+  return (completedCount / quizzes.length) * 100;
 });
 
 const processedMaterials = computed(() => {
-    if (!lessonData.value?.materials) return [];
-    
-    const materials = lessonData.value.materials;
-    const completedMaterialIds = new Set(
-        materials.filter(m => m.completed).map(m => m.id)
-    );
+    if (!lessonData.value?.materials) return [];
+    
+    const materials = lessonData.value.materials;
+    const completedMaterialIds = new Set(
+        materials.filter(m => m.completed).map(m => m.id)
+    );
 
-    return materials.map(material => ({
-        ...material,
-        isLocked: material.prerequisite_ids ? !material.prerequisite_ids.every(id => completedMaterialIds.has(id)) : false
-    }));
+    return materials.map(material => ({
+        ...material,
+        isLocked: material.prerequisite_ids ? !material.prerequisite_ids.every(id => completedMaterialIds.has(id)) : false
+    }));
 });
 
 const getIconForType = (materialType) => {
-    return {
-        'presentation': '🖥️',
-        'video': '🎬',
-        'game': '🎮',
-        'app': '🎮'
-    }[materialType] || '📚';
+    return {
+        'presentation': '🖥️',
+        'video': '🎬',
+        'game': '🎮',
+        'app': '🎮'
+    }[materialType] || '📚';
 };
 
+// FIX 4: Delete the old, redundant getButtonTextForType function
+/*
 const getButtonTextForType = (materialType) => {
-    const key = {
-        'presentation': 'study',
-        'video': 'watch',
-        'game': 'play',
-        'app': 'play'
-    }[materialType] || 'open';
-    return t(key);
+...
 };
+*/
 
 const toggleTestsSection = () => { isTestsSectionExpanded.value = !isTestsSectionExpanded.value; };
 
 const handleToggleTestCompletion = (testId) => {
-  console.log(`DEMO: Toggling completion for test ${testId}`);
+  console.log(`DEMO: Toggling completion for test ${testId}`);
 };
 
+// FIX 5: Rewrite handleMaterialClick to use the composable
 const handleMaterialClick = (material) => {
-  if (material.isLocked) return;
-  
-  const playerTypes = ['app', 'game', 'presentation', 'video'];
-
-  if (playerTypes.includes(material.material_type)) {
-    modalStore.openPlayer(material);
-  } else {
-    window.open(material.url, '_blank', 'noopener,noreferrer');
-  }
+  if (material.isLocked) return;
+  
+  // All the logic is now centralized in playMaterial
+  playMaterial(material);
 };
 </script>
 
 <style scoped>
-/* --- NEW STYLES --- */
 .lesson-modal-content {
   background: #18181B; /* Darker background */
   color: #E4E4E7; /* Light gray text */
@@ -405,4 +407,3 @@ const handleMaterialClick = (material) => {
   }
 }
 </style>
-
