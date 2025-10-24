@@ -1,192 +1,198 @@
+// app/components/modals/LessonDetails.vue
 <template>
-  <div class="lesson-modal-content">
-    <button class="modal-close-button" @click="close()">&times;</button>
-    
-    <div v-if="isLoading" class="loading-state">
-        <p>{{ $t('loadingLesson') }}</p>
-    </div>
+  <div class="lesson-modal-content">
+    <button class="modal-close-button" @click="close()">&times;</button>
+    
+    <div v-if="isLoading" class="loading-state">
+        <p>{{ $t('loadingLesson') }}</p>
+    </div>
 
-    <div v-else-if="lessonData" class="lesson-container">
-      <div class="modal-header">
-        <h2 class="topic-title">{{ lessonData.topic }}</h2>
-        <p class="topic-description" v-if="lessonData.description">{{ lessonData.description }}</p>
-      </div>
+    <div v-else-if="lessonData" class="lesson-container">
+      <div class="modal-header">
+        <h2 class="topic-title">{{ lessonData.topic }}</h2>
+        <p class="topic-description" v-if="lessonData.description">{{ lessonData.description }}</p>
+      </div>
 
-      <div v-if="lessonData.quizzes && lessonData.quizzes.length > 0" class="tests-section" :class="{ 'is-expanded': isTestsSectionExpanded }">
-        <div class="tests-header" @click="toggleTestsSection">
-          <h3>{{ $t('proveYouKnow') }}</h3>
-          <div class="header-right">
-            <div class="progress-bar-container" title="Overall test progress">
-              <div class="progress-bar-inner" :style="{ width: testProgress + '%' }">
-                <span v-if="testProgress > 10">{{ Math.round(testProgress) }}%</span>
-              </div>
-            </div>
-            <svg class="chevron-icon" :class="{ 'is-rotated': isTestsSectionExpanded }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </div>
-        </div>
-        <transition name="slide-fade">
-          <div v-if="isTestsSectionExpanded" class="tests-body">
-            <div class="test-card" v-for="test in lessonData.quizzes" :key="test.id">
-              <div class="test-info">
-                <p class="test-title">{{ test.title }}</p>
-              </div>
-              <button @click="handleToggleTestCompletion(test.id)" class="action-button test-button">
-                  {{ $t('startTest') }}
-              </button>
-            </div>
-          </div>
-        </transition>
-      </div>
+      <div v-if="processedExamMaterials && processedExamMaterials.length > 0" class="tests-section" :class="{ 'is-expanded': isTestsSectionExpanded }">
+        <div class="tests-header" @click="toggleTestsSection">
+          <h3>{{ $t('proveYouKnow') }}</h3>
+          <div class="header-right">
+            <div class="progress-bar-container" title="Overall test progress">
+              <div class="progress-bar-inner" :style="{ width: testProgress + '%' }">
+                <span v-if="testProgress > 10">{{ Math.round(testProgress) }}%</span>
+              </div>
+            </div>
+            <svg class="chevron-icon" :class="{ 'is-rotated': isTestsSectionExpanded }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
+        </div>
+        <transition name="slide-fade">
+          <div v-if="isTestsSectionExpanded" class="tests-body materials-grid">
+            <LessonMaterialCard
+              v-for="material in processedExamMaterials"
+              :key="material.id"
+              :material="material"
+              :isLocked="material.isLocked"
+            />
+          </div>
+        </transition>
+      </div>
 
-      <div class="materials-grid">
-        <div v-for="material in processedMaterials" :key="material.id" class="material-card" :class="{ 'is-locked': material.isLocked }">
-          <span class="material-icon">{{ getIconForType(material.material_type) }}</span>
-          <h3 class="material-title">{{ material.title }}</h3>
-          <p class="material-description">{{ material.description }}</p>
-          
-          <button @click="handleMaterialClick(material)" class="action-button material-button" :disabled="material.isLocked">
-            <!-- 
-              FIX 1: Call getButtonText(material) from composable.
-              We pass the whole material object, not just the type.
-          -->
-            <span>{{ getButtonText(material) }}</span>
-            
-            <!-- This logic can also be moved to the composable later if we want -->
-            <svg v-if="!['app', 'game', 'presentation', 'video'].includes(material.material_type)" class="external-link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5 0V6M18 6h-6m6 0l-7.5 7.5" />
-            </svg>
-          </button>
+      <div class="materials-section">
+        <h3 class="section-title">{{ $t('studyMaterials') }}</h3>
+        
+        <div class="materials-grid">
+          <LessonMaterialCard
+            v-for="material in processedStudyMaterials"
+            :key="material.id"
+            :material="material"
+            :isLocked="material.isLocked"
+          />
+        </div>
 
-          <div v-if="material.isLocked" class="lock-overlay">
-            <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+      </div>
+
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
-// FIX 2: Import the composable
 import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
+import LessonMaterialCard from '~/components/LessonMaterialCard.vue';
 
 const props = defineProps({
-  lessonId: { type: String, required: true }
+  lessonId: { type: String, required: true }
 });
 
 const isLoading = ref(true);
 const lessonData = ref(null);
-const isTestsSectionExpanded = ref(false);
+const isTestsSectionExpanded = ref(true); // Оставляем открытой по умолчанию
 
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const { locale, t } = useI18n();
 const modalStore = useModalStore();
-// FIX 3: Instantiate the composable
 const { getButtonText, playMaterial } = useMaterialPlayer();
 
 const close = () => {
-    if (modalStore.closeLesson) {
-        modalStore.closeLesson();
-    } else {
-        modalStore.close();
-    }
+    if (modalStore.closeLesson) {
+        modalStore.closeLesson();
+    } else {
+        modalStore.close();
+    }
 };
 
 const fetchData = async (id) => {
-  if (!id) return;
-  isLoading.value = true;
-  lessonData.value = null;
-  try {
-    const rpcArgs = {
-        p_lesson_id: id,
-        p_user_id: user.value?.id ?? null,
-        p_lang_code: locale.value
-    };
-    const { data, error } = await supabase.rpc('get_lesson_details', rpcArgs);
-    if (error) throw error;
-    lessonData.value = data;
-  } catch (error) {
-    console.error("Error loading lesson data inside component:", error);
-    close();
-  } finally {
-    isLoading.value = false;
-  }
+  if (!id) return;
+  isLoading.value = true;
+  lessonData.value = null;
+  try {
+    const rpcArgs = {
+        p_lesson_id: id,
+        p_user_id: user.value?.id ?? null,
+        p_lang_code: locale.value
+    };
+    // RPC теперь возвращает exam_materials и study_materials
+    const { data, error } = await supabase.rpc('get_lesson_details', rpcArgs);
+    if (error) throw error;
+    lessonData.value = data;
+  } catch (error) {
+    console.error("Error loading lesson data inside component:", error);
+    close();
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 onMounted(() => {
-  fetchData(props.lessonId);
+  fetchData(props.lessonId);
 });
 
-watch(() => lessonData.value, (newData) => {
-  if (newData) {
-    isTestsSectionExpanded.value = false;
-  }
-});
+// --- ОБНОВЛЕННЫЕ COMPUTED PROPERTIES ---
 
+/**
+ * Вычисляет прогресс прохождения экзаменационных материалов.
+ */
 const testProgress = computed(() => {
-  const quizzes = lessonData.value?.quizzes;
-  if (!quizzes || quizzes.length === 0) return 0;
-  const completedCount = quizzes.filter(q => q.completed).length;
-  return (completedCount / quizzes.length) * 100;
+  // Используем lessonData.exam_materials
+  const exams = lessonData.value?.exam_materials;
+  if (!exams || exams.length === 0) return 0;
+  // Считаем те, у которых поле 'completed' (из RPC) равно true
+  const completedCount = exams.filter(e => e.completed).length;
+  return (completedCount / exams.length) * 100;
 });
 
-const processedMaterials = computed(() => {
-    if (!lessonData.value?.materials) return [];
-    
-    const materials = lessonData.value.materials;
-    const completedMaterialIds = new Set(
-        materials.filter(m => m.completed).map(m => m.id)
-    );
+/**
+ * Вспомогательная функция для обработки логики блокировок
+ */
+const processMaterials = (materials) => {
+  if (!materials) return [];
+  
+  const completedMaterialIds = new Set(
+      materials.filter(m => m.completed).map(m => m.id)
+  );
 
-    return materials.map(material => ({
-        ...material,
-        isLocked: material.prerequisite_ids ? !material.prerequisite_ids.every(id => completedMaterialIds.has(id)) : false
-    }));
+  // Добавляем ID завершенных экзаменов, чтобы разблокировать учебные материалы
+  if (lessonData.value?.exam_materials) {
+    lessonData.value.exam_materials
+      .filter(m => m.completed)
+      .forEach(m => completedMaterialIds.add(m.id));
+  }
+
+  return materials.map(material => ({
+      ...material,
+      isLocked: material.prerequisite_ids ? !material.prerequisite_ids.every(id => completedMaterialIds.has(id)) : false
+  }));
+};
+
+/**
+ * Подготавливает список УЧЕБНЫХ материалов (с логикой isLocked).
+ */
+const processedStudyMaterials = computed(() => {
+  // Используем lessonData.study_materials
+  return processMaterials(lessonData.value?.study_materials);
 });
 
-const getIconForType = (materialType) => {
-    return {
-        'presentation': '🖥️',
-        'video': '🎬',
-        'game': '🎮',
-        'app': '🎮'
-    }[materialType] || '📚';
-};
+/**
+ * Подготавливает список ЭКЗАМЕНАЦИОННЫХ материалов (с логикой isLocked).
+ */
+const processedExamMaterials = computed(() => {
+  // Используем lessonData.exam_materials
+  return processMaterials(lessonData.value?.exam_materials);
+});
 
-// FIX 4: Delete the old, redundant getButtonTextForType function
-/*
-const getButtonTextForType = (materialType) => {
-...
-};
-*/
+
+// --- ХЕНДЛЕРЫ ---
 
 const toggleTestsSection = () => { isTestsSectionExpanded.value = !isTestsSectionExpanded.value; };
 
-const handleToggleTestCompletion = (testId) => {
-  console.log(`DEMO: Toggling completion for test ${testId}`);
-};
+// Этот хендлер больше не нужен, т.к. LessonMaterialCard сам вызывает playMaterial
+// const handleMaterialClick = (material) => { ... };
 
-// FIX 5: Rewrite handleMaterialClick to use the composable
-const handleMaterialClick = (material) => {
-  if (material.isLocked) return;
-  
-  // All the logic is now centralized in playMaterial
-  playMaterial(material);
-};
+// Этот хендлер тоже не нужен, т.к. у нас больше нет кнопок в .test-card
+// const handleToggleTestCompletion = (testId) => { ... };
+
 </script>
 
 <style scoped>
+/* Новая палитра (вдохновлена Tailwind 'slate' и 'sky'):
+  - Фон: #0F172A (slate-900 / Глубокий темно-синий)
+  - Второстепенный фон: #1E293B (slate-800 / Темно-сине-серый)
+  - Границы / Разделители: #334155 (slate-700 / Сине-серый)
+  - Текст приглушенный: #94A3B8 (slate-400 / Светлый сине-серый)
+  - Текст основной: #E2E8F0 (slate-200 / Почти белый)
+  - Акцент 1 (Пурпурный): #A855F7 (сохранен)
+  - Акцент 2 (Зеленый): #22C55E (green-500)
+  - Акцент 3 (Голубой): #06B6D4 (cyan-500 / для кнопок и скролла)
+*/
+
 .lesson-modal-content {
-  background: #18181B; /* Darker background */
-  color: #E4E4E7; /* Light gray text */
+  background: #0F172A; /* Новый фон */
+  color: #E2E8F0; /* Новый основной текст */
   padding: 2rem;
   border-radius: 16px;
   width: 90%;
@@ -194,13 +200,13 @@ const handleMaterialClick = (material) => {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  border: 1px solid #3F3F46;
+  border: 1px solid #334155; /* Новая граница */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   font-family: 'Inter', sans-serif;
 }
 .lesson-modal-content::-webkit-scrollbar { width: 8px; }
-.lesson-modal-content::-webkit-scrollbar-track { background: #18181B; }
-.lesson-modal-content::-webkit-scrollbar-thumb { background-color: #581C87; border-radius: 10px; }
+.lesson-modal-content::-webkit-scrollbar-track { background: #0F172A; }
+.lesson-modal-content::-webkit-scrollbar-thumb { background-color: #06B6D4; border-radius: 10px; } /* Новый акцент скролла */
 
 .modal-close-button {
   position: absolute;
@@ -214,17 +220,21 @@ const handleMaterialClick = (material) => {
   font-size: 1.5rem;
   line-height: 32px;
   text-align: center;
-  color: #A1A1AA;
+  color: #94A3B8; /* Приглушенный текст */
   cursor: pointer;
   transition: all 0.2s;
 }
-.modal-close-button:hover { color: #fff; background: #9333EA; transform: rotate(90deg); }
+.modal-close-button:hover { 
+  color: #fff; 
+  background: #E11D48; /* Яркий акцент для "закрытия" */
+  transform: rotate(90deg); 
+}
 
 .modal-header {
   text-align: center;
   margin-bottom: 2.5rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #27272A;
+  border-bottom: 1px solid #334155; /* Новый разделитель */
 }
 .topic-title {
   font-size: 2.75rem;
@@ -235,13 +245,19 @@ const handleMaterialClick = (material) => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.topic-description { font-size: 1.1rem; color: #A1A1AA; max-width: 600px; margin: 0.75rem auto 0; line-height: 1.6; }
+.topic-description { 
+  font-size: 1.1rem; 
+  color: #94A3B8; /* Приглушенный текст */
+  max-width: 600px; 
+  margin: 0.75rem auto 0; 
+  line-height: 1.6; 
+}
 
 .tests-section {
-  background: #27272A;
+  background: #1E293B; /* Второстепенный фон */
   border-radius: 12px;
   margin-bottom: 2.5rem;
-  border: 1px solid #3F3F46;
+  border: 1px solid #334155; /* Граница */
   overflow: hidden;
   transition: all 0.3s ease;
 }
@@ -252,11 +268,16 @@ const handleMaterialClick = (material) => {
   cursor: pointer;
   padding: 1rem 1.5rem;
 }
-.tests-header h3 { font-size: 1.2rem; font-weight: 600; color: #E4E4E7; margin: 0; }
+.tests-header h3 { 
+  font-size: 1.2rem; 
+  font-weight: 600; 
+  color: #E2E8F0; /* Основной текст */
+  margin: 0; 
+}
 .header-right { display: flex; align-items: center; gap: 1rem; }
 .progress-bar-container {
   width: 120px;
-  background: #3F3F46;
+  background: #334155; /* Фон прогресс-бара */
   border-radius: 10px;
   height: 18px;
   overflow: hidden;
@@ -271,57 +292,37 @@ const handleMaterialClick = (material) => {
   font-size: 0.75rem;
   line-height: 18px;
 }
-.chevron-icon { width: 24px; height: 24px; color: #71717A; transition: transform 0.3s ease; }
+.chevron-icon { width: 24px; height: 24px; color: #94A3B8; transition: transform 0.3s ease; }
 .chevron-icon.is-rotated { transform: rotate(180deg); }
-
 .tests-body { 
-  padding: 0 1.5rem 1.5rem 1.5rem;
+  padding: 1.5rem; /* Добавляем внутренний отступ для сетки */
+  /* Используем ту же сетку, что и для учебных материалов */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
 }
-.test-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #18181B;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-top: 0.75rem;
+.test-info p { margin: 0; color: #94A3B8; }
+.test-info p.test-title { font-weight: 500; color: #E2E8F0; }
+
+/* Новый заголовок для секции материалов */
+.materials-section {
+  /* Можно добавить отступ, если нужно */
 }
-.test-info p { margin: 0; color: #A1A1AA; }
-.test-info p.test-title { font-weight: 500; color: #E4E4E7; }
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #E2E8F0;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #334155;
+}
+
 
 .materials-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1.5rem;
 }
-.material-card {
-  background: #27272A;
-  border-radius: 12px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-  transition: all 0.2s;
-  border: 1px solid #3F3F46;
-  position: relative;
-  overflow: hidden;
-}
-.material-card:hover:not(.is-locked) {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-  border-color: #A855F7;
-}
-.material-card.is-locked {
-  filter: saturate(0.5);
-  cursor: not-allowed;
-}
-.material-icon { 
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  line-height: 1;
-}
-.material-title { margin: 0.5rem 0 0; font-size: 1.25rem; font-weight: 600; color: #fff; }
-.material-description { font-size: 0.9rem; color: #A1A1AA; flex-grow: 1; margin-bottom: 1.5rem; }
 
 .action-button {
   border: none;
@@ -345,44 +346,27 @@ const handleMaterialClick = (material) => {
   cursor: not-allowed;
   opacity: 0.5;
 }
-.material-button {
-  background: #7E22CE;
-  color: white;
-  margin-top: auto;
-}
-.material-button:hover:not(:disabled) {
-  background: #9333EA;
-}
+
+
+
 .test-button {
-  background: #16A34A;
+  background: #16A34A; /* Оригинальный зеленый */
   color: white;
   padding: 0.6rem 1.2rem;
 }
 .test-button:hover:not(:disabled) {
-  background: #22C55E;
+  background: #22C55E; /* Более яркий зеленый */
 }
-.external-link-icon { width: 16px; height: 16px; }
 
 .loading-state {
-    display: flex; justify-content: center; align-items: center;
-    height: 200px; font-size: 1.2rem; color: #A1A1AA;
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  height: 200px; 
+  font-size: 1.2rem; 
+  color: #94A3B8;
 }
-.lock-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(24, 24, 27, 0.8);
-    backdrop-filter: blur(4px);
-    border-radius: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: all;
-}
-.lock-icon {
-    width: 50px;
-    height: 50px;
-    color: rgba(228, 228, 231, 0.6);
-}
+
 
 .slide-fade-enter-active {
   transition: all 0.3s ease-out;
@@ -395,15 +379,13 @@ const handleMaterialClick = (material) => {
   transform: translateY(-10px);
   opacity: 0;
 }
-
-/* Hide scrollbar on smaller screens */
 @media (max-width: 768px) {
   .lesson-modal-content {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   .lesson-modal-content::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
   }
 }
 </style>

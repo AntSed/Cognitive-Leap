@@ -1,6 +1,6 @@
 // app\pages\hub\index.vue
 <template>
-  <div class="hub-layout" :class="{ 'sidebar-is-open': isSidebarOpen }">
+<div class="hub-layout" :class="[ `context-${hubContext}`, { 'sidebar-is-open': isSidebarOpen } ]">
     <aside class="hub-sidebar hide-scrollbar">
       <div class="tree-controls">
         <button @click="selectLesson(null)" :class="{ active: !selectedLesson }">
@@ -36,7 +36,7 @@
           :list="lessonsBySubject[subject.id] || []"
           :delay="250" :delay-on-touch-only="true" :disabled="isInlineEditing"
           class="lesson-list" group="materials" item-key="id"
-          @add="onDrop"
+          @add="(event) => onDrop(event, hubContext)"
           @end="hoveredLesson = null"
           :sort="false"
           :ghost-class="'ghost-item'"
@@ -48,7 +48,16 @@
                 <span v-else class="lesson-position">{{ lesson.position }}.</span>
                 <span class="lesson-title">{{ lesson.topic_translations?.en || t('hub.untitledLesson') }}</span>
                 <div class="sidebar-actions">
-                  <span class="material-count">{{ lesson.material_count }}</span>
+                  <div class="material-count">
+                    <span class="count-study" title="Study Materials">
+                      {{ lesson.study_count || 0 }}
+                    </span>
+                  </div>
+                  <div class="material-count2">
+                    <span class="count-exam" title="Exam Materials">
+                      {{ lesson.exam_count || 0 }}
+                    </span>
+                  </div>
                   <button v-if="isProgramOwner" class="edit-btn" @click.stop="handleEditLesson(lesson)">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
@@ -89,7 +98,26 @@
         </p>
         <p v-else>{{ t('hub.centralLibrary') }}</p>
       </header>
-
+    <div class="context-switcher-container">
+      <div class="context-switcher">
+        <button
+          :class="{ active: hubContext === 'study' }"
+          @click="hubContext = 'study'"
+          class="context-btn btn-study"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" /></svg>
+          <span>{{ t('hub.context.study') }}</span>
+        </button>
+        <button
+          :class="{ active: hubContext === 'exam' }"
+          @click="hubContext = 'exam'"
+          class="context-btn btn-exam"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <span>{{ t('hub.context.exam') }}</span>
+        </button>
+      </div>
+    </div>
       <div class="filters-container">
         <div class="filter-group">
           <label for="search">{{ t('hub.filters.search') }}</label>
@@ -118,33 +146,30 @@
       </div>
 
       <div v-if="currentUserProfile" class="materials-grid">
-        <draggable
-          class="draggable-container"
-          :list="displayedMaterials"
-          :disabled="isInlineEditing"
-          :delay="250" :delay-on-touch-only="true"
-          :group="{ name: 'materials', pull: 'clone', put: false }"
-          item-key="id" :sort="false" :drag-class="'dragging-card'"
-        >
-          <template #item="{ element: material }">
-            <template v-if="material.isAddNewCard">
-              <AddNewMaterialCard 
-                :selected-lesson-id="selectedLesson?.id"
-                :all-program-lessons="lessons"
-                :update-tools="hubUpdateTools"
-              />
-            </template>
-            <template v-else>
-              <HubMaterialCard
-                :material="material"
-                :current-user="currentUserProfile"
-                :selected-lesson-id="selectedLesson?.id"
-                :all-program-lessons="lessons"
-                :update-tools="hubUpdateTools"
-              />
-            </template>
-          </template>
-        </draggable>
+        <AddNewMaterialCard 
+          :selected-lesson-id="selectedLesson?.id"
+          :all-program-lessons="lessons"
+          :update-tools="hubUpdateTools" :hub-context="hubContext"
+        />
+<draggable
+        class="draggable-container"
+        :list="displayedMaterials"
+        :disabled="isInlineEditing"
+        :delay="250" :delay-on-touch-only="true"
+        :group="{ name: 'materials', pull: 'clone', put: false }"
+        item-key="id" :sort="false" :drag-class="'dragging-card'"
+      >
+        <template #item="{ element: material }">
+          <HubMaterialCard
+            :material="material"
+            :current-user="currentUserProfile"
+            :selected-lesson-id="selectedLesson?.id"
+            :all-program-lessons="lessons"
+            :update-tools="hubUpdateTools"
+            
+            @update-position="handlePositionUpdate" />
+        </template>
+      </draggable>
       </div>
     </main>
 
@@ -159,7 +184,7 @@ import { useSupabaseUser, useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
 import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
-import HubMaterialCard from '~/components/hub/MaterialCard.vue';
+import HubMaterialCard from '~/components/hub/HubMaterialCard.vue';
 import EditablePosition from '~/components/hub/EditablePosition.vue';
 import ModalWrapper from '~/components/ModalWrapper.vue';
 // Logic Composables
@@ -180,7 +205,7 @@ const currentUserProfile = ref(null);
 const activeProgram = ref(null);
 const isSidebarOpen = ref(false);
 const isInlineEditing = ref(false); // Disables draggable when an input is focused
-
+const hubContext = ref('study');
 // --- Logic from Composables ---
 const {
   lessons, subjects, lessonsBySubject, expandedSubjects, selectedLesson, newSubjectName,
@@ -193,15 +218,15 @@ const {
 const {
   materials, isLoading, searchQuery, statusFilter, typeFilter,
   displayedMaterials, fetchMaterials, handlePositionUpdate
-} = useHubMaterialsLogic(selectedLesson, activeProgram);
+} = useHubMaterialsLogic(selectedLesson, activeProgram, hubContext);
 
 // Provide child components with a toolkit to refresh parent state
-const hubUpdateTools = {
-  increment: incrementMaterialCount,
-  decrement: decrementMaterialCount,
+const hubUpdateTools = computed(() => ({
+  increment: (lessonId) => incrementMaterialCount(lessonId, hubContext.value),
+  decrement: (lessonId) => decrementMaterialCount(lessonId, hubContext.value),
   refreshMaterials: fetchMaterials,
   refreshTree: fetchTreeData
-};
+}));
 
 // --- Page-Specific Methods & Computed ---
 const isProgramOwner = computed(() => {
@@ -471,17 +496,26 @@ onMounted(async () => {
   background-color: #ef4444;
   color: #fff;
 }
+.material-count2 {
+  font-size: 0.7rem;
+  padding: 1px 5px;
+  background-color: #922727;
+  color: #d1d5db;
+  font-weight: bold;
+  border-radius: 1px;
+  min-width: 8px;
+  text-align: center;
+}
 .material-count {
   font-size: 0.7rem;
   padding: 1px 5px;
-  background-color: #4b5563;
+  background-color: #39446b;
   color: #d1d5db;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 1px;
   min-width: 18px;
   text-align: center;
 }
-
 /* Sidebar States */
 .lesson-list li.drop-target > a {
   background-color: #bebdc0; 
@@ -643,4 +677,69 @@ onMounted(async () => {
     transform: translateX(0);
   }
 }
+/* --- Стили переключателя контекста --- */
+.context-switcher-container {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+}
+.context-switcher {
+  display: flex;
+  padding: 0.5rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.context-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background-color: transparent;
+  color: #374151;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.context-btn svg {
+  width: 20px;
+  height: 20px;
+}
+.context-btn:hover:not(.active) {
+  background-color: #f3f4f6;
+}
+
+/* --- Цветовая маркировка (Контексты) --- */
+
+/* Стили по умолчанию (Study) */
+.context-btn.btn-study.active {
+  background-color: #3b82f6; /* Синий */
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.context-btn.btn-exam.active {
+  background-color: #ef4444; /* Красный */
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+.hub-layout.context-study .hub-header {
+  border-bottom: 4px solid #3b82f6; /* Синий */
+  padding-bottom: 1.5rem;
+}
+/* Глобальные перекрашивания для режима 'exam' */
+.hub-layout.context-exam .hub-header {
+  /* Пример: добавляем красную рамку, чтобы было видно */
+  border-bottom: 4px solid #ef4444;
+  padding-bottom: 1.5rem; /* Компенсируем рамку */
+}
+
+/* Ты можешь добавить больше стилей, например: */
+/*
+.hub-layout.context-exam :deep(.material-card) {
+  border-left-color: #ef4444;
+}
+*/
 </style>

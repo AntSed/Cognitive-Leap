@@ -112,6 +112,11 @@ const props = defineProps({
   onSuccess: {
     type: Function,
     required: true
+  },
+  hubContext: {
+    type: String,
+    required: true,
+    validator: (value) => ['study', 'exam'].includes(value)
   }
 });
 const supabase = useSupabaseClient();
@@ -166,6 +171,7 @@ const handleSubmit = async () => {
       recommended_age_min: formData.age_min,
       recommended_age_max: formData.age_max,
       status: 'draft',
+      material_purpose: props.hubContext
     };
 
     if (['external_link', 'internal_video'].includes(selectedType.value)) {

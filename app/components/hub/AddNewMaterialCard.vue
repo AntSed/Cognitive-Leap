@@ -25,33 +25,43 @@ const props = defineProps({
   updateTools: {
     type: Object,
     required: true,
+  },
+  hubContext: {
+    type: String,
+    required: true,
+    validator: (value) => ['study', 'exam'].includes(value)
   }
 });
 
 const modalStore = useModalStore();
 
 const openAddFlow = () => {
-  // If a lesson is already selected (the simple case)
+  // Если урок выбран (простой случай)
   if (props.selectedLessonId) {
     modalStore.open('hub/modals/AddMaterialModal', { 
-      // Pass an array with the single selected lesson id
       lessonIds: [props.selectedLessonId],
-      onSuccess: props.updateTools.refreshMaterials 
+      hubContext: props.hubContext, 
+      
+      // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+      // Оборачиваем в анонимную функцию и вызываем ОБА метода
+      onSuccess: () => {
+        props.updateTools.refreshMaterials();
+        props.updateTools.refreshTree(); // <- Эта строка была пропущена
+      }
     });
   } else {
-    // If no lesson is selected, start the two-step process
+    // Если урок не выбран (двухэтапный процесс) - этот блок уже верный
     modalStore.open('hub/modals/SelectLessonsModal', {
       programLessons: props.allProgramLessons,
-      // Define what to do AFTER lessons are selected in the new modal
       onComplete: (selectedIds) => {
-        // Now, open the final modal, passing the lessons selected by the user
+        // Открываем финальную модалку
         modalStore.open('hub/modals/AddMaterialModal', {
           lessonIds: selectedIds,
-            onSuccess: () => {
-              // Now we can refresh both, ensuring lesson counts are updated
-              props.updateTools.refreshMaterials();
-              props.updateTools.refreshTree(); 
-            }
+          hubContext: props.hubContext, 
+          onSuccess: () => {
+            props.updateTools.refreshMaterials();
+            props.updateTools.refreshTree(); 
+          }
         });
       }
     });

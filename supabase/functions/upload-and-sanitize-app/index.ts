@@ -110,6 +110,7 @@ serve(async (req) => {
       status: coreData.status,
       url: `${storagePath}/${mainHtmlFile.relativePath}`,
       html_content: finalHtmlContent,
+      material_purpose: coreData.material_purpose
     };
 
     const { data: dbData, error: dbError } = await supabaseClient

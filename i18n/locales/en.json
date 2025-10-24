@@ -122,6 +122,10 @@
     "showingMaterialsFor": "Showing materials for:",
     "unnamedSubject": "Unnamed Subject",
     "untitledLesson": "Untitled Lesson",
+    "context": {
+      "study": "Study",
+      "exam": "Exam"
+    },
     "sidebar": {
       "showAll": "Show All Materials",
       "newSubjectPlaceholder": "New subject title...",

@@ -122,6 +122,10 @@
     "showingMaterialsFor": "Mostrando materiales para:",
     "unnamedSubject": "Materia sin nombre",
     "untitledLesson": "Lección sin título",
+    "context": {
+      "study": "Estudio",
+      "exam": "Examen"
+    },
     "sidebar": {
       "showAll": "Mostrar Todos los Materiales",
       "newSubjectPlaceholder": "Título de la nueva materia...",

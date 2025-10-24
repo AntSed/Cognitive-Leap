@@ -1,3 +1,4 @@
+// app/components/hub/EditablePosition.vue
 <template>
   <div class="editable-position" @click.stop="startEditing">
     <input

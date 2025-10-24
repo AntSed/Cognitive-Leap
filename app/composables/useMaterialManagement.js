@@ -1,4 +1,4 @@
-// app\composables\useMaterialManagement.js
+// app/composables/useMaterialManagement.js
 import { useModalStore } from '~/composables/useModalStore';
 import { useSupabaseClient } from '#imports';
 import { useI18n } from 'vue-i18n';
@@ -43,14 +43,20 @@ export function useMaterialManagement() {
       messageParams: { materialName: material.title_translations?.en || 'this material' },
       onConfirm: async () => {
         try {
-          const { error } = await supabase.rpc('unpin_material_and_reorder', {
+          // --- UPDATED ---
+          // Call the new RPC function that is context-aware
+          const { error } = await supabase.rpc('unpin_material_and_reorder_context', {
             p_lesson_id: lessonId,
-            p_material_id: material.id
+            p_material_id: material.id,
+            p_material_purpose: material.material_purpose // Pass the material's purpose
           });
+          // --- END UPDATE ---
 
           if (error) throw error;
 
-          // Optimistic UI update: decrement count and refresh the grid
+          // Optimistic UI update: 
+          // updateTools.decrement() will correctly call decrementMaterialCount 
+          // with the right hubContext because of the closure in index.vue
           updateTools.decrement(lessonId);
           updateTools.refreshMaterials();
 
@@ -84,6 +90,9 @@ export function useMaterialManagement() {
           
           // Refresh the grid to show the material has been removed
           updateTools.refreshMaterials();
+          // We also need to refresh the tree in case the deleted material
+          // was linked to other lessons, changing their counts.
+          updateTools.refreshTree(); // Added this call
 
         } catch (err) {
           console.error('Error deleting material:', err);
@@ -99,4 +108,3 @@ export function useMaterialManagement() {
     openStatusModal,
   };
 }
-

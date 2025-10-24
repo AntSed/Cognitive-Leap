@@ -21,23 +21,27 @@ import { useI18nService } from '~/composables/useI18nService';
 import ModalWrapper from '~/components/ModalWrapper.vue';
 import PlayerModal from '~/components/modals/PlayerModal.vue';
 
-// --- УНИВЕРСАЛЬНОЕ РЕШЕНИЕ ДЛЯ SSR и КЛИЕНТА ---
-
-// 1. Проверяем, где мы находимся.
-const isServer = process.server;
-
-// 2. Создаем isAuthReady в зависимости от окружения.
-//    - На сервере: isAuthReady ВСЕГДА false. Сервер не должен ждать клиентский плагин.
-//      Он просто покажет загрузчик и отправит страницу браузеру.
-//    - На клиенте: Берем настоящее реактивное состояние из нашего плагина.
-const isAuthReady = isServer ? ref(false) : useNuxtApp().$auth.isAuthReady;
-
-
 const modalStore = useModalStore();
+const nuxtApp = useNuxtApp();
 
-// 3. Вся логика, которая зависит от браузера и плагинов, остается в onMounted.
-//    onMounted выполняется ТОЛЬКО на клиенте, поэтому здесь все безопасно.
+// --- ИСПРАВЛЕНИЕ ГИДРАТАЦИИ ---
+
+// 1. Мы ВСЕГДА (и на сервере, и на клиенте) начинаем с 'false'.
+//    Сервер отрендерит лоадер. Клиент при гидратации тоже будет
+//    считать, что isAuthReady = false, и увидит лоадер.
+//    Mismatch ИСЧЕЗНЕТ.
+const isAuthReady = ref(false);
+
+// 2. Вся логика, которая зависит от браузера и плагинов, остается в onMounted.
 onMounted(() => {
+  // 3. Как только клиент "оживет", мы немедленно (immediate: true)
+  //    синхронизируем наш локальный isAuthReady с реальным
+  //    состоянием из твоего плагина.
+  watch(nuxtApp.$auth.isAuthReady, (newValue) => {
+    isAuthReady.value = newValue;
+  }, { immediate: true }); // 'immediate' запустит это сразу, не дожидаясь изменений
+
+  // --- Остальная логика твоего макета ---
   modalStore.initializeModalListeners();
 
   const { locale, setLocale } = useI18nService();

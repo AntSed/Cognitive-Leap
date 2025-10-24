@@ -122,6 +122,10 @@
     "showingMaterialsFor": "Отображаются материалы для:",
     "unnamedSubject": "Предмет без названия",
     "untitledLesson": "Урок без названия",
+    "context": {
+      "study": "Обучение",
+      "exam": "Экзамен"
+    },
     "sidebar": {
       "showAll": "Показать все материалы",
       "newSubjectPlaceholder": "Название нового предмета...",

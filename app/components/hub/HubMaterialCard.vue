@@ -1,6 +1,6 @@
-// app\components\hub\MaterialCard.vue
+// app/components/hub/HubMaterialCard.vue
 <template>
-  <div class="material-card" :class="`status-${material.status}`">
+<div class="material-card" :class="[ `status-${material.status}`, `purpose-${material.material_purpose}` ]">
     <EditablePosition
       v-if="material.position && (isAdmin || isEditor)"
       :model-value="material.position"
@@ -190,10 +190,20 @@ const handleFieldUpdate = async (field, value) => {
   transform: translateY(-5px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.material-card.status-published { border-color: #2ecc71; }
+/* ... (остальные стили) ... */
+
+/* ИЗМЕНЕНО: 
+  'published' по умолчанию теперь синий (вместо зеленого)
+*/
+.material-card.status-published { 
+  border-color: #3b82f6; /* Синий (тот же, что в .context-study хедера) */
+}
 .material-card.status-in_review { border-color: #f1c40f; }
 .material-card.status-draft { border-color: #95a5a6; }
-.material-card.status-rejected { border-color: #e74c3c; }
+.material-card.status-rejected { border-color: #0a0a0a; }
+.material-card.purpose-exam.status-published {
+  border-color: #ef4444; /* Красный (тот же, что в .context-exam хедера) */
+}
 
 .card-header {
   display: flex;

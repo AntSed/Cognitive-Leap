@@ -1,5 +1,4 @@
 // app/composables/useHubSidebarLogic.js
-
 import { ref, computed } from 'vue';
 import { useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
@@ -10,46 +9,25 @@ import { useI18n } from 'vue-i18n';
  * This includes fetching and displaying the program structure (subjects and lessons),
  * handling all CRUD operations for them, and managing the drop logic for materials.
  *
- * @param {import('vue').Ref<object | null>} activeProgram - A ref holding the currently active program.
+ * @param {import('vue').Ref<object | null>} activeProgramRef - A ref holding the currently active program.
  */
-export function useHubSidebarLogic(activeProgram) {
+export function useHubSidebarLogic(activeProgramRef) { // ИЗМЕНЕНО: activeProgram -> activeProgramRef
   // --- SETUP ---
   const supabase = useSupabaseClient();
   const modalStore = useModalStore();
   const { t } = useI18n();
 
   // --- STATE ---
-
-  /** @type {import('vue').Ref<Array<object>>} */
   const subjects = ref([]);
-  
-  /** @type {import('vue').Ref<Array<object>>} */
   const lessons = ref([]);
-
-  /** @type {import('vue').Ref<object | null>} */
   const selectedLesson = ref(null);
-
-  /** @type {import('vue').Ref<Set<string>>} */
   const expandedSubjects = ref(new Set());
-
-  /** @type {import('vue').Ref<string>} */
   const newSubjectName = ref('');
-  
-  /** @type {import('vue').Ref<Record<string, string>>} */
   const newLessonTopics = ref({});
-
-  /** @type {import('vue').Ref<object | null>} */
   const hoveredLesson = ref(null);
-  
-  /** @type {import('vue').Ref<string | null>} */
   const errorLessonId = ref(null);
 
   // --- COMPUTED ---
-
-  /**
-   * Groups lessons by their subject ID for efficient rendering in the sidebar tree.
-   * @returns {Record<string, Array<object>>}
-   */
   const lessonsBySubject = computed(() => {
     if (!lessons.value) return {};
     return lessons.value.reduce((acc, lesson) => {
@@ -60,62 +38,77 @@ export function useHubSidebarLogic(activeProgram) {
       return acc;
     }, {});
   });
-// --- INTERNAL STATE MUTATIONS ---
 
-  const incrementMaterialCount = (lessonId) => {
+  // --- INTERNAL STATE MUTATIONS (ОБНОВЛЕНО) ---
+
+  /**
+   * Increments the correct material counter for a lesson.
+   * @param {string} lessonId - The ID of the lesson.
+   * @param {'study' | 'exam'} context - The context of the material.
+   */
+  const incrementMaterialCount = (lessonId, context = 'study') => {
     if (!lessonId) return;
     const lesson = lessons.value.find(l => l.id === lessonId);
     if (lesson) {
-      lesson.material_count = (lesson.material_count || 0) + 1;
+      if (context === 'exam') {
+        lesson.exam_count = (lesson.exam_count || 0) + 1;
+      } else {
+        lesson.study_count = (lesson.study_count || 0) + 1;
+      }
     }
   };
 
-  const decrementMaterialCount = (lessonId) => {
+  /**
+   * Decrements the correct material counter for a lesson.
+   * @param {string} lessonId - The ID of the lesson.
+   * @param {'study' | 'exam'} context - The context of the material.
+   */
+  const decrementMaterialCount = (lessonId, context = 'study') => {
     if (!lessonId) return;
     const lesson = lessons.value.find(l => l.id === lessonId);
-    if (lesson && lesson.material_count > 0) {
-      lesson.material_count -= 1;
+    if (lesson) {
+      if (context === 'exam' && lesson.exam_count > 0) {
+              lesson.exam_count -= 1;
+         } else if (context === 'study' && lesson.study_count > 0) {
+              lesson.study_count -= 1; // Стало как exam_count
+         }
     }
   };
+  
   // --- METHODS ---
 
   /**
    * Fetches the subjects and lessons for the currently active program.
    */
-const fetchTreeData = async () => {
+  const fetchTreeData = async () => {
     try {
-        const programId = activeProgram.value ? activeProgram.value.id : null;
+      const programId = activeProgramRef.value ? activeProgramRef.value.id : null;
 
-        // ШАГ 1: Создаем и настраиваем запрос ЗАРАНЕЕ
-        let subjectsQuery = supabase.from('subjects').select('*').order('name_translations->>en');
+      let subjectsQuery = supabase.from('subjects').select('*').order('name_translations->>en');
+      if (programId) {
+        subjectsQuery = subjectsQuery.eq('program_id', programId);
+      } else {
+        subjectsQuery = subjectsQuery.is('program_id', null);
+      }
 
-        if (programId) {
-            subjectsQuery = subjectsQuery.eq('program_id', programId);
-        } else {
-            subjectsQuery = subjectsQuery.is('program_id', null);
-        }
+      const [subjectsRes, lessonsRes] = await Promise.all([
+        subjectsQuery,
+        supabase.rpc('get_lessons_with_counts_and_subject', { p_program_id: programId })
+      ]);
 
-        // ШАГ 2: Передаем уже готовую переменную с запросом в Promise.all
-        const [subjectsRes, lessonsRes] = await Promise.all([
-            subjectsQuery, // <-- Вот здесь используется переменная
-            supabase.rpc('get_lessons_with_material_count', { p_program_id: programId })
-        ]);
+      if (subjectsRes.error) throw subjectsRes.error;
+      if (lessonsRes.error) throw lessonsRes.error;
 
-        // ... остальной код функции ...
-        if (subjectsRes.error) throw subjectsRes.error;
-        if (lessonsRes.error) throw lessonsRes.error;
-
-        subjects.value = subjectsRes.data;
-        lessons.value = lessonsRes.data;
+      subjects.value = subjectsRes.data;
+      lessons.value = lessonsRes.data;
 
     } catch (e) {
-        console.error("Error fetching tree data:", e);
+      console.error("Error fetching tree data:", e);
     }
-};
+  };
 
   /**
    * Toggles the expanded/collapsed state of a subject in the sidebar.
-   * @param {string} subjectId - The ID of the subject to toggle.
    */
   const toggleSubject = (subjectId) => {
     if (expandedSubjects.value.has(subjectId)) {
@@ -127,192 +120,157 @@ const fetchTreeData = async () => {
 
   /**
    * Sets the currently selected lesson.
-   * @param {object | null} lesson - The lesson object to select, or null to deselect.
    */
   const selectLesson = (lesson) => {
     selectedLesson.value = lesson;
-    // Closing sidebar on mobile is handled in the component
   };
 
-  /**
-   * Creates a new subject within the active program.
-   */
+  // ... (handleAddSubject, handleEditSubject, handleDeleteSubject без изменений) ...
   const handleAddSubject = async () => {
-    if (!newSubjectName.value.trim() || !activeProgram.value?.id) return;
-    
-    // The skin_id should be dynamically retrieved from the program's settings.
-    const skinId = activeProgram.value.skin_id;
-    if (!skinId) {
-        alert(t('hub.errors.programMissingSkin'));
-        return;
-    }
+    if (!newSubjectName.value.trim() || !activeProgramRef.value?.id) return;
+    const skinId = activeProgramRef.value.skin_id;
+    if (!skinId) {
+        alert(t('hub.errors.programMissingSkin'));
+        return;
+    }
+    try {
+      const prefix = newSubjectName.value.trim().toLowerCase().slice(0, 4) + Math.random().toString(36).slice(-4);
+      const { error } = await supabase.rpc('create_subject_with_style', {
+        p_program_id: activeProgramRef.value.id,
+        p_name_en: newSubjectName.value.trim(),
+        p_prefix: prefix,
+        p_skin_id: skinId
+      });
+      if (error) throw error;
+      newSubjectName.value = '';
+      await fetchTreeData();
+    } catch (error) {
+      console.error('Error adding subject:', error);
+      alert(t('hub.errors.addSubjectFailed'));
+    }
+  };
 
-    try {
-      const prefix = newSubjectName.value.trim().toLowerCase().slice(0, 4) + Math.random().toString(36).slice(-4);
-      
-      const { error } = await supabase.rpc('create_subject_with_style', {
-        p_program_id: activeProgram.value.id,
-        p_name_en: newSubjectName.value.trim(),
-        p_prefix: prefix,
-        p_skin_id: skinId
-      });
+  const handleEditSubject = (subject) => {
+    const skinId = activeProgramRef.value?.skin_id;
+    if (!skinId) {
+        alert(t('hub.errors.programMissingSkin'));
+        return;
+    }
+    modalStore.open('hub/modals/EditSubjectModal', {
+      subjectId: subject.id,
+      skinId: skinId,
+      onUpdateSuccess: fetchTreeData
+    });
+  };
 
-      if (error) throw error;
-      
-      newSubjectName.value = '';
-      await fetchTreeData();
-    } catch (error) {
-      console.error('Error adding subject:', error);
-      alert(t('hub.errors.addSubjectFailed'));
-    }
-  };
+  const handleDeleteSubject = (subject) => {
+    modalStore.open('hub/modals/ConfirmDeleteModal', {
+      titleKey: 'hub.modals.deleteSubject.title',
+      messageKey: 'hub.modals.deleteSubject.message',
+      messageParams: { subjectName: subject.name_translations?.en || 'this subject' },
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from('subjects').delete().eq('id', subject.id);
+          if (error) throw error;
+          await fetchTreeData();
+        } catch (error) {
+          console.error('Error deleting subject:', error);
+          alert(t('hub.errors.deleteSubjectFailed'));
+        }
+      }
+    });
+  };
 
-  /**
-   * Opens a modal to edit an existing subject.
-   * @param {object} subject - The subject object to edit.
-   */
-  const handleEditSubject = (subject) => {
-    const skinId = activeProgram.value?.skin_id;
-    if (!skinId) {
-        alert(t('hub.errors.programMissingSkin'));
-        return;
-    }
-    modalStore.open('hub/modals/EditSubjectModal', {
-      subjectId: subject.id,
-      skinId: skinId,
-      onUpdateSuccess: fetchTreeData
-    });
-  };
-
-  /**
-   * Opens a confirmation modal and deletes a subject if confirmed.
-   * @param {object} subject - The subject object to delete.
-   */
-  const handleDeleteSubject = (subject) => {
-    modalStore.open('hub/modals/ConfirmDeleteModal', {
-      titleKey: 'hub.modals.deleteSubject.title',
-      messageKey: 'hub.modals.deleteSubject.message',
-      messageParams: { subjectName: subject.name_translations?.en || 'this subject' },
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase.from('subjects').delete().eq('id', subject.id);
-          if (error) throw error;
-          await fetchTreeData();
-        } catch (error) {
-          console.error('Error deleting subject:', error);
-          alert(t('hub.errors.deleteSubjectFailed'));
-        }
-      }
-    });
-  };
-
-  /**
-   * Creates a new lesson within a given subject.
-   * @param {object} subject - The subject to which the new lesson will be added.
-   */
+  // ... (handleAddLesson, handleEditLesson, handleDeleteLesson без изменений) ...
   const handleAddLesson = async (subject) => {
-    const topic = newLessonTopics.value[subject.id]?.trim();
-    if (!topic || !activeProgram.value?.id) return;
+    const topic = newLessonTopics.value[subject.id]?.trim();
+    if (!topic || !activeProgramRef.value?.id) return;
 
-    const skinId = activeProgram.value.skin_id;
-    if (!skinId) {
-        alert(t('hub.errors.programMissingSkin'));
-        return;
-    }
+    const skinId = activeProgramRef.value.skin_id;
+    if (!skinId) {
+        alert(t('hub.errors.programMissingSkin'));
+        return;
+    }
 
-    try {
-      const currentLessons = lessonsBySubject.value[subject.id] || [];
-      const newPosition = currentLessons.length + 1;
-      const slug = topic.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).slice(-4);
+    try {
+      const currentLessons = lessonsBySubject.value[subject.id] || [];
+      const newPosition = currentLessons.length + 1;
+      const slug = topic.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).slice(-4);
 
-      const { error } = await supabase.rpc('create_lesson_with_layout', {
-        p_program_id: activeProgram.value.id,
-        p_subject_id: subject.id,
-        p_topic_en: topic,
-        p_position: newPosition,
-        p_slug: slug,
-        p_skin_id: skinId
-      });
+      const { error } = await supabase.rpc('create_lesson_with_layout', {
+        p_program_id: activeProgramRef.value.id,
+        p_subject_id: subject.id,
+        p_topic_en: topic,
+        p_position: newPosition,
+        p_slug: slug,
+        p_skin_id: skinId
+      });
 
-      if (error) throw error;
-      
-      newLessonTopics.value[subject.id] = '';
-      await fetchTreeData();
-    } catch (error) {
-      console.error('Error adding lesson:', error);
-      alert(t('hub.errors.addLessonFailed'));
-    }
-  };
+      if (error) throw error;
+      
+      newLessonTopics.value[subject.id] = '';
+      await fetchTreeData();
+    } catch (error) {
+      console.error('Error adding lesson:', error);
+      alert(t('hub.errors.addLessonFailed'));
+    }
+  };
 
-  /**
-   * Opens a modal to edit an existing lesson.
-   * @param {object} lesson - The lesson object to edit.
-   */
-  const handleEditLesson = (lesson) => {
-    const skinId = activeProgram.value?.skin_id;
-    modalStore.open('hub/modals/EditLessonModal', {
-      lessonId: lesson.id,
-      skinId: skinId, // Can be null, modal should handle it
-      onUpdateSuccess: fetchTreeData
-    });
-  };
+  const handleEditLesson = (lesson) => {
+    const skinId = activeProgramRef.value?.skin_id;
+    modalStore.open('hub/modals/EditLessonModal', {
+      lessonId: lesson.id,
+      skinId: skinId,
+      onUpdateSuccess: fetchTreeData
+    });
+  };
 
-  /**
-   * Opens a confirmation modal and deletes a lesson if confirmed.
-   * @param {object} lesson - The lesson object to delete.
-   */
-  const handleDeleteLesson = (lesson) => {
-    modalStore.open('hub/modals/ConfirmDeleteModal', {
-      titleKey: 'hub.modals.deleteLesson.title',
-      messageKey: 'hub.modals.deleteLesson.message',
-      messageParams: { lessonName: lesson.topic_translations?.en || 'this lesson' },
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase.rpc('delete_lesson_and_reorder', { p_lesson_id: lesson.id });
-          if (error) throw error;
-          await fetchTreeData();
-        } catch (error) {
-          console.error('Error deleting lesson:', error);
-          alert(t('hub.errors.deleteLessonFailed'));
-        }
-      }
-    });
-  };
+  const handleDeleteLesson = (lesson) => {
+    modalStore.open('hub/modals/ConfirmDeleteModal', {
+      titleKey: 'hub.modals.deleteLesson.title',
+      messageKey: 'hub.modals.deleteLesson.message',
+      messageParams: { lessonName: lesson.topic_translations?.en || 'this lesson' },
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.rpc('delete_lesson_and_reorder', { p_lesson_id: lesson.id });
+          if (error) throw error;
+          await fetchTreeData();
+        } catch (error) {
+          console.error('Error deleting lesson:', error);
+          alert(t('hub.errors.deleteLessonFailed'));
+        }
+      }
+    });
+  };
 
-  /**
-   * Reorders lessons within a subject based on user input.
-   * @param {object} lesson - The lesson being moved.
-   * @param {number} newPosition - The new position for the lesson.
-   */
   const handleLessonPositionUpdate = async (lesson, newPosition) => {
-    if (!newPosition || newPosition < 1) {
-      alert(t('hub.errors.invalidPosition'));
-      return;
-    }
-
-    try {
-      const { error } = await supabase.rpc('reorder_lessons', {
-        p_lesson_id: lesson.id,
-        p_new_position: newPosition
-      });
-      if (error) throw error;
-      await fetchTreeData();
-    } catch (error) {
-      console.error('Failed to reorder lesson:', error);
-      alert(t('hub.errors.reorderLessonFailed'));
-      await fetchTreeData(); // Re-fetch to revert UI
-    }
-  };
+    if (!newPosition || newPosition < 1) {
+      alert(t('hub.errors.invalidPosition'));
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('reorder_lessons', {
+        p_lesson_id: lesson.id,
+        p_new_position: newPosition
+      });
+      if (error) throw error;
+      await fetchTreeData();
+    } catch (error) {
+      console.error('Failed to reorder lesson:', error);
+      alert(t('hub.errors.reorderLessonFailed'));
+      await fetchTreeData(); 
+    }
+  };
 
   /**
    * Handles the drop event when a material is dragged onto a lesson.
    * @param {DragEvent} event - The event object from vuedraggable.
+   * @param {'study' | 'exam'} hubContext - The current UI context.
    */
-  const onDrop = async (event) => {
+  const onDrop = async (event, hubContext = 'study') => { // ИЗМЕНЕНО: Добавлен hubContext
     const droppedMaterial = event.item.__draggable_context.element;
     const targetLesson = hoveredLesson.value;
 
-    // Immediately remove the visual item vuedraggable adds to the list
     if (targetLesson) {
       const lessonList = lessonsBySubject.value[targetLesson.subject_id];
       if (lessonList) {
@@ -324,6 +282,13 @@ const fetchTreeData = async () => {
     if (!droppedMaterial || !targetLesson || droppedMaterial.isAddNewCard) {
       hoveredLesson.value = null;
       return;
+    }
+
+    if (droppedMaterial.material_purpose !== hubContext) {
+        console.warn(`Mismatched drop context. UI: ${hubContext}, Material: ${droppedMaterial.material_purpose}`);
+        alert(t('hub.errors.mismatchedDrop')); // Ошибка: Попытка перетащить учебный материал в экзамены
+        hoveredLesson.value = null;
+        return;
     }
 
     try {
@@ -341,13 +306,9 @@ const fetchTreeData = async () => {
         return;
       }
 
-      const { count, error: countError } = await supabase
-        .from('lesson_materials')
-        .select('*', { count: 'exact', head: true })
-        .eq('lesson_id', targetLesson.id);
-
-      if (countError) throw countError;
-      const newPosition = (count ?? 0) + 1;
+      const lesson = lessons.value.find(l => l.id === targetLesson.id);
+      const currentCount = (hubContext === 'exam' ? lesson?.exam_count : lesson?.study_count) || 0;
+      const newPosition = currentCount + 1;
 
       const { error: insertError } = await supabase
         .from('lesson_materials')
@@ -358,7 +319,8 @@ const fetchTreeData = async () => {
         });
 
       if (insertError) throw insertError;
-      incrementMaterialCount(targetLesson.id);
+      
+      incrementMaterialCount(targetLesson.id, hubContext);
 
     } catch (e) {
       console.error("Error linking material:", e);

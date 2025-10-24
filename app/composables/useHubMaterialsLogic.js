@@ -10,7 +10,7 @@ import { useI18n } from 'vue-i18n';
  * @param {import('vue').Ref<object | null>} selectedLesson - A ref holding the currently selected lesson to filter materials.
  * @param {import('vue').Ref<object | null>} activeProgram - A ref holding the currently active program.
  */
-export function useHubMaterialsLogic(selectedLesson, activeProgram) {
+export function useHubMaterialsLogic(selectedLesson, activeProgram, hubContext) {
   // --- SETUP ---
   const supabase = useSupabaseClient();
   const { t } = useI18n();
@@ -27,15 +27,9 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
 
   // --- COMPUTED ---
 
-  /**
-   * Prepends an "Add New" card to the materials list.
-   * This card is now ALWAYS displayed, regardless of whether a lesson is selected.
-   * @returns {Array<object>}
-   */
+
   const displayedMaterials = computed(() => {
-    const addNewCard = { isAddNewCard: true, id: 'add-new-sentinel' };
-    // The logic is now simple: always return the "Add New" card at the beginning of the array.
-    return [addNewCard, ...materials.value];
+  return materials.value;
   });
 
   // --- METHODS ---
@@ -53,13 +47,13 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
       let query;
 
       if (selectedLesson.value) {
-        // Fetch materials specifically linked to the selected lesson.
+        // --- Логика для ВЫБРАННОГО УРОКА ---
         query = supabase
           .from('lesson_materials')
-          .select('position, learning_apps ( * )')
-          .eq('lesson_id', selectedLesson.value.id);
+          .select('position, learning_apps!inner ( * )')
+          .eq('lesson_id', selectedLesson.value.id)
+          .eq('learning_apps.material_purpose', hubContext.value); 
         
-        // Apply filters to the nested learning_apps record.
         if (statusFilter.value) query = query.eq('learning_apps.status', statusFilter.value);
         if (typeFilter.value) query = query.eq('learning_apps.material_type', typeFilter.value);
         if (searchQuery.value) query = query.ilike('learning_apps.title_translations->>en', `%${searchQuery.value}%`);
@@ -67,16 +61,19 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
         query = query.order('position', { ascending: true });
 
       } else {
-        // Fetch all materials from the central library.
+        // --- Логика для ВСЕЙ БИБЛИОТЕКИ (урок не выбран) ---
         query = supabase.from('learning_apps').select('*');
         
+        // НОВАЯ СТРОКА: Фильтруем по 'material_purpose'
+        query = query.eq('material_purpose', hubContext.value);
+
+        // ... (старые фильтры по статусу, типу, поиску) ...
         if (statusFilter.value) query = query.eq('status', statusFilter.value);
         if (typeFilter.value) query = query.eq('material_type', typeFilter.value);
         if (searchQuery.value) query = query.ilike('title_translations->>en', `%${searchQuery.value}%`);
         
         query = query.order('created_at', { ascending: false });
       }
-
       const { data, error: fetchError } = await query;
       if (fetchError) throw fetchError;
 
@@ -98,8 +95,8 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
     }
   };
 
-  /**
-   * Handles reordering of materials within a lesson.
+/**
+   * Handles reordering of materials within a lesson (optimistic update).
    * @param {object} payload - The event payload.
    * @param {string} payload.materialId - The ID of the material being moved.
    * @param {number} payload.newPosition - The new position for the material.
@@ -107,21 +104,56 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
   const handlePositionUpdate = async ({ materialId, newPosition }) => {
     if (!selectedLesson.value) return;
 
+    // 1. Находим материал и его старую позицию
+    const material = materials.value.find(m => m.id === materialId);
+    if (!material) return;
+    const oldPosition = material.position;
+    if (oldPosition === newPosition || newPosition <= 0) return;
+
+    // 2. Сохраняем "бэкап" для отката в случае ошибки
+    const originalMaterials = JSON.parse(JSON.stringify(materials.value));
+
+    // 3. ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ UI
+    // Применяем изменения к локальному состоянию (materials.value)
+    materials.value.forEach(m => {
+      // Это наш материал, ставим ему новую позицию
+      if (m.id === materialId) {
+        m.position = newPosition;
+      } 
+      // Другие материалы, которые нужно "подвинуть"
+      else {
+        // Сдвигаем ВНИЗ (освобождаем место)
+        if (newPosition < oldPosition && m.position >= newPosition && m.position < oldPosition) {
+          m.position++;
+        }
+        // Сдвигаем ВВЕРХ (заполняем пустоту)
+        else if (newPosition > oldPosition && m.position <= newPosition && m.position > oldPosition) {
+          m.position--;
+        }
+      }
+    });
+
+    // Сортируем массив в UI по новым позициям
+    materials.value.sort((a, b) => a.position - b.position);
+
+    // 4. ВЫЗОВ RPC В ФОНОВОМ РЕЖИМЕ
     try {
-      const { error: rpcError } = await supabase.rpc('reorder_lesson_materials', {
+      const { error: rpcError } = await supabase.rpc('reorder_lesson_materials_context', {
         p_lesson_id: selectedLesson.value.id,
         p_material_id: materialId,
-        p_new_position: newPosition
+        p_new_position: newPosition,
+        p_material_purpose: hubContext.value // <-- Передаем 'study' или 'exam'
       });
 
       if (rpcError) throw rpcError;
       
-      await fetchMaterials();
+      // Успех! UI уже обновлен, ничего делать не нужно.
 
     } catch (e) {
-      console.error('Failed to reorder materials by input:', e);
+      console.error('Failed to reorder material:', e);
       alert(t('hub.errors.reorderMaterialFailed'));
-      await fetchMaterials();
+      // 5. ОТКАТ UI В СЛУЧАЕ ОШИБКИ
+      materials.value = originalMaterials;
     }
   };
 
@@ -129,7 +161,9 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram) {
   watch([searchQuery, statusFilter, typeFilter], () => {
     fetchMaterials();
   }, { deep: true });
-
+  watch(hubContext, () => {
+    fetchMaterials();
+  });
   return {
     materials,
     isLoading,
