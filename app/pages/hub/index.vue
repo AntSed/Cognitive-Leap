@@ -15,7 +15,7 @@
 
       <div v-for="subject in subjects" :key="subject.id" class="subject-group">
         <div class="subject-header" @click="toggleSubject(subject.id)">
-          <h3 class="subject-title">{{ subject.name_translations?.en || t('hub.unnamedSubject') }}</h3>
+          <h3 class="subject-title">{{ subject.name_translations?.[locale] || subject.name_translations?.en || t('hub.unnamedSubject') }}</h3>
           <div class="sidebar-actions">
             <svg class="subject-chevron" :class="{ 'is-expanded': expandedSubjects.has(subject.id) }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -46,7 +46,7 @@
               <a @click="selectLesson(lesson)" :class="{ active: selectedLesson?.id === lesson.id }" @dragenter.prevent="hoveredLesson = lesson">
                 <EditablePosition v-if="isProgramOwner" :model-value="lesson.position" @update:modelValue="newPosition => handleLessonPositionUpdate(lesson, newPosition)" />
                 <span v-else class="lesson-position">{{ lesson.position }}.</span>
-                <span class="lesson-title">{{ lesson.topic_translations?.en || t('hub.untitledLesson') }}</span>
+                <span class="lesson-title">{{ lesson.topic_translations?.[locale] || lesson.topic_translations?.en || t('hub.untitledLesson') }}</span>
                 <div class="sidebar-actions">
                   <div class="material-count">
                     <span class="count-study" title="Study Materials">
@@ -92,6 +92,18 @@
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
           </svg>
+        </div>
+        <div class="header-controls">
+          <div class="language-switcher">
+            <button @click="cycleLanguage" :title="t('changeLanguage')">
+              {{ locale.toUpperCase() }}
+            </button>
+          </div>
+
+          <div class="user-profile-widget" @click="goToProfile" :title="t('hub.goToProfile')">
+            <img v-if="avatarUrl" :src="avatarUrl" alt="User Avatar" class="user-avatar" />
+            <span v-if="user" class="user-email">{{ user.email }}</span>
+          </div>
         </div>
         <p v-if="selectedLesson">
           {{ t('hub.showingMaterialsFor') }} <strong>{{ selectedLesson.topic_translations?.en }}</strong>
@@ -180,9 +192,10 @@
 <script setup>
 import { ref, onMounted, watch, computed, provide } from 'vue';
 import draggable from 'vuedraggable';
-import { useSupabaseUser, useSupabaseClient } from '#imports';
+import { useSupabaseUser, useSupabaseClient, useRouter } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
+import { useI18nService } from '~/composables/useI18nService';
 import AddNewMaterialCard from '~/components/hub/AddNewMaterialCard.vue';
 import HubMaterialCard from '~/components/hub/HubMaterialCard.vue';
 import EditablePosition from '~/components/hub/EditablePosition.vue';
@@ -199,9 +212,11 @@ const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const modalStore = useModalStore();
 const { t } = useI18n();
-
+const { locale, setLocale } = useI18nService();
+const router = useRouter();
 // --- Page-Level State ---
 const currentUserProfile = ref(null);
+const avatarUrl = ref('');
 const activeProgram = ref(null);
 const isSidebarOpen = ref(false);
 const isInlineEditing = ref(false); // Disables draggable when an input is focused
@@ -238,10 +253,17 @@ const fetchUserProfile = async () => {
   if (!user.value) return;
   const { data } = await supabase
     .from('user_profiles')
-    .select('user_id, hub_role')
+    .select('user_id, hub_role, avatar_config') // <-- ИЗМЕНЕНИЕ: добавили avatar_config
     .eq('user_id', user.value.id)
     .single();
+  
   currentUserProfile.value = data;
+  if (user.value) {
+    const config = data?.avatar_config || {};
+    const seed = config.seed || user.value.id;
+    const style = config.style || 'adventurer';
+    avatarUrl.value = `/api/avatar?seed=${encodeURIComponent(seed)}&style=${encodeURIComponent(style)}`;
+  }
 };
 
 const selectProgram = (program) => {
@@ -276,7 +298,16 @@ const fetchAllHubData = async () => {
 provide('setInlineEditingState', (isEditing) => {
   isInlineEditing.value = isEditing;
 });
+const goToProfile = () => {
+  router.push('/?view=profile');
+};
 
+const languages = ['en', 'ru', 'es']; // Тот же список, что и в TheProfile
+const cycleLanguage = () => {
+  const currentIndex = languages.indexOf(locale.value);
+  const nextIndex = (currentIndex + 1) % languages.length;
+  setLocale(languages[nextIndex]);
+};
 // --- Watchers & Lifecycle Hooks ---
 watch(
   [activeProgram, selectedLesson], 
@@ -545,6 +576,7 @@ onMounted(async () => {
   margin-bottom: 2rem;
   text-align: center;
   color: #262e3d;
+  position: relative;
 }
 .hub-header h1 {
   font-size: 2.5rem;
@@ -675,6 +707,96 @@ onMounted(async () => {
   }
   .hub-layout.sidebar-is-open .hub-sidebar {
     transform: translateX(0);
+  }
+}
+.header-controls {
+  position: absolute;
+  top: -0.6rem;
+  right: -1.5rem;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: normal; /* Выравниваем по верху */
+  gap: 1.5rem;
+  z-index: 10;
+}
+
+.language-switcher button {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+  min-width: 44px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  margin-top: 0.2rem; /* Сдвигаем кнопку, чтобы она была примерно по центру аватара */
+}
+.language-switcher button:hover {
+  background-color: #f3f4f6;
+}
+
+.user-profile-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  width: 140px; /* Даем фиксированную ширину для email */
+}
+.user-avatar {
+  width: 64px; /* ИЗМЕНЕНИЕ: 32px -> 64px */
+  height: 64px; /* ИЗМЕНЕНИЕ: 32px -> 64px */
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  object-fit: cover;
+  background-color: #f3f4f6;
+  transition: all 0.2s ease;
+}
+.user-profile-widget:hover .user-avatar {
+  transform: scale(1.05);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.user-email {
+  display: block; /* ИЗМЕНЕНИЕ: Теперь это блок */
+  font-size: 0.75rem; /* 12px */
+  font-weight: 500;
+  color: #52525b;
+  /* Защита от длинного email */
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  /* ... (.hub-layout, .filters-container, .sidebar-toggle, .hub-sidebar...) ... */
+  
+  /* ИЗМЕНЕНИЕ: Мобильные стили для контролов */
+  .header-controls {
+    top: -1rem;
+    right: -1rem;
+    gap: 1rem;
+  }
+  .language-switcher {
+    margin-top: 0.1rem; /* Поменьше отступ */
+  }
+  .language-switcher button {
+    padding: 0.2rem 0.3rem;
+  }
+
+  .user-profile-widget {
+    width: 64px; /* Чуть поуже */
+  }
+  .user-avatar {
+    width: 48px; /* На мобилках 64px все же многовато, 48px - золотая середина */
+    height: 48px;
+  }
+  .user-email {
+    font-size: 0.65rem; /* 10px */
   }
 }
 /* --- Стили переключателя контекста --- */

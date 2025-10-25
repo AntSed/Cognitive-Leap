@@ -4,18 +4,12 @@ import { useSupabaseClient } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
 
-/**
- * Manages the state and logic for the Content Hub's sidebar.
- * This includes fetching and displaying the program structure (subjects and lessons),
- * handling all CRUD operations for them, and managing the drop logic for materials.
- *
- * @param {import('vue').Ref<object | null>} activeProgramRef - A ref holding the currently active program.
- */
-export function useHubSidebarLogic(activeProgramRef) { // ИЗМЕНЕНО: activeProgram -> activeProgramRef
+
+export function useHubSidebarLogic(activeProgramRef) { 
   // --- SETUP ---
   const supabase = useSupabaseClient();
   const modalStore = useModalStore();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   // --- STATE ---
   const subjects = ref([]);
@@ -167,7 +161,7 @@ export function useHubSidebarLogic(activeProgramRef) { // ИЗМЕНЕНО: acti
     modalStore.open('hub/modals/ConfirmDeleteModal', {
       titleKey: 'hub.modals.deleteSubject.title',
       messageKey: 'hub.modals.deleteSubject.message',
-      messageParams: { subjectName: subject.name_translations?.en || 'this subject' },
+      messageParams: { subjectName: subject.name_translations?.[locale.value] || subject.name_translations?.en || 'this subject' },
       onConfirm: async () => {
         try {
           const { error } = await supabase.from('subjects').delete().eq('id', subject.id);
@@ -229,7 +223,7 @@ export function useHubSidebarLogic(activeProgramRef) { // ИЗМЕНЕНО: acti
     modalStore.open('hub/modals/ConfirmDeleteModal', {
       titleKey: 'hub.modals.deleteLesson.title',
       messageKey: 'hub.modals.deleteLesson.message',
-      messageParams: { lessonName: lesson.topic_translations?.en || 'this lesson' },
+      messageParams: { lessonName: lesson.topic_translations?.[locale.value] || lesson.topic_translations?.en || 'this lesson' },
       onConfirm: async () => {
         try {
           const { error } = await supabase.rpc('delete_lesson_and_reorder', { p_lesson_id: lesson.id });

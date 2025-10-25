@@ -17,7 +17,7 @@
         :model-value="material.title_translations?.en"
         :can-edit="canEdit"
         placeholder="Untitled"
-        @update:modelValue="newValue => handleFieldUpdate('title_translations', { ...(material.title_translations || {}), en: newValue })"
+        @update:modelValue="newValue => handleFieldUpdate('title_translations', { ...(material.title_translations || {}), [locale]: newValue })"
       />
       <InlineEditor
         tag="p"
@@ -26,7 +26,7 @@
         :model-value="material.description_translations?.en"
         :can-edit="canEdit"
         placeholder="No description"
-        @update:modelValue="newValue => handleFieldUpdate('description_translations', { ...(material.description_translations || {}), en: newValue })"
+        @update:modelValue="newValue => handleFieldUpdate('description_translations', { ...(material.description_translations || {}), [locale]: newValue })"
       />
     </div>
     <div class="card-footer">
@@ -120,7 +120,7 @@ const emit = defineEmits(['update-position']);
 
 // --- COMPOSABLES ---
 const supabase = useSupabaseClient();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { openDeleteModal, openUnpinModal, openStatusModal } = useMaterialManagement();
 const { getButtonText, playMaterial } = useMaterialPlayer();
 

@@ -117,6 +117,7 @@
   },
   "hub": {
     "title": "El Hub",
+    "goToProfile": "Ir al perfil",
     "defaultProgram": "Programa Escolar",
     "centralLibrary": "Todos los materiales",
     "showingMaterialsFor": "Mostrando materiales para:",
