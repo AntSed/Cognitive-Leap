@@ -102,7 +102,8 @@
   "error_linking_account": "Error al vincular la cuenta: ",
   "profile_hubInvitation_part1": "¡Profesores y padres! Ayúdennos a mejorar Cognitive Leap añadiendo los mejores videos y materiales interactivos a ",
   "profile_hubInvitation_part2": ".",
-  "profile_hubLinkText": "nuestro Centro",
+  "profile_hubLinkText": "nuestro Hub",
+  "studyMaterials": "Materiales de Estudio",
   "common": {
     "loading": "Cargando",
     "creating": "Creando",

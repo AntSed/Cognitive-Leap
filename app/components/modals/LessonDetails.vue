@@ -58,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'; // Добавил onUnmounted
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
 import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
@@ -70,10 +70,11 @@ const props = defineProps({
 
 const isLoading = ref(true);
 const lessonData = ref(null);
-const isTestsSectionExpanded = ref(true); // Оставляем открытой по умолчанию
+const isTestsSectionExpanded = ref(true);
 
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
+const realtimeChannel = ref(null);
 const { locale, t } = useI18n();
 const modalStore = useModalStore();
 const { getButtonText, playMaterial } = useMaterialPlayer();
@@ -87,16 +88,15 @@ const close = () => {
 };
 
 const fetchData = async (id) => {
-  if (!id) return;
+  if (!id || !user.value?.id) return; // Добавил проверку на user.value.id
   isLoading.value = true;
   lessonData.value = null;
   try {
     const rpcArgs = {
         p_lesson_id: id,
-        p_user_id: user.value?.id ?? null,
+        p_user_id: user.value.id, // Теперь мы уверены, что user.value.id есть
         p_lang_code: locale.value
     };
-    // RPC теперь возвращает exam_materials и study_materials
     const { data, error } = await supabase.rpc('get_lesson_details', rpcArgs);
     if (error) throw error;
     lessonData.value = data;
@@ -109,43 +109,87 @@ const fetchData = async (id) => {
 };
 
 onMounted(() => {
-  fetchData(props.lessonId);
+  // fetchData(props.lessonId); // Убрали отсюда, теперь это в watch
 });
 
-// --- ОБНОВЛЕННЫЕ COMPUTED PROPERTIES ---
+// --- ИСПРАВЛЕНИЕ 1: Подписка на Realtime ---
+watch(user, (currentUser) => {
+  // Ждем, пока user.value станет доступен
+  if (currentUser) {
+    // 1. Загружаем данные, как только юзер стал известен
+    fetchData(props.lessonId);
+    
+    // 2. Подписываемся на канал
+    const channelName = `user-progress:${currentUser.id}`;
+    realtimeChannel.value = supabase.channel(channelName);
+
+    realtimeChannel.value
+      .on(
+        'broadcast',
+        { event: 'progress_updated' },
+        (payload) => {
+          console.log('Broadcast received, progress updated!', payload);
+          fetchData(props.lessonId);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[LessonDetails] Subscribed to broadcast channel: ${channelName}`);
+        }
+      });
+  }
+}, { immediate: true });
+
+onUnmounted(() => {
+  // Не забываем отписаться
+  if (realtimeChannel.value) {
+    supabase.removeChannel(realtimeChannel.value);
+  }
+});
+
+
+// --- ИСПРАВЛЕНИЕ 2: Логика Computed ---
+
+/**
+ * Единый источник правды: Set со ВСЕМИ пройденными ID
+ */
+const allCompletedMaterialIds = computed(() => {
+  if (!lessonData.value) return new Set();
+
+  const completedStudy = lessonData.value.study_materials
+    ?.filter(m => m.completed)
+    .map(m => m.id) || [];
+    
+  const completedExams = lessonData.value.exam_materials
+    ?.filter(m => m.completed)
+    .map(m => m.id) || [];
+    
+  return new Set([...completedStudy, ...completedExams]);
+});
 
 /**
  * Вычисляет прогресс прохождения экзаменационных материалов.
  */
 const testProgress = computed(() => {
-  // Используем lessonData.exam_materials
   const exams = lessonData.value?.exam_materials;
   if (!exams || exams.length === 0) return 0;
-  // Считаем те, у которых поле 'completed' (из RPC) равно true
   const completedCount = exams.filter(e => e.completed).length;
-  return (completedCount / exams.length) * 100;
+  return (completedCount / (exams.length || 1)) * 100; // Защита от деления на 0
 });
 
 /**
- * Вспомогательная функция для обработки логики блокировок
+ * Вспомогательная функция (теперь УПРОЩЕННАЯ)
  */
 const processMaterials = (materials) => {
   if (!materials) return [];
   
-  const completedMaterialIds = new Set(
-      materials.filter(m => m.completed).map(m => m.id)
-  );
-
-  // Добавляем ID завершенных экзаменов, чтобы разблокировать учебные материалы
-  if (lessonData.value?.exam_materials) {
-    lessonData.value.exam_materials
-      .filter(m => m.completed)
-      .forEach(m => completedMaterialIds.add(m.id));
-  }
+  const completedIds = allCompletedMaterialIds.value; // Используем единый источник
 
   return materials.map(material => ({
-      ...material,
-      isLocked: material.prerequisite_ids ? !material.prerequisite_ids.every(id => completedMaterialIds.has(id)) : false
+    ...material,
+    isLocked: material.prerequisite_ids 
+      ? !material.prerequisite_ids.every(id => completedIds.has(id)) 
+      : false
   }));
 };
 
@@ -153,7 +197,6 @@ const processMaterials = (materials) => {
  * Подготавливает список УЧЕБНЫХ материалов (с логикой isLocked).
  */
 const processedStudyMaterials = computed(() => {
-  // Используем lessonData.study_materials
   return processMaterials(lessonData.value?.study_materials);
 });
 
@@ -161,20 +204,12 @@ const processedStudyMaterials = computed(() => {
  * Подготавливает список ЭКЗАМЕНАЦИОННЫХ материалов (с логикой isLocked).
  */
 const processedExamMaterials = computed(() => {
-  // Используем lessonData.exam_materials
   return processMaterials(lessonData.value?.exam_materials);
 });
 
 
 // --- ХЕНДЛЕРЫ ---
-
 const toggleTestsSection = () => { isTestsSectionExpanded.value = !isTestsSectionExpanded.value; };
-
-// Этот хендлер больше не нужен, т.к. LessonMaterialCard сам вызывает playMaterial
-// const handleMaterialClick = (material) => { ... };
-
-// Этот хендлер тоже не нужен, т.к. у нас больше нет кнопок в .test-card
-// const handleToggleTestCompletion = (testId) => { ... };
 
 </script>
 

@@ -55,13 +55,15 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
 import { useResizeObserver } from '@vueuse/core';
 import { useGesture } from '@vueuse/gesture';
+import { useSupabaseClient, useSupabaseUser } from '#imports';
 
 const props = defineProps({
   material: { type: Object, required: true }
 });
 
 const modalStore = useModalStore();
-
+const supabase = useSupabaseClient();
+const user = useSupabaseUser();
 const manualZoomLevel = ref(1.0);
 const autoScale = ref(0);
 const scrollerRef = ref(null);
@@ -176,15 +178,82 @@ const toggleFullscreen = async () => {
     }
   }
 };
+/**
+ * Обрабатывает сообщения, приходящие от iframe (игры/квиза).
+ * @param {MessageEvent} event
+ */
+async function handleMessage(event) {
+  // БЕЗОПАСНОСТЬ:
+  // 1. Твоя игра загружается из blob.
+  // 2. Ты используешь sandbox="allow-scripts allow-same-origin".
+  // 3. Это значит, что origin у iframe будет тот же, что и у твоего сайта.
+  // Поэтому мы можем безопасно проверять origin.
+  if (event.origin !== window.location.origin) {
+    console.warn(`[PlayerModal] Blocked message from untrusted origin: ${event.origin}`);
+    return;
+  }
 
+  // Проверяем, что это тот самый сигнал "success"
+  if (event.data?.type === 'material:completed') {
+    console.log('[PlayerModal] Received material:completed signal.');
+
+    // Если lessonId не передан (например, материал открыт из Hub),
+    // мы не можем записать прогресс, поэтому просто закроем модалку.
+    if (!user.value) {
+      console.warn('[PlayerModal] No user, closing modal without saving progress.');
+      modalStore.close();
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('set-material-completed', {
+        body: {
+          materialId: props.material.id,
+          score: 1.0
+        }
+      });
+
+      if (error) throw error;
+      
+      console.log('[PlayerModal] Edge function invoked successfully.', data);
+
+    } catch (e) {
+      console.error('[PlayerModal] Failed to invoke "set-material-completed" function:', e);
+      modalStore.close();
+    }
+  }
+}
+
+/**
+ * Анти-чит: закрывает модалку, если пользователь ушел из окна
+ * во время экзамена.
+ */
+const handleFocusLoss = () => {
+  console.log('[PlayerModal] Focus lost during exam. Closing player.');
+  // Мы не сохраняем прогресс, просто закрываем.
+  modalStore.close();
+  // В будущем можно отправлять в iframe 'pause'
+  // iframeRef.value.contentWindow.postMessage({ type: 'material:pause' }, window.location.origin);
+};
 onMounted(() => {
   document.addEventListener('fullscreenchange', onFullscreenChange);
   isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  window.addEventListener('message', handleMessage);
+
+  // Если это экзамен, включаем "анти-чит"
+  if (props.material.material_purpose === 'exam') {
+    window.addEventListener('blur', handleFocusLoss);
+  }
+
 });
 
 onUnmounted(() => {
   if (iframeSrc.value.startsWith('blob:')) { URL.revokeObjectURL(iframeSrc.value); }
   document.removeEventListener('fullscreenchange', onFullscreenChange);
+  window.removeEventListener('message', handleMessage);
+  if (props.material.material_purpose === 'exam') {
+    window.removeEventListener('blur', handleFocusLoss);
+  }
 });
 </script>
 
