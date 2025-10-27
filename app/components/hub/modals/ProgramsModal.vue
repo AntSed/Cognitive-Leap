@@ -188,75 +188,119 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="css" scoped>
+/* * 1. ОСНОВНАЯ СТРУКТУРА МОДАЛКИ
+ * Задаем размеры, фон, тень и вертикальное flex-расположение,
+ * как в EditProgramModal.
+ */
 .programs-modal {
-  width: 90vw;
-  max-width: 600px;
-  background-color: #27272A;
-  color: #E4E4E7;
-  border-radius: 12px;
-  border: 1px solid #3F3F46;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  max-height: 80vh;
+  @apply flex flex-col max-h-[85vh] w-11/12 max-w-lg;
+  @apply bg-white text-zinc-900 rounded-xl border border-gray-200 shadow-xl shadow-black/10;
 }
+
+/* * 2. ШАПКА
+ * Фиксированная шапка с отступами и разделителем.
+ */
 .modal-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #3F3F46;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
+  @apply px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0;
 }
-.modal-header h2 { margin: 0; font-size: 1.25rem; }
+.modal-header h2 {
+  @apply text-xl font-semibold;
+}
 .modal-close-button {
-  background: none; border: none; color: #A1A1AA;
-  font-size: 2rem; line-height: 1; cursor: pointer;
-  transition: color 0.2s, transform 0.2s;
+  @apply bg-transparent border-none text-gray-400 text-3xl leading-none cursor-pointer;
+  @apply transition-all duration-200 hover:text-gray-700 hover:rotate-90;
 }
-.modal-close-button:hover { color: #fff; transform: rotate(90deg); }
-.modal-body { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
-.state-indicator { text-align: center; color: #A1A1AA; padding: 2rem 0; }
-.programs-list { list-style: none; padding: 0; margin: 0; }
+
+/* * 3. ТЕЛО
+ * Самая важная часть: заставляет контент прокручиваться,
+ * если он не помещается по высоте.
+ */
+.modal-body {
+  @apply flex-1 overflow-y-auto p-6;
+  /* Скрываем полосу прокрутки */
+  @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
+}
+
+/* Состояния загрузки / пустого списка */
+.state-indicator {
+  @apply text-center text-gray-500 py-8;
+}
+
+/* * 4. СПИСОК ПРОГРАММ
+ */
+.programs-list {
+  @apply flex flex-col gap-2;
+}
 .program-item {
-  display: flex; align-items: center; padding: 1rem;
-  border-radius: 8px; cursor: pointer;
-  transition: background-color 0.2s; border: 2px solid transparent;
+  @apply flex justify-between items-center p-3 rounded-lg cursor-pointer;
+  @apply transition-all duration-150 hover:bg-gray-100;
 }
-.program-item:hover { background-color: #3F3F46; }
 .program-item.active {
-  background-color: #3F3F46; border-color: #4f46e5; font-weight: bold;
+  @apply bg-indigo-50 text-indigo-700 font-semibold;
 }
-.program-title { flex-grow: 1; }
-.program-actions { display: flex; gap: 0.75rem; }
-.edit-button:hover {
-  background-color: #1d4ed8;
-  border-color: #2563eb;
+.program-title {
+  @apply flex-1 truncate pr-4; /* Обрезаем длинные названия */
 }
+.program-actions {
+  @apply flex gap-1 sm:gap-2 flex-shrink-0; /* Кнопки не сжимаются */
+}
+
+/* Кнопки действий (Редакт., Удалить) */
 .action-button {
-  background: none; border: 1px solid #52525B; color: #D4D4D8;
-  padding: 0.25rem 0.75rem; border-radius: 6px; cursor: pointer;
-  font-size: 0.85rem; transition: all 0.2s;
+  @apply text-xs font-medium rounded p-1.5 transition-all;
 }
-.action-button:hover:not(:disabled) { background-color: #52525B; color: #fff; }
-.action-button:disabled { opacity: 0.7; cursor: default; }
-.delete-button:hover { background-color: #991B1B; border-color: #DC2626; }
+.share-button {
+  @apply text-blue-600 hover:bg-blue-100;
+  /* Для состояния "Скопировано!" */
+  @apply disabled:text-gray-400 disabled:bg-transparent disabled:cursor-default;
+}
+.edit-button {
+  @apply text-indigo-600 hover:bg-indigo-100;
+}
+.delete-button {
+  @apply text-red-600 hover:bg-red-100;
+}
+
+/* * 5. ПОДВАЛ (ФУТЕР)
+ * Фиксированный подвал с формой создания.
+ */
 .modal-footer {
-  padding: 1.5rem; border-top: 1px solid #3F3F46;
-  background-color: #18181B; flex-shrink: 0;
+  @apply p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0 rounded-b-xl;
 }
-.create-form { display: flex; gap: 0.75rem; }
+
+/* * 6. АДАПТИВНАЯ ФОРМА СОЗДАНИЯ
+ * Ключевой фикс для мобильных:
+ * - По умолчанию: flex-col (инпут над кнопкой)
+ * - На экранах sm и больше: flex-row (инпут слева от кнопки)
+ */
+.create-form {
+  @apply flex flex-col sm:flex-row gap-3;
+}
 .create-form input {
-  flex-grow: 1; background-color: #3F3F46; border: 1px solid #52525B;
-  color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-size: 1rem;
+  @apply flex-1; /* Инпут занимает все доступное место */
 }
-.create-form input::placeholder { color: #A1A1AA; }
 .create-form button {
-  background-color: #4f46e5; color: #fff; border: none;
-  padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600;
-  cursor: pointer; transition: background-color 0.2s;
+  @apply w-full sm:w-auto flex-shrink-0; /* Кнопка во всю ширину на мобилке */
 }
-.create-form button:hover { background-color: #4338ca; }
-.create-form button:disabled { background-color: #3730a3; cursor: not-allowed; }
+
+
+/* * 7. ОБЩИЕ СТИЛИ (из прошлого файла)
+ * Добавляем базовые стили для инпутов и кнопок,
+ * чтобы форма выглядела единообразно.
+ */
+.create-form input {
+  @apply block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-zinc-900;
+  @apply placeholder:text-gray-400 transition-all duration-200;
+  @apply focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30;
+}
+
+.create-form button {
+  @apply px-5 py-2.5 rounded-lg font-semibold text-white bg-indigo-600;
+  @apply transition-all duration-200 ease-in-out;
+  @apply hover:bg-indigo-700;
+  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
 </style>

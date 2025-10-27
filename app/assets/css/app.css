@@ -8,18 +8,12 @@
   display: flex;
   flex-direction: column;
   width: 100vw;
-  overflow: hidden; /* Будь осторожен с этим свойством, оно может обрезать тени модалок */
+  overflow: hidden; 
   position: relative;
   height: 100vh; 
-  /* Если используешь --vh, onMounted логику нужно будет перенести сюда */
+ 
 }
 
-
-/*
-  Глобальные стили и сбросы
-  - Настраивает базовую структуру документа, основной шрифт и цвета.
-  - Предотвращает нежелательную прокрутку на уровне всей страницы.
-*/
 html, body, #__nuxt {
   height: 100%;
   margin: 0;
@@ -28,7 +22,7 @@ html, body, #__nuxt {
   color: #f3f4f6;
   font-family: 'Inter', sans-serif;
 }
-/* Стиль для заглушки-загрузчика */
+
 .component-placeholder {
   display: flex;
   justify-content: center;
@@ -37,14 +31,14 @@ html, body, #__nuxt {
   color: #9ca3af;
 }
 .hide-scrollbar {
-  /* Для Firefox */
+
   scrollbar-width: none;
   
-  /* Для Internet Explorer и старых версий Edge */
+
   -ms-overflow-style: none;
 }
 
-/* Для Chrome, Safari, Opera и других WebKit-браузеров */
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }

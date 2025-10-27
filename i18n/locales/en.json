@@ -140,6 +140,27 @@
       "study": "Study",
       "exam": "Exam"
     },
+      "editProgram": {
+      "title": "Edit Program",
+      "form": {
+        "titleLabel": "Title",
+        "titlePlaceholder": "Enter program title...",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Enter a brief description...",
+        "skinLabel": "Skin for Program",
+        "skinPlaceholder": "-- Select a skin --",
+        "publicLabel": "Make this program public",
+        "publicHelp": "Anyone with the link will be able to view a public program.",
+        "prerequisitesLabel": "Lesson Prerequisites",
+        "prerequisitesHelp": "Set up the sequence in which lessons must be completed.",
+        "prerequisitesButton": "Manage Prerequisites"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "save": "Save Changes"
+      }
+    },
     "sidebar": {
       "showAll": "Show All Materials",
       "newSubjectPlaceholder": "New subject title...",
