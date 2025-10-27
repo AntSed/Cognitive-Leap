@@ -27,26 +27,39 @@
             @click="handleSelectProgram(program)"
           >
             <span class="program-title">{{ program.title }}</span>
-            <div class="program-actions">
-              <button
-                class="action-button share-button"
-                @click.stop="handleShareProgram($event, program)"
-              >
-                {{ t('common.share') }}
-              </button>
-              <button
-                class="action-button edit-button"
-                @click.stop="handleEditProgram(program)"
-              >
-                {{ t('common.edit') }}
-              </button>
-              <button
-                class="action-button delete-button"
-                @click.stop="handleDeleteProgram(program)"
-              >
-                {{ t('common.delete') }}
-              </button>
-            </div>
+<div class="program-actions">
+                <button
+                  class="action-button share-button"
+                  @click.stop="handleShareProgram($event, program)"
+                  :title="t('common.share')"
+                  :disabled="copying === program.id"
+                >
+                  <svg v-if="copying === program.id" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                  </svg>
+                </button>
+                
+                <button
+                  class="action-button edit-button"
+                  @click.stop="handleEditProgram(program)"
+                  :title="t('common.edit')"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                  </svg>
+                </button>
+
+                <button
+                  class="action-button delete-button"
+                  @click.stop="handleDeleteProgram(program)"
+                  :title="t('common.delete')"
+                >
+                  &times;
+                </button>
+              </div>
           </li>
         </ul>
 
@@ -92,6 +105,7 @@ const programs = ref([]);
 const isLoading = ref(true);
 const newProgramTitle = ref('');
 const isCreating = ref(false);
+const copying = ref(null);
 
 const fetchUserPrograms = async () => {
   isLoading.value = true;
@@ -162,16 +176,18 @@ const handleSelectProgram = (program) => {
 
 const handleShareProgram = async (event, program) => {
   const shareUrl = `${window.location.origin}/program/${program.id}`;
+
+  if (copying.value) return; 
+
   try {
     await navigator.clipboard.writeText(shareUrl);
-    const button = event.target;
-    const originalText = button.textContent;
-    button.textContent = t('common.copied');
-    button.disabled = true;
+    
+    copying.value = program.id; 
+    
     setTimeout(() => {
-      button.textContent = originalText;
-      button.disabled = false;
+      copying.value = null; 
     }, 2000);
+
   } catch (err) {
     console.error('Failed to copy text: ', err);
     alert('Could not copy link to clipboard.');
@@ -189,18 +205,10 @@ onMounted(() => {
 </script>
 
 <style lang="css" scoped>
-/* * 1. ОСНОВНАЯ СТРУКТУРА МОДАЛКИ
- * Задаем размеры, фон, тень и вертикальное flex-расположение,
- * как в EditProgramModal.
- */
 .programs-modal {
   @apply flex flex-col max-h-[85vh] w-11/12 max-w-lg;
   @apply bg-white text-zinc-900 rounded-xl border border-gray-200 shadow-xl shadow-black/10;
 }
-
-/* * 2. ШАПКА
- * Фиксированная шапка с отступами и разделителем.
- */
 .modal-header {
   @apply px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0;
 }
@@ -212,23 +220,15 @@ onMounted(() => {
   @apply transition-all duration-200 hover:text-gray-700 hover:rotate-90;
 }
 
-/* * 3. ТЕЛО
- * Самая важная часть: заставляет контент прокручиваться,
- * если он не помещается по высоте.
- */
 .modal-body {
   @apply flex-1 overflow-y-auto p-6;
-  /* Скрываем полосу прокрутки */
   @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
 }
 
-/* Состояния загрузки / пустого списка */
 .state-indicator {
   @apply text-center text-gray-500 py-8;
 }
 
-/* * 4. СПИСОК ПРОГРАММ
- */
 .programs-list {
   @apply flex flex-col gap-2;
 }
@@ -240,28 +240,48 @@ onMounted(() => {
   @apply bg-indigo-50 text-indigo-700 font-semibold;
 }
 .program-title {
-  @apply flex-1 truncate pr-4; /* Обрезаем длинные названия */
+  @apply flex-1 truncate pr-4; 
 }
 .program-actions {
-  @apply flex gap-1 sm:gap-2 flex-shrink-0; /* Кнопки не сжимаются */
+  @apply flex gap-1 sm:gap-2 flex-shrink-0; 
 }
 
-/* Кнопки действий (Редакт., Удалить) */
+/* * Стили кнопок действий (Поделиться, Редакт., Удалить)
+ * Делаем их квадратными, центрируем иконки 
+ */
 .action-button {
-  @apply text-xs font-medium rounded p-1.5 transition-all;
+  @apply flex items-center justify-center w-8 h-8 rounded-lg; /* 32x32px */
+  @apply transition-all duration-150;
 }
+
+/* * Задаем размер для ВСЕХ иконок-SVG внутри кнопок 
+ */
+.action-button svg {
+  @apply w-4 h-4; /* 16x16px */
+}
+
 .share-button {
   @apply text-blue-600 hover:bg-blue-100;
-  /* Для состояния "Скопировано!" */
-  @apply disabled:text-gray-400 disabled:bg-transparent disabled:cursor-default;
 }
+/* * Стиль для состояния "Скопировано!" (когда кнопка :disabled)
+ * Меняем цвет на зеленый.
+ */
+.share-button:disabled {
+  @apply text-green-600 bg-green-100 cursor-default;
+}
+
 .edit-button {
   @apply text-indigo-600 hover:bg-indigo-100;
 }
+
 .delete-button {
   @apply text-red-600 hover:bg-red-100;
+  /* * Стилизуем символ '&times;' чтобы он был похож на иконку:
+   * делаем его большим, жирным и центрируем по вертикали.
+   */
+  @apply text-2xl font-bold leading-none;
+  padding-bottom: 2px; /* Легкая коррекция для оптического центра */
 }
-
 /* * 5. ПОДВАЛ (ФУТЕР)
  * Фиксированный подвал с формой создания.
  */
