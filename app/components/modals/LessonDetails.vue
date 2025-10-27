@@ -1,426 +1,349 @@
 // app/components/modals/LessonDetails.vue
 <template>
-  <div class="lesson-modal-content">
-    <button class="modal-close-button" @click="close()">&times;</button>
-    
-    <div v-if="isLoading" class="loading-state">
-        <p>{{ $t('loadingLesson') }}</p>
-    </div>
+  <div
+    @click.self="closeModal"
+    class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 lg:p-8"
+  >
+    <div
+      class="relative w-full h-full md:w-[98vw] md:h-[98vh] max-w-7xl bg-gray-50 text-gray-900 md:rounded-3xl shadow-2xl flex flex-col overflow-hidden transform transition-all duration-300"
+    >
+      <button
+        @click="closeModal"
+        class="absolute top-5 right-5 z-50 w-10 h-10 rounded-full bg-black/10 text-gray-600 hover:bg-black/20 hover:text-gray-900 transition-all flex items-center justify-center glow-focus"
+        v-html="svgIcons.close"
+      ></button>
 
-    <div v-else-if="lessonData" class="lesson-container">
-      <div class="modal-header">
-        <h2 class="topic-title">{{ lessonData.topic }}</h2>
-        <p class="topic-description" v-if="lessonData.description">{{ lessonData.description }}</p>
+      <div
+        v-if="isLoading"
+        class="loading-state flex items-center justify-center h-full w-full"
+      >
+        <p class="text-lg text-gray-600">{{ $t('loadingLesson') }}</p>
       </div>
 
-      <div v-if="processedExamMaterials && processedExamMaterials.length > 0" class="tests-section" :class="{ 'is-expanded': isTestsSectionExpanded }">
-        <div class="tests-header" @click="toggleTestsSection">
-          <h3>{{ $t('proveYouKnow') }}</h3>
-          <div class="header-right">
-            <div class="progress-bar-container" title="Overall test progress">
-              <div class="progress-bar-inner" :style="{ width: testProgress + '%' }">
-                <span v-if="testProgress > 10">{{ Math.round(testProgress) }}%</span>
-              </div>
+      <div v-else-if="lessonData" class="flex flex-col h-full">
+        <div ref="scrollContainer" class="flex-1 overflow-y-auto no-scrollbar">
+          <div
+            class="relative h-auto min-h-[18rem] md:min-h-0 md:h-80 lg:h-96 bg-gradient-to-br from-blue-900 to-gray-800 flex items-end p-8 md:p-12 overflow-hidden"
+          >
+            <div
+              class="absolute inset-0 opacity-15 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"
+            ></div>
+            <div class="z-10">
+              <h1
+                class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-tight drop-shadow-lg"
+              >
+                {{ lessonData.topic }}
+              </h1>
+              <p
+                v-if="lessonData.description"
+                class="text-lg text-gray-200 mt-3 max-w-4xl opacity-90 text-shadow-sm"
+              >
+                {{ lessonData.description }}
+              </p>
             </div>
-            <svg class="chevron-icon" :class="{ 'is-rotated': isTestsSectionExpanded }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-gray-50/80 to-transparent"
+            ></div>
+          </div>
+
+          <div
+            class="sticky top-0 z-10 bg-white bg-gradient-to-r from-blue-50/80 to-red-50/80 backdrop-blur-lg shadow-md py-4 px-8 md:px-12 border-b border-gray-200"
+          >
+            <div class="flex justify-center space-x-6">
+              <button
+                @click="setSection('materials')"
+                class="relative py-2 min-w-[150px] text-center text-xl font-semibold transition-colors duration-300 transform active:scale-95 focus:outline-none focus:scale-[1.02]"
+                :class="
+                  activeSection === 'materials'
+                    ? 'text-blue-600'
+                    : 'text-gray-500 hover:text-gray-900'
+                "
+              >
+                {{ $t('studyMaterials') }}
+
+                <div
+                  class="absolute bottom-0 left-0 w-full h-1.5 rounded-full bg-gray-200"
+                ></div>
+
+                <div
+                  class="absolute bottom-0 left-0 h-1.5 rounded-full transition-all duration-500 ease-out"
+                  :class="
+                    activeSection === 'materials'
+                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                      : 'bg-gray-400'
+                  "
+                  :style="{ width: materialProgressPercent + '%' }"
+                ></div>
+              </button>
+
+              <button
+                @click="setSection('exams')"
+                class="relative py-2 min-w-[150px] text-center text-xl font-semibold transition-colors duration-300 transform active:scale-95 focus:outline-none focus:scale-[1.02]"
+                :class="
+                  activeSection === 'exams'
+                    ? 'text-red-600'
+                    : 'text-gray-500 hover:text-gray-900'
+                "
+              >
+                {{ $t('proveYouKnow') }}
+
+                <div
+                  class="absolute bottom-0 left-0 w-full h-1.5 rounded-full bg-gray-200"
+                ></div>
+
+                <div
+                  class="absolute bottom-0 left-0 h-1.5 rounded-full transition-all duration-500 ease-out"
+                  :class="
+                    activeSection === 'exams'
+                      ? 'bg-gradient-to-r from-red-500 to-rose-500'
+                      : 'bg-gray-400'
+                  "
+                  :style="{ width: testProgress + '%' }"
+                ></div>
+              </button>
+            </div>
+          </div>
+
+          <div class="px-8 md:px-12 pb-8 pt-8">
+            <transition name="section-transition" mode="out-in">
+              <section
+                v-if="activeSection === 'materials'"
+                key="materials-content"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                <LessonMaterialCard
+                  v-for="material in processedStudyMaterials"
+                  :key="material.id"
+                  :material="material"
+                  :isLocked="material.isLocked"
+                  :is-exam="false"
+                />
+              </section>
+
+              <section
+                v-else-if="activeSection === 'exams'"
+                key="exams-content"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                <LessonMaterialCard
+                  v-for="material in processedExamMaterials"
+                  :key="material.id"
+                  :material="material"
+                  :isLocked="material.isLocked"
+                  :is-exam="true"
+                />
+              </section>
+            </transition>
           </div>
         </div>
-        <transition name="slide-fade">
-          <div v-if="isTestsSectionExpanded" class="tests-body materials-grid">
-            <LessonMaterialCard
-              v-for="material in processedExamMaterials"
-              :key="material.id"
-              :material="material"
-              :isLocked="material.isLocked"
-            />
-          </div>
-        </transition>
-      </div>
-
-      <div class="materials-section">
-        <h3 class="section-title">{{ $t('studyMaterials') }}</h3>
-        
-        <div class="materials-grid">
-          <LessonMaterialCard
-            v-for="material in processedStudyMaterials"
-            :key="material.id"
-            :material="material"
-            :isLocked="material.isLocked"
-          />
         </div>
-
       </div>
-
     </div>
-  </div>
-</template>
+  </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'; // Добавил onUnmounted
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18n } from 'vue-i18n';
-import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
 import LessonMaterialCard from '~/components/LessonMaterialCard.vue';
 
+// --- PROPS ---
 const props = defineProps({
-  lessonId: { type: String, required: true }
+  lessonId: { type: String, required: true },
 });
 
+// --- STATE (CORE) ---
 const isLoading = ref(true);
 const lessonData = ref(null);
-const isTestsSectionExpanded = ref(true);
-
-const supabase = useSupabaseClient();
-const user = useSupabaseUser();
 const realtimeChannel = ref(null);
-const { locale, t } = useI18n();
-const modalStore = useModalStore();
-const { getButtonText, playMaterial } = useMaterialPlayer();
 
-const close = () => {
-    if (modalStore.closeLesson) {
-        modalStore.closeLesson();
-    } else {
-        modalStore.close();
-    }
+// --- STATE (UI) ---
+const activeSection = ref('materials'); // 'materials' or 'exams'
+const scrollContainer = ref(null);
+const svgIcons = {
+  close: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`,
 };
 
+// --- COMPOSABLES ---
+const supabase = useSupabaseClient();
+const user = useSupabaseUser();
+const { locale, t } = useI18n();
+const modalStore = useModalStore();
+
+// --- HANDLERS (UI) ---
+const setSection = (sectionName) => {
+  activeSection.value = sectionName;
+};
+
+const closeModal = () => {
+  if (modalStore.closeLesson) {
+    modalStore.closeLesson();
+  } else {
+    modalStore.close();
+  }
+};
+
+// --- DATA FETCHING ---
 const fetchData = async (id) => {
-  if (!id || !user.value?.id) return; // Добавил проверку на user.value.id
+  if (!id || !user.value?.id) return;
   isLoading.value = true;
-  lessonData.value = null;
+  // Keep old data while loading to prevent full-screen flash
+  // lessonData.value = null; 
   try {
     const rpcArgs = {
-        p_lesson_id: id,
-        p_user_id: user.value.id, // Теперь мы уверены, что user.value.id есть
-        p_lang_code: locale.value
+      p_lesson_id: id,
+      p_user_id: user.value.id,
+      p_lang_code: locale.value,
     };
     const { data, error } = await supabase.rpc('get_lesson_details', rpcArgs);
     if (error) throw error;
     lessonData.value = data;
   } catch (error) {
-    console.error("Error loading lesson data inside component:", error);
-    close();
+    console.error('Error loading lesson data inside component:', error);
+    closeModal(); // Close if data fails to load
   } finally {
     isLoading.value = false;
   }
 };
 
-onMounted(() => {
-  // fetchData(props.lessonId); // Убрали отсюда, теперь это в watch
-});
+// --- LIFECYCLE & REALTIME ---
+watch(
+  user,
+  (currentUser) => {
+    // Wait until user.value is available
+    if (currentUser) {
+      // 1. Fetch initial data
+      fetchData(props.lessonId);
 
-// --- ИСПРАВЛЕНИЕ 1: Подписка на Realtime ---
-watch(user, (currentUser) => {
-  // Ждем, пока user.value станет доступен
-  if (currentUser) {
-    // 1. Загружаем данные, как только юзер стал известен
-    fetchData(props.lessonId);
-    
-    // 2. Подписываемся на канал
-    const channelName = `user-progress:${currentUser.id}`;
-    realtimeChannel.value = supabase.channel(channelName);
+      // 2. Subscribe to realtime channel
+      const channelName = `user-progress:${currentUser.id}`;
+      realtimeChannel.value = supabase.channel(channelName);
 
-    realtimeChannel.value
-      .on(
-        'broadcast',
-        { event: 'progress_updated' },
-        (payload) => {
-          console.log('Broadcast received, progress updated!', payload);
-          fetchData(props.lessonId);
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`[LessonDetails] Subscribed to broadcast channel: ${channelName}`);
-        }
-      });
-  }
-}, { immediate: true });
+      realtimeChannel.value
+        .on(
+          'broadcast',
+          { event: 'progress_updated' },
+          (payload) => {
+            console.log('Broadcast received, progress updated!', payload);
+            fetchData(props.lessonId);
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(
+              `[LessonDetails] Subscribed to broadcast channel: ${channelName}`
+            );
+          }
+        });
+    }
+  },
+  { immediate: true }
+);
 
 onUnmounted(() => {
-  // Не забываем отписаться
+  // Unsubscribe from channel
   if (realtimeChannel.value) {
     supabase.removeChannel(realtimeChannel.value);
   }
 });
 
-
-// --- ИСПРАВЛЕНИЕ 2: Логика Computed ---
+// --- COMPUTED (DATA PROCESSING) ---
 
 /**
- * Единый источник правды: Set со ВСЕМИ пройденными ID
+ * Single source of truth: Set of ALL completed material IDs
  */
 const allCompletedMaterialIds = computed(() => {
   if (!lessonData.value) return new Set();
 
-  const completedStudy = lessonData.value.study_materials
-    ?.filter(m => m.completed)
-    .map(m => m.id) || [];
-    
-  const completedExams = lessonData.value.exam_materials
-    ?.filter(m => m.completed)
-    .map(m => m.id) || [];
-    
+  const completedStudy =
+    lessonData.value.study_materials
+      ?.filter((m) => m.completed)
+      .map((m) => m.id) || [];
+
+  const completedExams =
+    lessonData.value.exam_materials
+      ?.filter((m) => m.completed)
+      .map((m) => m.id) || [];
+
   return new Set([...completedStudy, ...completedExams]);
 });
 
 /**
- * Вычисляет прогресс прохождения экзаменационных материалов.
- */
-const testProgress = computed(() => {
-  const exams = lessonData.value?.exam_materials;
-  if (!exams || exams.length === 0) return 0;
-  const completedCount = exams.filter(e => e.completed).length;
-  return (completedCount / (exams.length || 1)) * 100; // Защита от деления на 0
-});
-
-/**
- * Вспомогательная функция (теперь УПРОЩЕННАЯ)
+ * Helper function to process materials and determine lock state.
  */
 const processMaterials = (materials) => {
   if (!materials) return [];
-  
-  const completedIds = allCompletedMaterialIds.value; // Используем единый источник
 
-  return materials.map(material => ({
+  const completedIds = allCompletedMaterialIds.value; // Use single source of truth
+
+  return materials.map((material) => ({
     ...material,
-    isLocked: material.prerequisite_ids 
-      ? !material.prerequisite_ids.every(id => completedIds.has(id)) 
-      : false
+    isLocked: material.prerequisite_ids
+      ? !material.prerequisite_ids.every((id) => completedIds.has(id))
+      : false,
   }));
 };
 
 /**
- * Подготавливает список УЧЕБНЫХ материалов (с логикой isLocked).
+ * Prepares the list of STUDY materials (with isLocked logic).
  */
 const processedStudyMaterials = computed(() => {
   return processMaterials(lessonData.value?.study_materials);
 });
 
 /**
- * Подготавливает список ЭКЗАМЕНАЦИОННЫХ материалов (с логикой isLocked).
+ * Prepares the list of EXAM materials (with isLocked logic).
  */
 const processedExamMaterials = computed(() => {
   return processMaterials(lessonData.value?.exam_materials);
 });
 
+// --- COMPUTED (UI) ---
 
-// --- ХЕНДЛЕРЫ ---
-const toggleTestsSection = () => { isTestsSectionExpanded.value = !isTestsSectionExpanded.value; };
+/**
+ * Calculates progress for the EXAM materials tab.
+ */
+const testProgress = computed(() => {
+  const exams = lessonData.value?.exam_materials;
+  if (!exams || exams.length === 0) return 0;
+  const completedCount = exams.filter((e) => e.completed).length;
+  return (completedCount / (exams.length || 1)) * 100; // Protect against division by 0
+});
 
+/**
+ * Calculates progress for the STUDY materials tab.
+ */
+const materialProgressPercent = computed(() => {
+  const materials = lessonData.value?.study_materials;
+  if (!materials || materials.length === 0) return 0;
+  const completedCount = materials.filter((m) => m.completed).length;
+  return (completedCount / (materials.length || 1)) * 100;
+});
 </script>
 
 <style scoped>
-/* Новая палитра (вдохновлена Tailwind 'slate' и 'sky'):
-  - Фон: #0F172A (slate-900 / Глубокий темно-синий)
-  - Второстепенный фон: #1E293B (slate-800 / Темно-сине-серый)
-  - Границы / Разделители: #334155 (slate-700 / Сине-серый)
-  - Текст приглушенный: #94A3B8 (slate-400 / Светлый сине-серый)
-  - Текст основной: #E2E8F0 (slate-200 / Почти белый)
-  - Акцент 1 (Пурпурный): #A855F7 (сохранен)
-  - Акцент 2 (Зеленый): #22C55E (green-500)
-  - Акцент 3 (Голубой): #06B6D4 (cyan-500 / для кнопок и скролла)
-*/
-
-.lesson-modal-content {
-  background: #0F172A; /* Новый фон */
-  color: #E2E8F0; /* Новый основной текст */
-  padding: 2rem;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 850px;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-  border: 1px solid #334155; /* Новая граница */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-  font-family: 'Inter', sans-serif;
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, Opera */
 }
-.lesson-modal-content::-webkit-scrollbar { width: 8px; }
-.lesson-modal-content::-webkit-scrollbar-track { background: #0F172A; }
-.lesson-modal-content::-webkit-scrollbar-thumb { background-color: #06B6D4; border-radius: 10px; } /* Новый акцент скролла */
-
-.modal-close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  line-height: 32px;
-  text-align: center;
-  color: #94A3B8; /* Приглушенный текст */
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.modal-close-button:hover { 
-  color: #fff; 
-  background: #E11D48; /* Яркий акцент для "закрытия" */
-  transform: rotate(90deg); 
+.no-scrollbar {
+  -ms-overflow-style: none; /* For IE and Edge */
+  scrollbar-width: none; /* For Firefox */
 }
 
-.modal-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #334155; /* Новый разделитель */
+/* Custom transition for section switching */
+.section-transition-enter-active,
+.section-transition-leave-active {
+  transition: opacity 0.3s ease;
 }
-.topic-title {
-  font-size: 2.75rem;
-  font-weight: 800;
-  color: #fff;
-  margin: 0;
-  background: -webkit-linear-gradient(45deg, #A855F7, #D946EF);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.topic-description { 
-  font-size: 1.1rem; 
-  color: #94A3B8; /* Приглушенный текст */
-  max-width: 600px; 
-  margin: 0.75rem auto 0; 
-  line-height: 1.6; 
-}
-
-.tests-section {
-  background: #1E293B; /* Второстепенный фон */
-  border-radius: 12px;
-  margin-bottom: 2.5rem;
-  border: 1px solid #334155; /* Граница */
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-.tests-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  padding: 1rem 1.5rem;
-}
-.tests-header h3 { 
-  font-size: 1.2rem; 
-  font-weight: 600; 
-  color: #E2E8F0; /* Основной текст */
-  margin: 0; 
-}
-.header-right { display: flex; align-items: center; gap: 1rem; }
-.progress-bar-container {
-  width: 120px;
-  background: #334155; /* Фон прогресс-бара */
-  border-radius: 10px;
-  height: 18px;
-  overflow: hidden;
-}
-.progress-bar-inner {
-  background: linear-gradient(90deg, #7E22CE, #A855F7);
-  height: 100%;
-  transition: width 0.5s ease;
-  text-align: center;
-  color: white;
-  font-weight: 600;
-  font-size: 0.75rem;
-  line-height: 18px;
-}
-.chevron-icon { width: 24px; height: 24px; color: #94A3B8; transition: transform 0.3s ease; }
-.chevron-icon.is-rotated { transform: rotate(180deg); }
-.tests-body { 
-  padding: 1.5rem; /* Добавляем внутренний отступ для сетки */
-  /* Используем ту же сетку, что и для учебных материалов */
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1.5rem;
-}
-.test-info p { margin: 0; color: #94A3B8; }
-.test-info p.test-title { font-weight: 500; color: #E2E8F0; }
-
-/* Новый заголовок для секции материалов */
-.materials-section {
-  /* Можно добавить отступ, если нужно */
-}
-.section-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #E2E8F0;
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #334155;
-}
-
-
-.materials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1.5rem;
-}
-
-.action-button {
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  outline: none;
-}
-.action-button:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-.action-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-
-
-.test-button {
-  background: #16A34A; /* Оригинальный зеленый */
-  color: white;
-  padding: 0.6rem 1.2rem;
-}
-.test-button:hover:not(:disabled) {
-  background: #22C55E; /* Более яркий зеленый */
-}
-
-.loading-state {
-  display: flex; 
-  justify-content: center; 
-  align-items: center;
-  height: 200px; 
-  font-size: 1.2rem; 
-  color: #94A3B8;
-}
-
-
-.slide-fade-enter-active {
-  transition: all 0.3s ease-out;
-}
-.slide-fade-leave-active {
-  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
-}
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(-10px);
+.section-transition-enter-from,
+.section-transition-leave-to {
   opacity: 0;
 }
-@media (max-width: 768px) {
-  .lesson-modal-content {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .lesson-modal-content::-webkit-scrollbar {
-    display: none;
-  }
+
+/* A subtle glow on focus for buttons/interactive elements */
+.glow-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4); /* Tailwind's blue-500 with alpha */
 }
 </style>

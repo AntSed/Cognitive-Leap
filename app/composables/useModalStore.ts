@@ -21,12 +21,18 @@ const modalComponents = import.meta.glob('~/components/**/*.vue');
 let isInitialized = false;
 export const useModalStore = defineStore('modal', () => {
   const stack = ref<ModalInstance[]>([]);
-
+  const isOpening = ref(false);
   const isOpen = computed(() => stack.value.length > 0);
   const currentStack = computed(() => stack.value);
 
   const open = <T = any>(componentPath: string, componentProps: Record<string, any> = {}, options: ModalOptions = {}): Promise<T | undefined> => {
     return new Promise<T | undefined>(async (resolve) => {
+      if (isOpening.value) {
+        console.warn('Modal open call ignored, already opening.');
+        return resolve(undefined);
+      }
+      isOpening.value = true;
+
       if (options.history !== false && stack.value.length === 0) {
         window.location.hash = 'modal';
       }
@@ -36,6 +42,7 @@ export const useModalStore = defineStore('modal', () => {
 
       if (!componentImporter) {
         console.error(`Modal store error: Component at path "${componentPath}" not found. Looked for key: "${fullPath}"`);
+        isOpening.value = false;
         return resolve(undefined);
       }
 
@@ -52,6 +59,8 @@ export const useModalStore = defineStore('modal', () => {
       } catch (e) {
         console.error(`Modal store error: Could not load component at path: ${componentPath}`, e);
         resolve(undefined);
+      } finally {
+        isOpening.value = false;
       }
     });
   };
