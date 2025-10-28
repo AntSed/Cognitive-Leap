@@ -5,23 +5,25 @@
     :title="cardTooltip"
     @click.stop="handleCardClick"
   >
-    <div class="relative w-full aspect-video">
-      <img
-        :src="imageUrl"
-        :alt="material.title"
-        class="w-full h-full object-cover"
+    <div class="relative">
+      <HubCardImage
+        :material="material"
+        :thumbnail-url="material.thumbnail_url"
+        :can-edit="false"
+        :title="material.title"
+        @play="handleCardClick"
       />
 
       <div
         v-if="isLocked"
-        class="absolute top-3 right-3 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
+        class="absolute top-3 right-3 z-20 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
         :title="t('locked')"
         v-html="svgIcons.lock"
       ></div>
 
       <div
         v-else-if="isCompleted"
-        class="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
+        class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
         :class="isStale ? 'bg-yellow-400' : 'bg-green-500'"
         :title="completionDateTooltip"
         v-html="svgIcons.check"
@@ -53,6 +55,7 @@
 import { computed } from 'vue';
 import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
 import { useI18n } from 'vue-i18n';
+import HubCardImage from '~/components/hub/HubCardImage.vue';
 
 // --- PROPS ---
 const props = defineProps({
@@ -88,13 +91,9 @@ const handleCardClick = () => {
 
 // --- COMPUTED: STATUS ---
 const isCompleted = computed(() => !!props.material.completed);
-
 const isStale = computed(() => {
   if (!props.material.completed_at) return false;
-  
-  // Only stale if it's actually completed
   if (!isCompleted.value) return false; 
-
   const completionDate = new Date(props.material.completed_at);
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -102,17 +101,6 @@ const isStale = computed(() => {
 });
 
 // --- COMPUTED: DISPLAY LOGIC ---
-const imageUrl = computed(() => {
-  // 1. Check for the future-proof thumbnail_url
-  if (props.material.thumbnail_url) {
-    return props.material.thumbnail_url;
-  }
-
-  // 2. Fallback to placehold.co as requested
-  const text = encodeURIComponent(props.material.title);
-  const color = props.isExam ? 'F87171' : '60A5FA'; // Red for exam, Blue for study
-  return `https://placehold.co/600x400/${color}/FFFFFF?text=${text}&font=inter`;
-});
 
 const rootClasses = computed(() => [
   'bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 group',
@@ -120,12 +108,9 @@ const rootClasses = computed(() => [
     ? 'border-l-4 border-l-red-400'
     : 'border-l-4 border-l-blue-400',
   {
-    // Apply dimming if completed, but not if locked
     'opacity-70': isCompleted.value && !props.isLocked,
     'opacity-100': !isCompleted.value && !props.isLocked,
-    // Apply lock styles (takes precedence)
     'grayscale opacity-60 cursor-not-allowed': props.isLocked,
-    // Apply hover effects only if not locked
     'hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-1.5 cursor-pointer':
       !props.isLocked,
   },

@@ -175,7 +175,9 @@
     "card": {
       "manageStatusTooltip": "Administrar Estado y Adjuntos",
       "unpinTooltip": "Desanclar de esta lección",
-      "deleteTooltip": "Eliminar material permanentemente"
+      "deleteTooltip": "Eliminar material permanentemente",
+      "editThumbnailTooltip": "Editar Miniatura",
+      "uploading": "Subiendo..."
     },
     "add": {
       "chooseType": "Elegir tipo de material",
@@ -242,7 +244,11 @@
       "deleteMaterialFailed": "Error al eliminar el material. Por favor, inténtalo de nuevo.",
       "createProgramFailed": "Error al crear el programa. Por favor, inténtalo de nuevo.",
       "deleteProgramFailed": "Error al eliminar el programa. Por favor, inténtalo de nuevo.",
-      "saveFailed": "Error al guardar los cambios. Por favor, inténtalo de nuevo."
+      "saveFailed": "Error al guardar los cambios. Por favor, inténtalo de nuevo.",
+      "invalidImageType": "Tipo de archivo de imagen inválido. Solo se permiten PNG y JPEG.",
+      "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo permitido es 8 MB.",
+      "thumbnailUploadFailed": "Error al subir la miniatura. Por favor, inténtalo de nuevo.",
+      "bucketNotFound": "Storage error: Bucket not found."      
     }
   },
   "statuses": {

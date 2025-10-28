@@ -175,7 +175,9 @@
     "card": {
       "manageStatusTooltip": "Manage Status & Attachments",
       "unpinTooltip": "Unpin from this lesson",
-      "deleteTooltip": "Delete material permanently"
+      "deleteTooltip": "Delete material permanently",
+      "editThumbnailTooltip": "Edit thumbnail",
+      "uploading": "Uploading..."
     },
     "add": {
       "chooseType": "Choose material type",
@@ -242,7 +244,11 @@
       "deleteMaterialFailed": "Failed to delete material. Please try again.",
       "createProgramFailed": "Failed to create program. Please try again.",
       "deleteProgramFailed": "Failed to delete program. Please try again.",
-      "saveFailed": "Failed to save changes. Please try again."
+      "saveFailed": "Failed to save changes. Please try again.",
+      "invalidImageType": "Invalid file type. Please upload PNG, JPG, or WEBP.",
+      "fileTooLarge": "File is too large (max 8 MB).",
+      "thumbnailUploadFailed": "Thumbnail upload failed.",
+      "bucketNotFound": "Storage error: Bucket not found."
     }
   },
   "statuses": {
