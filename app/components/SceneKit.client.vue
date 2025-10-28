@@ -1,3 +1,4 @@
+// app/components/SceneKit.client.vue
 <template>
   <div class="scene-wrapper" ref="wrapperRef">
     <canvas ref="canvasRef"></canvas>
@@ -11,6 +12,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import { useModalStore } from '~/composables/useModalStore';
@@ -81,32 +83,43 @@ watch(() => modalStore.isOpen.value, (isOpen) => {
     isOpen ? sceneKitApp.pause() : sceneKitApp.resume();
   }
 });
-
 // =================================================================================================
 // --- UNIVERSAL 3D ENGINE ---
 // =================================================================================================
 class SceneKitApp {
-  constructor(wrapper, canvas, skinData, supabase, modalStore, programId) {
-    this.wrapper = wrapper; this.canvas = canvas; this.skinData = skinData; this.supabase = supabase; this.modalStore = modalStore;
-    this.renderer = null; this.scene = null; this.programId = programId; this.camera = null;
-    this.mainGroup = new THREE.Group(); this.clock = new THREE.Clock();
-    this.controls = null; this.raycaster = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
-    this.font = null; this.geometryCache = {};
-    this.gltfLoader = new GLTFLoader(); 
-    this.stlLoader = new STLLoader(); 
-    this.textureLoader = new THREE.TextureLoader();
-    this.svgLoader = new SVGLoader();
-    this.nodesData = []; this.assetsData = [];
-    this.clickableObjects = []; 
-    this.attentionNodes = []; 
-    this.allNodeGroups = [];
-    this.attentionEffectUpdater = null;
-    this.globalEffectUpdater = null;
-    this.billboardGroups = [];
-    this.needsRender = true; this.animationFrameId = null; this.isPaused = true;
-    this.isEditMode = false; this.isProcessingClick = false;
-    this.draggedObject = null; this.dragPlane = new THREE.Plane(); this.dragOffset = new THREE.Vector3();
-  }
+    constructor(wrapper, canvas, skinData, supabase, modalStore, programId) {
+        this.wrapper = wrapper; this.canvas = canvas; this.skinData = skinData; this.supabase = supabase; this.modalStore = modalStore;
+        this.renderer = null; this.scene = null; this.programId = programId; this.camera = null;
+        this.mainGroup = new THREE.Group(); this.clock = new THREE.Clock();
+        this.controls = null; this.raycaster = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
+        this.font = null; this.geometryCache = {};
+
+        // --- NEW: Инициализация DRACOLoader ---
+        this.dracoLoader = new DRACOLoader();
+        // Указываем путь к папке с файлами декодера Draco в папке public
+        this.dracoLoader.setDecoderPath('/draco/'); // Убедись, что папка draco есть в public
+        this.dracoLoader.setDecoderConfig({ type: 'js' }); // Или 'wasm'
+        this.dracoLoader.preload();
+
+        this.gltfLoader = new GLTFLoader();
+        // --- NEW: Связываем DRACOLoader с GLTFLoader ---
+        this.gltfLoader.setDRACOLoader(this.dracoLoader);
+
+        this.stlLoader = new STLLoader();
+        this.textureLoader = new THREE.TextureLoader();
+        this.svgLoader = new SVGLoader();
+
+        this.nodesData = []; this.assetsData = [];
+        this.clickableObjects = [];
+        this.attentionNodes = [];
+        this.allNodeGroups = [];
+        this.attentionEffectUpdater = null;
+        this.globalEffectUpdater = null;
+        this.billboardGroups = [];
+        this.needsRender = true; this.animationFrameId = null; this.isPaused = true;
+        this.isEditMode = false; this.isProcessingClick = false;
+        this.draggedObject = null; this.dragPlane = new THREE.Plane(); this.dragOffset = new THREE.Vector3();
+    }
 
 async init() {
   try {
@@ -353,17 +366,42 @@ async init() {
             });
         } else if (url.endsWith('.glb') || url.endsWith('.gltf')) {
             modelPromise = this.gltfLoader.loadAsync(url).then(gltf => {
-                const model = gltf.scene;
-                if (params.transparent) {
-                    model.traverse(child => {
-                        if (child.isMesh) {
-                            child.material.transparent = true;
-                            child.material.opacity = params.opacity;
-                        }
-                    });
-                }
-                return model;
-            });
+    const model = gltf.scene;
+    model.traverse(child => {
+        if (child.isMesh) {
+            // --- Улучшенная логика применения параметров ---
+            const originalMaterial = child.material;
+            // Всегда создаем новый MeshStandardMaterial, чтобы точно применить все параметры из БД
+            const newMaterial = new THREE.MeshStandardMaterial();
+
+            // Копируем карту текстур, если она была (можно добавить и другие карты)
+            if (originalMaterial.map) newMaterial.map = originalMaterial.map;
+             if (originalMaterial.normalMap) newMaterial.normalMap = originalMaterial.normalMap;
+
+
+            // Применяем параметры из БД (params = assetData.parameters)
+            // Используем значения из params, если они есть, иначе - дефолтные
+            newMaterial.color.set(params.color ?? '#ffffff'); // Дефолтный белый
+            newMaterial.metalness = params.metalness ?? 0.1;   // Дефолт
+            newMaterial.roughness = params.roughness ?? 0.5;   // Дефолт
+            newMaterial.envMapIntensity = params.envMapIntensity ?? 1.0; // Дефолт
+
+            // Прозрачность
+            newMaterial.transparent = params.transparent ?? false; // Дефолт - непрозрачный
+            newMaterial.opacity = params.opacity ?? 1.0;       // Дефолт - полная непрозрачность
+            newMaterial.depthWrite = params.depthWrite ?? !newMaterial.transparent; // Дефолт: true для непрозрачных, false для прозрачных
+            newMaterial.side = THREE.DoubleSide; // Для прозрачных лучше DoubleSide
+
+            // Заменяем материал и утилизируем старый
+            child.material = newMaterial;
+            if (originalMaterial.dispose) originalMaterial.dispose();
+
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
+    return model;
+});
         } else if (assetData.asset_type === 'image_plane') {
             return this.textureLoader.loadAsync(url).then(texture => {
                 const geometry = new THREE.PlaneGeometry(params.width || 100, params.height || 100);
