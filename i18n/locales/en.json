@@ -161,6 +161,9 @@
         "save": "Save Changes"
       }
     },
+    "messages": {
+      "compressing": "Compressing..."
+    },
     "sidebar": {
       "showAll": "Show All Materials",
       "newSubjectPlaceholder": "New subject title...",

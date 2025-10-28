@@ -161,6 +161,9 @@
         "save": "Сохранить изменения"
       }
     },
+    "messages": {
+      "compressing": "Сжимаем..."
+    },
     "sidebar": {
       "showAll": "Показать все материалы",
       "newSubjectPlaceholder": "Название нового предмета...",

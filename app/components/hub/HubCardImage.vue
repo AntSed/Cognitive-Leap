@@ -1,9 +1,8 @@
-C:\cognitive-leap\app\components\hub\HubCardImage.vue
 <template>
   <div
     class="relative w-full cursor-pointer aspect-video group/image bg-black overflow-hidden"
- >
-<img
+  >
+    <img
       :src="imageUrl"
       :alt="title" :class="['absolute inset-0 h-full w-full', imageClass]"
       @click="emit('play')"
@@ -14,7 +13,7 @@ C:\cognitive-leap\app\components\hub\HubCardImage.vue
       @click.self="emit('play')"
     >
       <div
-        class="flex h-16 w-16 items-center justify-center rounded-full bg-white/30 backdrop-blur-sm"
+        class="flex h-16 w-16 items-center justify-center rounded-full bg-white/30 backdrop-blur-sm pointer-events-none"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -31,7 +30,7 @@ C:\cognitive-leap\app\components\hub\HubCardImage.vue
       </div>
     </div>
 
-<button
+    <button
       v-if="canEdit"
       class="absolute left-2 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white opacity-70 transition-all hover:opacity-100 hover:bg-black"
       :title="t('hub.card.editThumbnailTooltip')"
@@ -53,12 +52,14 @@ C:\cognitive-leap\app\components\hub\HubCardImage.vue
       v-if="isLoading"
       class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm"
     >
-      </div>
+       <p class="font-bold text-gray-700">{{ t('hub.messages.compressing') }}</p>
+    </div>
     <div
       v-if="uploadError"
       class="absolute bottom-0 z-20 w-full bg-red-600 p-2 text-center text-xs font-medium text-white"
     >
-      </div>
+      {{ uploadError }}
+    </div>
     <input
       ref="fileInputRef"
       type="file"
@@ -70,10 +71,10 @@ C:\cognitive-leap\app\components\hub\HubCardImage.vue
 </template>
 
 <script setup>
-
 import { ref, computed } from 'vue';
-import { useSupabaseClient } from '#imports';
+// import { useSupabaseClient } from '#imports'; // Больше не нужен
 import { useI18n } from 'vue-i18n';
+import { useR2Uploader } from '~/composables/useR2Uploader'; // <-- ИМПОРТ
 
 // --- PROPS & EMITS ---
 const props = defineProps({
@@ -86,28 +87,27 @@ const props = defineProps({
 const emit = defineEmits(['update:thumbnailUrl', 'play']);
 
 // --- COMPOSABLES ---
-const supabase = useSupabaseClient();
 const { t } = useI18n();
+// Управляется через composable:
+const { upload, isLoading, error: uploadError } = useR2Uploader(); 
 
 // --- STATE ---
 const fileInputRef = ref(null);
-const isLoading = ref(false);
-const uploadError = ref(null);
-const cacheKey = ref(new Date().getTime());
+
 // --- COMPUTED ---
 
 const imageClass = computed(() => {
-  // Use 'contain' for user-uploaded images (which might be vertical)
-  // Use 'cover' for our fallback (which we know is 16:9)
   return props.thumbnailUrl ? 'object-contain' : 'object-cover';
 });
 
 const imageUrl = computed(() => {
   if (props.thumbnailUrl) {
+    // Используем updated_at для сброса кэша
     const timestamp = new Date(props.material.updated_at).getTime();
     return `${props.thumbnailUrl}?t=${timestamp}`;
   }
 
+  // Логика фоллбэка
   const text = encodeURIComponent(props.title);
   const isExam = props.material.material_purpose === 'exam';
   const color = isExam ? 'F87171' : '60A5FA';
@@ -116,7 +116,7 @@ const imageUrl = computed(() => {
 // --- METHODS ---
 
 const triggerFileInput = () => {
-  uploadError.value = null;
+  uploadError.value = null; // Сброс ошибки при новой попытке
   fileInputRef.value?.click();
 };
 
@@ -129,8 +129,7 @@ const handleFileSelect = (event) => {
     return;
   }
 
-  if (file.size > 8 * 1024 * 1024) {
-    // 8MB limit
+  if (file.size > 8 * 1024 * 1024) { // 8MB лимит на *оригинал*
     uploadError.value = t('hub.errors.fileTooLarge');
     return;
   }
@@ -138,45 +137,19 @@ const handleFileSelect = (event) => {
   uploadFile(file);
 };
 
+// --- !! ГЛАВНОЕ ИЗМЕНЕНИЕ БЫЛО ЗДЕСЬ !! ---
 const uploadFile = async (file) => {
-  isLoading.value = true;
-  uploadError.value = null;
-
-  try {
-    const bucket = 'material-thumbnails';
-    const filePath = `${props.material.id}/cover.png`;
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
-
-    if (uploadError) throw uploadError;
-
-    const { data: urlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(uploadData.path);
-
-    if (!urlData.publicUrl) {
-      throw new Error('Could not retrieve public URL.');
-    }
-
-    emit('update:thumbnailUrl', urlData.publicUrl);
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    if (error.message.includes('Bucket not found')) {
-      uploadError.value = t('hub.errors.bucketNotFound');
-    } else {
-      uploadError.value =
-        error.message || t('hub.errors.thumbnailUploadFailed');
-    }
-  } finally {
-    isLoading.value = false;
-    if (fileInputRef.value) {
-      fileInputRef.value.value = '';
-    }
+  
+  const newPublicUrl = await upload(file, props.material.id);
+  
+  if (newPublicUrl) {
+    // Сообщаем родителю (Хабу), что URL изменился.
+    // Родитель должен сохранить это в `learning_apps.thumbnail_url`
+    emit('update:thumbnailUrl', newPublicUrl);
+  }
+  
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
   }
 };
 </script>
