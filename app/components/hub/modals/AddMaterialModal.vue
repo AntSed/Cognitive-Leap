@@ -66,7 +66,7 @@
         </div>
         <div class="tab-content">
           <div v-show="activeLangTab === 'en'">
-            <input v-model="formData.title_translations.en" type="text" placeholder="Title (in English)" required class="form-input" />
+            <input v-model="formData.title_translations.en" type="text" placeholder="Title (in English)" class="form-input" />
             <textarea v-model="formData.description_translations.en" placeholder="Description (in English)" rows="3" class="form-input"></textarea>
           </div>
           <div v-show="activeLangTab === 'es'">

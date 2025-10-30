@@ -14,7 +14,7 @@
       :material="material"
       :thumbnail-url="material.thumbnail_url"
       :can-edit="canEdit"
-      :title="material.title_translations?.en || 'Untitled'"
+      :title="displayedTitle"
       @play="handleCardClick"
       @update:thumbnailUrl="
         (newUrl) => handleFieldUpdate('thumbnail_url', newUrl)
@@ -23,34 +23,60 @@
 
     <div class="flex flex-grow flex-col p-4">
       <div class="flex-grow">
-        <InlineEditor
-          tag="h3"
-          class="material-title pr-12 text-lg font-semibold text-gray-800"
-          :model-value="material.title_translations?.en"
-          :can-edit="canEdit"
-          placeholder="Untitled"
-          input-class="w-full text-lg font-semibold p-0 border-0 border-b-2 border-gray-300 !text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-0"
-          @update:modelValue="
-            (newValue) =>
-              handleFieldUpdate('title_translations', {
-                ...(material.title_translations || {}),
-                [locale]: newValue,
-              })
-          "
-        />
+        <div class="flex items-center justify-between gap-1 pr-12">
+          <InlineEditor
+            tag="h3"
+            class="material-title text-lg font-semibold text-gray-800"
+            :model-value="displayedTitle"
+            :can-edit="canEdit"
+            :placeholder="t('hub.card.untitled')"
+            input-class="w-full text-lg font-semibold p-0 border-0 border-b-2 border-gray-300 !text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-0"
+            @update:modelValue="
+              (newValue) =>
+                handleFieldUpdate('title_translations', {
+                  ...(material.title_translations || {}),
+                  [currentLangCode]: newValue,
+                })
+            "
+          />
+
+          <div
+            v-if="availableLangs.length > 1"
+            class="lang-switcher ml-2 flex shrink-0 items-center gap-1"
+          >
+            <button
+              @click.stop="cycleLang(-1)"
+              class="rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              title="Previous language"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <span class="text-xs font-medium text-gray-500">
+              {{ currentLangCode.toUpperCase() }}
+            </span>
+            <button
+              @click.stop="cycleLang(1)"
+              class="rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              title="Next language"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+        </div>
+
         <InlineEditor
           tag="p"
           class="material-description mt-1 text-sm leading-snug text-gray-700"
           input-type="textarea"
-          :model-value="material.description_translations?.en"
+          :model-value="displayedDescription"
           :can-edit="canEdit"
-          placeholder="No description"
+          :placeholder="t('hub.card.noDescription')"
           input-class="w-full text-sm border border-gray-300 rounded-md p-1 mt-1 !text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           @update:modelValue="
             (newValue) =>
               handleFieldUpdate('description_translations', {
                 ...(material.description_translations || {}),
-                [locale]: newValue,
+                [currentLangCode]: newValue,
               })
           "
         />
@@ -123,7 +149,7 @@
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.438 1.001v.001c0 .388.145.761.438 1.001l1.003.827a1.125 1.125 0 01.26 1.431l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.075.124a6.57 6.57 0 01-.22.127c-.332.183-.582.495-.645.87l-.213 1.281c-.09.543-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 01-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 01-1.37-.49l-1.296-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.437-1.001v-.001c0-.388-.145-.761-.437-1.001l-1.004-.827a1.125 1.125 0 01-.26-1.431l1.296-2.247a1.125 1.125 0 011.37-.49l1.217.456c.355.133.75.072 1.075.124.072-.044.146-.087.22-.127.332-.183.582.495.645.87l.213-1.281z"
+                d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.438 1.001v.001c0 .388.145.761.438 1.001l1.003.827a1.125 1.125 0 01.26 1.431l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.075.124a6.57 6.57 0 01-.22.127c-.332.183-.582.495-.645.87l-.213 1.281c-.09.543-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 01-.22-.127c-.324-.196-.72-.257-1.075.124l-1.217.456a1.125 1.125 0 01-1.37-.49l-1.296-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.437-1.001v-.001c0-.388-.145-.761-.437-1.001l-1.004-.827a1.125 1.125 0 01-.26-1.431l1.296-2.247a1.125 1.125 0 011.37-.49l1.217.456c.355.133.75.072 1.075.124.072-.044.146-.087.22-.127.332-.183.582.495.645.87l.213-1.281z"
               />
               <path
                 stroke-linecap="round"
@@ -181,7 +207,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useSupabaseClient } from '#imports';
 import { useI18n } from 'vue-i18n';
 import { useMaterialPlayer } from '~/composables/useMaterialPlayer';
@@ -204,6 +230,61 @@ const emit = defineEmits(['update-position']);
 // --- COMPOSABLES ---
 const supabase = useSupabaseClient();
 const { t, locale } = useI18n();
+const availableLangs = computed(() => {
+  const translations = props.material.title_translations || {};
+  // Возвращаем только те языки, у которых есть непустой заголовок
+  return Object.keys(translations).filter(lang => translations[lang]);
+});
+
+// 2. Находим, какой язык показать по умолчанию
+const getInitialLangIndex = () => {
+  if (!availableLangs.value.length) return 0; // На случай, если переводов нет
+
+  // Сначала ищем язык пользователя (locale)
+  const localeIndex = availableLangs.value.indexOf(locale.value);
+  if (localeIndex !== -1) return localeIndex;
+
+  // Если не нашли, ищем 'en'
+  const enIndex = availableLangs.value.indexOf('en');
+  if (enIndex !== -1) return enIndex;
+
+  // Если нет ни 'en', ни языка пользователя, показываем первый доступный
+  return 0;
+};
+
+// 3. Локальное состояние: индекс текущего языка
+const currentLangIndex = ref(getInitialLangIndex());
+
+// 4. Код текущего языка (e.g., 'en', 'ru')
+const currentLangCode = computed(() => {
+  return availableLangs.value[currentLangIndex.value] || 'en'; // Фоллбэк на 'en'
+});
+
+// 5. Вычисляемые title и description, которые мы покажем в <template>
+const displayedTitle = computed(() => {
+  return props.material.title_translations?.[currentLangCode.value] || t('hub.card.untitled');
+});
+
+const displayedDescription = computed(() => {
+  return props.material.description_translations?.[currentLangCode.value] || t('hub.card.noDescription');
+});
+
+// 6. Функция для стрелочек < >
+const cycleLang = (direction) => {
+  const langCount = availableLangs.value.length;
+  if (langCount <= 1) return;
+
+  let newIndex = currentLangIndex.value + direction;
+
+  // "Закольцовываем" переключение
+  if (newIndex < 0) {
+    newIndex = langCount - 1; // с 0 на последний
+  } else if (newIndex >= langCount) {
+    newIndex = 0; // с последнего на 0
+  }
+  
+  currentLangIndex.value = newIndex;
+};
 const { openDeleteModal, openUnpinModal, openStatusModal } =
   useMaterialManagement();
 const { playMaterial } = useMaterialPlayer();

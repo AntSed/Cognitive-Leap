@@ -108,7 +108,7 @@ const rootClasses = computed(() => [
     ? 'border-l-4 border-l-red-400'
     : 'border-l-4 border-l-blue-400',
   {
-    'opacity-70': isCompleted.value && !props.isLocked,
+    'opacity-100': isCompleted.value && !props.isLocked,
     'opacity-100': !isCompleted.value && !props.isLocked,
     'grayscale opacity-60 cursor-not-allowed': props.isLocked,
     'hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-1.5 cursor-pointer':

@@ -190,6 +190,8 @@
       "unpinTooltip": "Desanclar de esta lección",
       "deleteTooltip": "Eliminar material permanentemente",
       "editThumbnailTooltip": "Editar Miniatura",
+      "noDescription": "Sin descripción",
+      "untitled": "Sin título",
       "uploading": "Subiendo..."
     },
     "add": {

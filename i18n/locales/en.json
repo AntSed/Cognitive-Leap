@@ -190,7 +190,9 @@
       "unpinTooltip": "Unpin from this lesson",
       "deleteTooltip": "Delete material permanently",
       "editThumbnailTooltip": "Edit thumbnail",
-      "uploading": "Uploading..."
+      "uploading": "Uploading...",
+      "noDescription": "No description",
+      "Untitled": "Untitled"
     },
     "add": {
       "chooseType": "Choose material type",

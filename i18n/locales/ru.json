@@ -190,6 +190,8 @@
       "unpinTooltip": "Открепить от этого урока",
       "deleteTooltip": "Удалить материал навсегда",
       "editThumbnailTooltip": "Редактировать миниатюру",
+      "noDescription": "Нет описания",
+      "untitled": "Без названия",
       "uploading": "Загрузка..."
     },
     "add": {
