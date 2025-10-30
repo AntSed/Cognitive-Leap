@@ -136,6 +136,11 @@
     "showingMaterialsFor": "Mostrando materiales para:",
     "unnamedSubject": "Materia sin nombre",
     "untitledLesson": "Lección sin título",
+    "pagination": {
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "page": "Página {current} de {total}"
+    },
     "context": {
       "study": "Estudio",
       "exam": "Examen"
@@ -173,6 +178,11 @@
       "search": "Buscar por Título",
       "status": "Estado",
       "type": "Tipo",
+      "language": "Idioma",
+      "age": "Edad Recomendada",
+      "creator": "Creador",
+      "myMaterials": "Mis Materiales",
+      "title": "Filtros",
       "all": "Todos"
     },
     "card": {

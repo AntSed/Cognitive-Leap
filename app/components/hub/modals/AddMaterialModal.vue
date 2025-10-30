@@ -146,6 +146,14 @@ const handleFileUpload = (event) => {
 };
 
 const handleSubmit = async () => {
+
+  const hasAnyTitle = Object.values(formData.title_translations).some(title => title && title.trim());
+  if (!hasAnyTitle) {
+    alert('please provide a title.'); // TODO: i18n
+    return; 
+  }
+
+
   if (isSubmitting.value) return;
   isSubmitting.value = true;
 

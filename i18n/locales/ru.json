@@ -136,6 +136,11 @@
     "showingMaterialsFor": "Отображаются материалы для:",
     "unnamedSubject": "Предмет без названия",
     "untitledLesson": "Урок без названия",
+    "pagination": {
+      "prev": "Назад",
+      "next": "Вперед",
+      "page": "Страница {current} из {total}"
+    },
     "context": {
       "study": "Обучение",
       "exam": "Экзамен"
@@ -173,6 +178,11 @@
       "search": "Поиск по названию",
       "status": "Статус",
       "type": "Тип",
+      "language": "Язык",
+      "age": "Рекомендуемый возраст",
+      "creator": "Создатель",
+      "myMaterials": "Мои материалы",
+      "title": "Фильтры",
       "all": "Все"
     },
     "card": {

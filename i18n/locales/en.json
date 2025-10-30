@@ -136,6 +136,11 @@
     "showingMaterialsFor": "Showing materials for:",
     "unnamedSubject": "Unnamed Subject",
     "untitledLesson": "Untitled Lesson",
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next",
+      "page": "Page {current} of {total}"
+    },
     "context": {
       "study": "Study",
       "exam": "Exam"
@@ -173,6 +178,11 @@
       "search": "Search by Title",
       "status": "Status",
       "type": "Type",
+      "language": "Language",
+      "age": "Recommended Age",
+      "creator": "Creator",
+      "myMaterials": "My Materials",
+      "title": "Filters",
       "all": "All"
     },
     "card": {

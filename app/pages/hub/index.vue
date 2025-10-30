@@ -110,6 +110,7 @@
         </p>
         <p v-else>{{ t('hub.centralLibrary') }}</p>
       </header>
+
     <div class="context-switcher-container">
       <div class="context-switcher">
         <button
@@ -130,10 +131,15 @@
         </button>
       </div>
     </div>
-      <div class="filters-container">
+
+      <div class="filters-container" :class="{ 'mobile-filters-open': areFiltersOpen }">
+        <button class="filter-toggle-btn" @click="areFiltersOpen = !areFiltersOpen">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.573a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" /></svg>
+          <span>{{ t('hub.filters.title') }}</span>
+        </button>
         <div class="filter-group">
           <label for="search">{{ t('hub.filters.search') }}</label>
-          <input id="search" v-model="searchQuery" type="text" placeholder="e.g., Photosynthesis" />
+          <input id="search" v-model="localSearchInput" type="text" placeholder="e.g., Photosynthesis" />
         </div>
         <div class="filter-group">
           <label for="status">{{ t('hub.filters.status') }}</label>
@@ -153,6 +159,32 @@
             <option value="game">{{ t('types.game') }}</option>
             <option value="presentation">{{ t('types.presentation') }}</option>
             <option value="article">{{ t('types.article') }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="language">{{ t('hub.filters.language') }}</label>
+          <select id="language" v-model="languageFilter">
+            <option value="">{{ t('hub.filters.all') }}</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="ru">Русский</option>
+            </select>
+        </div>
+        <div class="filter-group">
+          <label for="age">{{ t('hub.filters.age') }}</label>
+          <select id="age" v-model="ageFilter">
+            <option value="">{{ t('hub.filters.all') }}</option>
+            <option value="4-6">4-6</option>
+            <option value="7-10">7-10</option>
+            <option value="11-15">11-15</option>
+            <option value="16+">16+</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="creator">{{ t('hub.filters.creator') }}</label>
+          <select id="creator" v-model="creatorFilter">
+            <option value="">{{ t('hub.filters.all') }}</option>
+            <option value="me">{{ t('hub.filters.myMaterials') }}</option>
           </select>
         </div>
       </div>
@@ -183,6 +215,17 @@
         </template>
       </draggable>
       </div>
+      <div v-if="totalPages > 1" class="pagination-controls">
+        <button @click="prevPage" :disabled="currentPage === 1">
+          &lt; {{ t('hub.pagination.prev') }}
+        </button>
+        <span>
+          {{ t('hub.pagination.page', { current: currentPage, total: totalPages }) }}
+        </span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">
+          {{ t('hub.pagination.next') }} &gt;
+        </button>
+      </div>
     </main>
 
     <ModalWrapper />
@@ -201,6 +244,7 @@ import HubMaterialCard from '~/components/hub/HubMaterialCard.vue';
 import EditablePosition from '~/components/hub/EditablePosition.vue';
 import ModalWrapper from '~/components/ModalWrapper.vue';
 // Logic Composables
+import { debounce } from '~/utils/debounce.js';
 import { useHubSidebarLogic } from '~/composables/useHubSidebarLogic';
 import { useHubMaterialsLogic } from '~/composables/useHubMaterialsLogic';
 
@@ -221,6 +265,7 @@ const activeProgram = ref(null);
 const isSidebarOpen = ref(false);
 const isInlineEditing = ref(false); // Disables draggable when an input is focused
 const hubContext = ref('study');
+const areFiltersOpen = ref(true);
 // --- Logic from Composables ---
 const {
   lessons, subjects, lessonsBySubject, expandedSubjects, selectedLesson, newSubjectName,
@@ -232,8 +277,30 @@ const {
 
 const {
   materials, isLoading, searchQuery, statusFilter, typeFilter,
-  displayedMaterials, fetchMaterials, handlePositionUpdate
-} = useHubMaterialsLogic(selectedLesson, activeProgram, hubContext);
+  languageFilter,
+  ageFilter,
+  creatorFilter,
+  displayedMaterials, fetchMaterials, handlePositionUpdate,
+  currentPage,
+  totalMaterials,
+  pageSize,
+  resetPage
+} = useHubMaterialsLogic(selectedLesson, activeProgram, hubContext, user);
+
+
+
+const localSearchInput = ref(searchQuery.value);
+
+// 2. Создаем debounced-функцию, которая обновляет "настоящий" searchQuery
+// (который и запускает fetch)
+const updateSearchQuery = debounce((newValue) => {
+  searchQuery.value = newValue;
+}, 500); // 500ms задержка
+
+// 3. Следим за локальным инпутом и вызываем debounced-функцию
+watch(localSearchInput, (newValue) => {
+  updateSearchQuery(newValue);
+});
 
 // Provide child components with a toolkit to refresh parent state
 const hubUpdateTools = computed(() => ({
@@ -248,7 +315,22 @@ const isProgramOwner = computed(() => {
   if (!user.value || !activeProgram.value) return false;
   return user.value.id === activeProgram.value.creator_id;
 });
+const totalPages = computed(() => {
+  if (pageSize <= 0) return 0;
+  return Math.ceil(totalMaterials.value / pageSize);
+});
 
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
 const fetchUserProfile = async () => {
   if (!user.value) return;
   const { data } = await supabase
@@ -314,13 +396,14 @@ watch(
   ([newProgram, newLesson], [oldProgram, oldLesson]) => {
     // Scenario 1: The program has changed. This requires a full data reload.
     if (newProgram?.id !== oldProgram?.id) {
+      resetPage();
       fetchAllHubData();
-      return; // Exit to prevent the next condition from running unnecessarily
+      return; 
     }
 
     // Scenario 2: The program is the same, but the lesson has changed.
-    // This only requires the materials grid to be reloaded.
     if (newLesson?.id !== oldLesson?.id) {
+      resetPage(); 
       fetchMaterials();
     }
   }, 
@@ -328,6 +411,9 @@ watch(
 );
 
 onMounted(async () => {
+  if (window.innerWidth <= 768) {
+    areFiltersOpen.value = false;
+  }
   await fetchUserProfile();
   const savedProgramId = localStorage.getItem('activeProgramId');
   let programLoaded = false;
@@ -608,6 +694,22 @@ onMounted(async () => {
   height: 1rem;
   color: #9ca3af;
 }
+.filter-toggle-btn {
+  display: none;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
 .filters-container {
   display: flex;
   gap: 1.5rem;
@@ -674,9 +776,6 @@ onMounted(async () => {
   .hub-layout {
     grid-template-columns: 1fr;
   }
-  .filters-container {
-    flex-direction: column;
-  }
   .sidebar-toggle {
     position: fixed;
     top: 1rem;
@@ -693,6 +792,25 @@ onMounted(async () => {
     border-radius: 8px;
     font-weight: 500;
     color: #111827;
+  }
+  .filter-toggle-btn {
+    display: flex;
+  }
+  .filter-toggle-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .filters-container {
+    flex-direction: column;
+  }
+
+  .filters-container:not(.mobile-filters-open) .filter-group {
+    display: none;
+  }
+
+  .filters-container.mobile-filters-open .filter-group {
+    display: flex;
   }
   .hub-sidebar {
     position: fixed;
@@ -864,4 +982,42 @@ onMounted(async () => {
   border-left-color: #ef4444;
 }
 */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.pagination-controls button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  background-color: #fff;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.pagination-controls button:disabled {
+  background-color: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  color: #374151;
+  font-weight: 500;
+}
+
 </style>
