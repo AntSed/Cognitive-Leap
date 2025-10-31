@@ -26,10 +26,10 @@
           <p v-show="selectedType === 'internal_video'">
             {{ $t('hub.add.typeVideoInternal_desc') }}
           </p>
-           <p v-show="selectedType === 'upload_app'">
+            <p v-show="selectedType === 'upload_app'">
             {{ $t('hub.add.typeApp_desc') }}
           </p>
-           <p v-show="selectedType === 'upload_presentation'">
+            <p v-show="selectedType === 'upload_presentation'">
             {{ $t('hub.add.typePresentation_desc') }}
           </p>
         </div>
@@ -37,9 +37,24 @@
 
       <div class="form-section">
         <label class="form-label">{{ $t('hub.add.provideSource') }}</label>
+        
+        <!-- === TEMPLATE CHANGE HERE === -->
         <div v-if="['external_link', 'internal_video'].includes(selectedType)">
-          <input v-model="formData.url" type="url" placeholder="https://..." required class="form-input" />
+          <!-- 
+            Changed type="url" to type="text".
+            This stops the browser from blocking "presentations/MyComponent.vue".
+            We will add validation in the script.
+          -->
+          <input 
+            v-model="formData.url" 
+            type="text" 
+            placeholder="https://TheBestMaterialForThisLesson.com" 
+            required 
+            class="form-input" 
+          />
         </div>
+        <!-- === END TEMPLATE CHANGE === -->
+
         <div v-if="['upload_app', 'upload_presentation'].includes(selectedType)">
           <input @change="handleFileUpload" type="file" accept=".zip" required class="form-input-file" />
         </div>
@@ -127,13 +142,12 @@ const selectedType = ref('external_link');
 const activeLangTab = ref('en');
 const isSubmitting = ref(false);
 
-// Full form data structure
 const formData = reactive({
   url: '',
   file: null,
   title_translations: { en: '', es: '', ru: '' },
   description_translations: { en: '', es: '', ru: '' },
-  languages: ['en'], // Default to English
+  languages: ['en'],
   age_min: null,
   age_max: null,
 });
@@ -145,57 +159,104 @@ const handleFileUpload = (event) => {
   }
 };
 
+/**
+ * Checks if a string is a valid absolute URL.
+ */
+const isValidHttpUrl = (string) => {
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
 const handleSubmit = async () => {
 
   const hasAnyTitle = Object.values(formData.title_translations).some(title => title && title.trim());
   if (!hasAnyTitle) {
-    alert('please provide a title.'); // TODO: i18n
-    return; 
+    alert('Please provide at least one title.');
+    return;
   }
-
 
   if (isSubmitting.value) return;
   isSubmitting.value = true;
 
+  const cleanTranslations = (trans) => {
+    return Object.entries(trans).reduce((acc, [lang, value]) => {
+      if (value && value.trim()) acc[lang] = value.trim();
+      return acc;
+    }, {});
+  };
+
   try {
-    const cleanTranslations = (trans) => {
-      return Object.entries(trans).reduce((acc, [lang, value]) => {
-        if (value && value.trim()) acc[lang] = value.trim();
-        return acc;
-      }, {});
-    };
+    // --- SCRIPT CHANGE HERE ---
+    // We now have ONE flow for links/vue-components and one for file uploads.
+    
+    // 1. Normalize path: replace backslashes with forward slashes
+    const normalizedPath = formData.url ? formData.url.replace(/\\/g, '/') : '';
+
+    // 2. Check for .vue using the normalized path
+    const isVueComponent = (selectedType.value === 'external_link' || selectedType.value === 'internal_video') &&
+                           normalizedPath.endsWith('.vue');
 
     const materialTypeMap = {
       'external_link': 'external_link', 'internal_video': 'video',
       'upload_app': 'app', 'upload_presentation': 'presentation',
     };
 
+    // 3. Prepare core data
     const coreMaterialData = {
       developer_id: user.value.id,
-      material_type: materialTypeMap[selectedType.value],
       title_translations: cleanTranslations(formData.title_translations),
       description_translations: cleanTranslations(formData.description_translations),
       languages: formData.languages,
       recommended_age_min: formData.age_min,
       recommended_age_max: formData.age_max,
       status: 'draft',
-      material_purpose: props.hubContext
+      material_purpose: props.hubContext,
+      // --- Logic is now here ---
+      material_type: '', // Will be set below
+      component_name: null, // Will be set if needed
     };
 
-    if (['external_link', 'internal_video'].includes(selectedType.value)) {
-      if (!formData.url) throw new Error('A URL is required.');
-      
-      const { error } = await supabase.rpc('create_material_and_link', {
-        core_data: coreMaterialData,
-        link_url: formData.url,
-        // Убедись, что эта строка на месте!
-        lesson_uuids: props.lessonIds
-      });
-      if (error) throw error;
+    let linkUrl = null; // Will be set if needed
 
+    if (isVueComponent) {
+      // --- FLOW A: Vue Component (Admin) ---
+      const componentPath = normalizedPath.replace(/\.vue$/, '');
+      
+      // Parse material_type from path
+      let materialType = 'app'; // Default
+      if (componentPath.startsWith('presentations/')) {
+        materialType = 'presentation';
+      } else if (componentPath.startsWith('games/')) {
+        materialType = 'game';
+      }
+      
+      coreMaterialData.material_type = materialType;
+      coreMaterialData.component_name = componentPath; // Save the clean, forward-slash path
+      linkUrl = null; // Explicitly null for Vue components
+
+    } else if (['external_link', 'internal_video'].includes(selectedType.value)) {
+      // --- FLOW B: Normal Link ---
+      if (!formData.url) throw new Error('A URL is required.');
+
+      // Add validation because we changed to type="text"
+      if (!isValidHttpUrl(formData.url)) {
+        throw new Error('Please enter a valid URL (e.g., https://...) or a .vue component path.');
+      }
+      
+      coreMaterialData.material_type = materialTypeMap[selectedType.value];
+      linkUrl = formData.url; // Save original URL
+    
     } else if (selectedType.value.startsWith('upload_')) {
+      // --- FLOW C: File Upload ---
       if (!formData.file) throw new Error('A file is required.');
       
+      // This flow uses a different function, so we'll handle it separately
+      coreMaterialData.material_type = materialTypeMap[selectedType.value];
+
       const body = new FormData();
       body.append('file', formData.file);
       body.append('coreData', JSON.stringify(coreMaterialData));
@@ -204,8 +265,24 @@ const handleSubmit = async () => {
       const { data, error } = await supabase.functions.invoke('upload-and-sanitize-app', { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      
+      // Upload flow is done, call success and exit
+      props.onSuccess();
+      modalStore.close();
+      return; // Exit function
     }
 
+    // --- RPC Call for Flows A and B ---
+    // This will only be reached by link or vue component flows
+    const { error } = await supabase.rpc('create_material_and_link', {
+      core_data: coreMaterialData,
+      link_url: linkUrl,
+      lesson_uuids: props.lessonIds
+    });
+    if (error) throw error;
+
+
+    // --- Common Success ---
     props.onSuccess();
     modalStore.close();
 
@@ -217,6 +294,8 @@ const handleSubmit = async () => {
   }
 };
 </script>
+
+
 <style scoped>
 .add-material-modal {
   width: 90vw;

@@ -834,7 +834,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column-reverse;
   align-items: normal; /* Выравниваем по верху */
-  gap: 1.5rem;
   z-index: 10;
 }
 

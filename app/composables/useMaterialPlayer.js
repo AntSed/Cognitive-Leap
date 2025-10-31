@@ -67,13 +67,20 @@ export function useMaterialPlayer() {
     }
 
     // 3. Handle internal player types (app, game, presentation).
-    // This completes the refactoring by removing 'openPlayer'.
     if (internalPlayerTypes.includes(material.material_type)) {
-      modalStore.open(
-        'modals/PlayerModal', // Direct path to the modal
-        { material },           // Props
-        { history: false }      // Options (this was implied by openPlayer)
-      );
+      if (material.component_name) {
+        modalStore.open(
+          'modals/VuePlayerModal',
+          { material },
+          { history: false }
+        );
+      } else {
+        modalStore.open(
+          'modals/PlayerModal',
+          { material },
+          { history: false }
+        );
+      }
       return;
     }
 
@@ -90,3 +97,4 @@ export function useMaterialPlayer() {
     playMaterial,
   };
 }
+

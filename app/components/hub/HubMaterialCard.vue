@@ -1,3 +1,4 @@
+// app/components/hub/HubMaterialCard.vue
 <template>
   <div
     class="material-card group relative flex flex-col overflow-hidden rounded-lg border-l-4 bg-white shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
