@@ -1,4 +1,4 @@
-// app/components/games/MathRadar1.vue
+// app/components/games/MathRadar4.vue
 <template>
   <div class="math-radar-game">
     
@@ -173,7 +173,7 @@ const {
 // --- Game State Refs ---
 const score = ref(0);
 const highscore = ref(0);
-const level = ref(1); // Fixed at 1
+const level = ref(5); // Fixed at 5
 const lives = ref(3);
 const blips = ref([]);
 const activeBlip = ref(null);
@@ -207,8 +207,8 @@ onUnmounted(() => {
 
 async function startGame() {
   score.value = 0;
-  level.value = 1; // Always 1
-  lives.value = 3;
+  level.value = 5; // Always 5
+  lives.value = 1;
   blips.value = [];
   playerMissiles.value = [];
   activeBlip.value = null;
@@ -266,29 +266,29 @@ function gameLoop() {
   gameLoopId = requestAnimationFrame(gameLoop);
 };
 
-// 4. НОВАЯ АДАПТИВНАЯ СКОРОСТЬ
+
 function scheduleNextBlip() {
   if (gameStatus.value !== 'playing') return;
 
-  const baseInterval = 6000; // 6 секунд (норма)
+  const baseInterval = 6000;
   let delay = baseInterval;
 
   const blipCount = blips.value.length;
 
   if (blipCount >= 7) {
-    delay = baseInterval * 1.5; // 10.5 секунд
+    delay = baseInterval * 1.5; 
   } else if (blipCount >= 4) {
-    delay = baseInterval; // 7 секунд
+    delay = baseInterval; 
   } else if (blipCount >= 1) {
-    delay = baseInterval * 0.65; // 4.5 секунды
+    delay = baseInterval * 0.65; 
   } else {
-    delay = baseInterval * 0.35; // 2.5 секунды
+    delay = baseInterval * 0.35; 
   }
 
   setTimeout(() => {
-    if (gameStatus.value !== 'playing') return; // Доп. проверка
+    if (gameStatus.value !== 'playing') return;
     generateBlip();
-    scheduleNextBlip(); // Рекурсивный вызов
+    scheduleNextBlip(); 
   }, delay);
 }
 
@@ -315,48 +315,80 @@ function generateBlip() {
   setTimeout(() => showWarning.value = false, 2000);
 };
 
+
 function generateEquation() {
-  let a, b, answer, text, operator;
+  const getRandomInt = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  };
+
+  let a, b, answer, text;
   let isValid = false;
 
   do {
     isValid = true; 
-    operator = Math.random() < 0.5 ? '+' : '-';
 
-    if (operator === '+') {
-      a = Math.floor(Math.random() * 8) + 3; 
-      const bMax = (20 - a);
-      const bRange = bMax - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3; 
-      answer = a + b;
-    } else {
-      a = Math.floor(Math.random() * 16) + 5; 
-      const bMax = a - 3;
-      if (bMax < 3) {
+    const opRoll = Math.random();
+
+    if (opRoll < 0.25) {
+      
+      a = getRandomInt(21, 129); 
+      b = getRandomInt(21, 149 - a);
+      answer = a + b; 
+
+
+      if (answer < 50 || a % 10 === 0 || b % 10 === 0 || answer % 10 === 0) {
         isValid = false;
-        continue; 
+        continue;
       }
-      const bRange = bMax - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3; 
+      text = `${a} + ${b}`;
+
+    } else if (opRoll < 0.5) {
+
+      
+      a = getRandomInt(50, 150); 
+      
+      const bMin = 11;
+      const bMax = a - 11; 
+      
+      if (bMax < bMin) {
+        isValid = false;
+        continue;
+      }
+      
+      b = getRandomInt(bMin, bMax);
       answer = a - b;
-    }
 
-    if (answer <= 2) {
-      isValid = false;
-      continue;
-    }
-    
-    if (a === 10 || b === 10) {
-      isValid = false;
-      continue;
-    }
-    
-    if (operator === '-' && (a % 10 === b % 10)) {
-      isValid = false;
-      continue;
-    }
+      if (a % 10 === 0 || b % 10 === 0 || answer % 10 === 0) {
+        isValid = false;
+        continue;
+      }
+      text = `${a} - ${b}`;
 
-    text = (operator === '+') ? `${a} + ${b}` : `${a} - ${b}`;
+    } else if (opRoll < 0.75) {
+      
+      a = getRandomInt(3, 9);
+      b = getRandomInt(3, 9);
+      answer = a * b;
+
+      // Исключаем 5x5, 6x6
+      if (a === b && (a === 5 || a === 6)) {
+        isValid = false;
+        continue;
+      }
+      text = `${a} × ${b}`;
+
+    } else {
+      
+      b = getRandomInt(3, 9); 
+      answer = getRandomInt(3, 9); 
+      a = b * answer; 
+
+      if (b === answer && (b === 5 || b === 6)) {
+        isValid = false;
+        continue;
+      }
+      text = `${a} ÷ ${b}`;
+    }
 
     if (text === lastEquationText.value) {
       isValid = false;
@@ -400,7 +432,7 @@ function submitAnswer() {
   if (isCorrect) {
     score.value += 10 * level.value; 
     
-    if (!hasCompleted.value && score.value >= 1000) {
+    if (!hasCompleted.value && score.value >= 500) {
       hasCompleted.value = true;
       emit('completed'); 
     }
@@ -467,12 +499,12 @@ function missileHit(missile) {
   playerMissiles.value = playerMissiles.value.filter(m => m.id !== missile.id);
 };
 
-// 7. ОБНОВЛЕННАЯ GAME OVER
+
 function gameOver(reasonKey = 'mathRadar.reasonCore') {
   if (gameStatus.value === 'over') return; 
   
   gameStatus.value = 'over';
-  gameOverReason.value = t(reasonKey); // Переводим ключ
+  gameOverReason.value = t(reasonKey); 
   
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
   clearInterval(missileInterval);
@@ -488,7 +520,6 @@ function gameOver(reasonKey = 'mathRadar.reasonCore') {
 </script>
 
 <style scoped>
-/* Стили остаются без изменений */
 .math-radar-game {
   font-family: 'Orbitron', sans-serif;
   background-color: #000000;

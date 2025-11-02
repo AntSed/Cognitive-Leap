@@ -24,22 +24,26 @@
 
     <div class="flex flex-grow flex-col p-4">
       <div class="flex-grow">
-        <div class="flex items-center justify-between gap-1 pr-12">
-          <InlineEditor
-            tag="h3"
-            class="material-title text-lg font-semibold text-gray-800"
-            :model-value="displayedTitle"
-            :can-edit="canEdit"
-            :placeholder="t('hub.card.untitled')"
-            input-class="w-full text-lg font-semibold p-0 border-0 border-b-2 border-gray-300 !text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-0"
-            @update:modelValue="
-              (newValue) =>
-                handleFieldUpdate('title_translations', {
-                  ...(material.title_translations || {}),
-                  [currentLangCode]: newValue,
-                })
-            "
-          />
+        
+        <div class="flex items-center justify-between gap-1">
+          
+          <div class="flex-1 min-w-0">
+            <InlineEditor
+              tag="h3"
+              class="material-title text-lg font-semibold text-gray-800"
+              :model-value="displayedTitle"
+              :can-edit="canEdit"
+              :placeholder="t('hub.card.untitled')"
+              input-class="w-full text-lg font-semibold p-0 border-0 border-b-2 border-gray-300 !text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-0"
+              @update:modelValue="
+                (newValue) =>
+                  handleFieldUpdate('title_translations', {
+                    ...(material.title_translations || {}),
+                    [currentLangCode]: newValue,
+                  })
+              "
+            />
+          </div>
 
           <div
             v-if="availableLangs.length > 1"

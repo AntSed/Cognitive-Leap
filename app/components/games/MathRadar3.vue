@@ -1,4 +1,4 @@
-// app/components/games/MathRadar1.vue
+// app/components/games/MathRadar3.vue
 <template>
   <div class="math-radar-game">
     
@@ -149,10 +149,8 @@
 
 <script setup>
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
-// 1. ИМПОРТИРУЕМ useI18n
 import { useI18n } from 'vue-i18n';
 
-// 2. ИНИЦИАЛИЗИРУЕМ
 const { t } = useI18n();
 
 // --- Emits ---
@@ -207,7 +205,7 @@ onUnmounted(() => {
 
 async function startGame() {
   score.value = 0;
-  level.value = 1; // Always 1
+  level.value = 3; // Always 3
   lives.value = 3;
   blips.value = [];
   playerMissiles.value = [];
@@ -266,29 +264,28 @@ function gameLoop() {
   gameLoopId = requestAnimationFrame(gameLoop);
 };
 
-// 4. НОВАЯ АДАПТИВНАЯ СКОРОСТЬ
 function scheduleNextBlip() {
   if (gameStatus.value !== 'playing') return;
 
-  const baseInterval = 6000; // 6 секунд (норма)
+  const baseInterval = 6000; 
   let delay = baseInterval;
 
   const blipCount = blips.value.length;
 
   if (blipCount >= 7) {
-    delay = baseInterval * 1.5; // 10.5 секунд
+    delay = baseInterval * 1.5; 
   } else if (blipCount >= 4) {
-    delay = baseInterval; // 7 секунд
+    delay = baseInterval; 
   } else if (blipCount >= 1) {
-    delay = baseInterval * 0.65; // 4.5 секунды
+    delay = baseInterval * 0.65;
   } else {
-    delay = baseInterval * 0.35; // 2.5 секунды
+    delay = baseInterval * 0.35; 
   }
 
   setTimeout(() => {
-    if (gameStatus.value !== 'playing') return; // Доп. проверка
+    if (gameStatus.value !== 'playing') return; 
     generateBlip();
-    scheduleNextBlip(); // Рекурсивный вызов
+    scheduleNextBlip(); 
   }, delay);
 }
 
@@ -315,48 +312,29 @@ function generateBlip() {
   setTimeout(() => showWarning.value = false, 2000);
 };
 
+// 5. НОВЫЙ ГЕНЕРАТОР УРАВНЕНИЙ
 function generateEquation() {
-  let a, b, answer, text, operator;
+  const getRandomInt = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  };
+
+  let a, b, answer, text;
   let isValid = false;
 
   do {
     isValid = true; 
-    operator = Math.random() < 0.5 ? '+' : '-';
-
-    if (operator === '+') {
-      a = Math.floor(Math.random() * 8) + 3; 
-      const bMax = (20 - a);
-      const bRange = bMax - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3; 
-      answer = a + b;
-    } else {
-      a = Math.floor(Math.random() * 16) + 5; 
-      const bMax = a - 3;
-      if (bMax < 3) {
-        isValid = false;
-        continue; 
-      }
-      const bRange = bMax - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3; 
-      answer = a - b;
-    }
-
-    if (answer <= 2) {
-      isValid = false;
-      continue;
-    }
     
-    if (a === 10 || b === 10) {
+    a = getRandomInt(3, 9);
+    b = getRandomInt(3, 9);
+    answer = a * b;
+
+   
+    if (a === b && (a === 5 || a === 6)) {
       isValid = false;
-      continue;
-    }
-    
-    if (operator === '-' && (a % 10 === b % 10)) {
-      isValid = false;
-      continue;
+      continue; 
     }
 
-    text = (operator === '+') ? `${a} + ${b}` : `${a} - ${b}`;
+    text = `${a} × ${b}`; 
 
     if (text === lastEquationText.value) {
       isValid = false;
@@ -364,6 +342,7 @@ function generateEquation() {
 
   } while (!isValid);
 
+ 
   lastEquationText.value = text;
   
   return { text, answer };
@@ -398,11 +377,11 @@ function submitAnswer() {
   const isCorrect = parseInt(playerAnswer.value) === activeBlip.value.equation.answer;
   
   if (isCorrect) {
-    score.value += 10 * level.value; 
+    score.value += 10 * level.value; // level.value всегда 1
     
     if (!hasCompleted.value && score.value >= 1000) {
       hasCompleted.value = true;
-      emit('completed'); 
+      emit('completed'); // Пустой эмит
     }
     
     playSfx('fire');
@@ -467,12 +446,12 @@ function missileHit(missile) {
   playerMissiles.value = playerMissiles.value.filter(m => m.id !== missile.id);
 };
 
-// 7. ОБНОВЛЕННАЯ GAME OVER
+
 function gameOver(reasonKey = 'mathRadar.reasonCore') {
   if (gameStatus.value === 'over') return; 
   
   gameStatus.value = 'over';
-  gameOverReason.value = t(reasonKey); // Переводим ключ
+  gameOverReason.value = t(reasonKey);
   
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
   clearInterval(missileInterval);
@@ -488,7 +467,7 @@ function gameOver(reasonKey = 'mathRadar.reasonCore') {
 </script>
 
 <style scoped>
-/* Стили остаются без изменений */
+
 .math-radar-game {
   font-family: 'Orbitron', sans-serif;
   background-color: #000000;
