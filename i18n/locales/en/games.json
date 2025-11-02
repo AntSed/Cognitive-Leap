@@ -1,0 +1,24 @@
+{"mathRadar": {
+      "title": "Math Radar",
+      "description": "Defend the core by solving enemy equations!",
+      "play": "PLAY GAME",
+      "score": "SCORE",
+      "lives": "LIVES",
+      "level": "LEVEL",
+      "highscore": "HIGHSCORE",
+      "muteMusic": "Mute Music",
+      "unmuteMusic": "Unmute Music",
+      "muteSfx": "Mute SFX",
+      "unmuteSfx": "Unmute SFX",
+      "targetLocked": "TARGET LOCKED",
+      "answerPlaceholder": "ANSWER",
+      "targetPlaceholder": "LOCK ON A TARGET",
+      "warning": "! ENEMY DETECTED !",
+      "gameOver": "GAME OVER",
+      "finalScore": "Your final score is:",
+      "newHighscore": "New Highscore!",
+      "playAgain": "Play Again",
+      "reasonCore": "An enemy reached the radar core!",
+      "reasonLives": "You ran out of lives!"
+    }
+}

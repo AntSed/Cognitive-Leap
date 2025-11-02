@@ -1,5 +1,4 @@
 // file: nuxt.config.ts
-
 export default defineNuxtConfig({
   app: {
     head: {
@@ -47,15 +46,51 @@ export default defineNuxtConfig({
     }
   },
 
+  // --- I18N CONFIGURATION (v8+ SYNTAX) ---
   i18n: {
+    langDir: 'locales',
+    
+    defaultLocale: 'en', 
+    strategy: 'no_prefix',
+
     locales: [
-      { code: 'en', file: 'en.json', name: 'English' },
-      { code: 'ru', file: 'ru.json', name: 'Русский' },
-      { code: 'es', file: 'es.json', name: 'Español' }
+      {
+        code: 'en',
+        iso: 'en-US',
+        name: 'English',
+        files: [
+          { path: 'en/platform.json'},
+          { path: 'en/games.json' } 
+        ]
+      },
+      {
+        code: 'ru',
+        iso: 'ru-RU',
+        name: 'Русский',
+        files: [
+          { path: 'ru/platform.json'},
+          { path: 'ru/games.json' }
+        ]
+      },
+      {
+        code: 'es',
+        iso: 'es-ES', 
+        name: 'Español',
+        files: [
+          { path: 'es/platform.json'},
+          { path: 'es/games.json' }
+        ]
+      }
     ],
 
-    langDir: 'locales', 
-    defaultLocale: 'en', 
-    strategy: 'no_prefix'
+
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root',
+    },
+    compilation: {
+      strictMessage: false,
+    }
   },
 })

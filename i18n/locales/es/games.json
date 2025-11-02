@@ -1,0 +1,25 @@
+{
+"mathRadar": {
+    "title": "Radar Matemático",
+    "description": "¡Defiende el núcleo resolviendo ecuaciones enemigas!",
+    "play": "JUGAR",
+    "score": "PUNTOS",
+    "lives": "VIDAS",
+    "level": "NIVEL",
+    "highscore": "RÉCORD",
+    "muteMusic": "Silenciar Música",
+    "unmuteMusic": "Activar Música",
+    "muteSfx": "Silenciar SFX",
+    "unmuteSfx": "Activar SFX",
+    "targetLocked": "OBJETIVO FIJADO",
+    "answerPlaceholder": "RESPUESTA",
+    "targetPlaceholder": "FIJA UN OBJETIVO",
+    "warning": "¡ ENEMIGO DETECTADO !",
+    "gameOver": "FIN DEL JUEGO",
+    "finalScore": "Tu puntuación final es:",
+    "newHighscore": "¡Nuevo Récord!",
+    "playAgain": "Jugar de Nuevo",
+    "reasonCore": "¡Un enemigo alcanzó el núcleo!",
+    "reasonLives": "¡Te quedaste sin vidas!"
+    }
+}

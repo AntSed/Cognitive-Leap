@@ -1,3 +1,4 @@
+// app/components/games/MathRadar1.vue
 <template>
   <div class="math-radar-game">
     
@@ -10,10 +11,10 @@
     </div>
 
     <div v-if="gameStatus === 'menu'" class="flex flex-col items-center justify-center text-center h-full z-10">
-      <h1 class="text-7xl font-bold tracking-widest uppercase">Math Radar</h1>
-      <p class="text-2xl text-gray-400 my-4">Defend the core by solving enemy equations!</p>
+      <h1 class="text-7xl font-bold tracking-widest uppercase">{{ t('mathRadar.title') }}</h1>
+      <p class="text-2xl text-gray-400 my-4">{{ t('mathRadar.description') }}</p>
       <button @click="startGame" class="mt-8 py-4 px-12 themed-button rounded-lg text-3xl transition-transform transform hover:scale-105">
-        PLAY GAME
+        {{ t('mathRadar.play') }}
       </button>
     </div>
 
@@ -21,32 +22,32 @@
 
         <div class="w-full md:w-64 order-3 md:order-1 flex-shrink-0 space-y-3">
         
-       <div class="game-panel p-3">
-            <div class="flex flex-wrap justify-around items-center gap-x-4 gap-y-2 md:flex-col md:gap-y-8">
+        <div class="game-panel p-3">
+          <div class="flex flex-wrap justify-around items-center gap-x-4 gap-y-2 md:flex-col md:gap-y-4">
             
             <div class="text-center">
-              <h2 class="panel-title-sm">SCORE</h2>
+              <h2 class="panel-title-sm">{{ t('mathRadar.score') }}</h2>
               <p class="panel-value-lg leading-tight">{{ score }}</p>
             </div>
             
             <div class="text-center">
-              <h2 class="panel-title-sm">LIVES</h2>
+              <h2 class="panel-title-sm">{{ t('mathRadar.lives') }}</h2>
               <div class="flex justify-center items-center gap-1.5 mt-1">
                 <svg v-for="n in lives" :key="n" class="w-7 h-7 text-red-500 drop-shadow-[0_0_5px_rgba(255,0,0,0.7)]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
               </div>
             </div>
             
             <div class="text-center">
-              <h2 class="panel-title-sm">LEVEL</h2>
+              <h2 class="panel-title-sm">{{ t('mathRadar.level') }}</h2>
               <p class="panel-value-md leading-tight">{{ level }}</p>
             </div>
             
             <div class="text-center">
-              <h2 class="panel-title-sm">HIGHSCORE</h2>
+              <h2 class="panel-title-sm">{{ t('mathRadar.highscore') }}</h2>
               <p class="panel-value-md leading-tight">{{ highscore }}</p>
             </div>
 
-            <button @click="toggleMusicMute" :title="isMusicMuted ? 'Unmute Music' : 'Mute Music'" class="themed-icon-button">
+            <button @click="toggleMusicMute" :title="t(isMusicMuted ? 'mathRadar.unmuteMusic' : 'mathRadar.muteMusic')" class="themed-icon-button">
               <svg v-if="!isMusicMuted" class="w-6 h-6" viewBox="0 -960 960 960" fill="currentColor">
                 <path d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z"/>
               </svg>
@@ -55,7 +56,7 @@
               </svg>
             </button>
             
-            <button @click="toggleSfxMute" :title="isSfxMuted ? 'Unmute SFX' : 'Mute SFX'" class="themed-icon-button">
+            <button @click="toggleSfxMute" :title="t(isSfxMuted ? 'mathRadar.unmuteSfx' : 'mathRadar.muteSfx')" class="themed-icon-button">
               <svg v-if="!isSfxMuted" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm7-.17v6.34L7.83 13H5v-2h2.83L10 8.83zM16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
               </svg>
@@ -66,23 +67,23 @@
             
           </div>
         </div>
-        </div>
+      </div>
 
       <div class="flex flex-col flex-1 order-1 md:order-2 gap-4">
 
         <div class="game-panel w-full max-w-sm mx-auto p-4 text-center order-1">
           <div v-if="activeBlip" class="engagement-active">
-            <p class="text-xl text-yellow-400 mb-2">TARGET LOCKED</p>
+            <p class="text-xl text-yellow-400 mb-2">{{ t('mathRadar.targetLocked') }}</p>
             <p class="text-4xl font-bold tracking-widest mb-3">{{ activeBlip.equation.text }} = ?</p>
             <input type="number" 
                 v-model="playerAnswer" 
                 @keyup.enter="submitAnswer"
                 ref="answerInput"
-                placeholder="ANSWER"
+                :placeholder="t('mathRadar.answerPlaceholder')"
                 class="w-full p-2 rounded-md themed-input">
           </div>
           <div v-else class="engagement-placeholder">
-            <p class="text-xl text-gray-500">LOCK ON A TARGET</p>
+            <p class="text-xl text-gray-500">{{ t('mathRadar.targetPlaceholder') }}</p>
           </div>
         </div>
         
@@ -98,7 +99,7 @@
             </svg>
 
             <div v-if="showWarning" class="absolute inset-0 flex items-center justify-center">
-              <div class="warning-text">! ENEMY DETECTED !</div>
+              <div class="warning-text">{{ t('mathRadar.warning') }}</div>
             </div>
             
             <div v-for="blip in blips"
@@ -127,15 +128,18 @@
           </div>
         </div>
         
-      </div> </div> <div v-if="gameStatus === 'over'" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      </div>
+    </div>
+
+    <div v-if="gameStatus === 'over'" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
       <div class="w-full max-w-lg p-8 rounded-lg text-center">
-        <h2 class="text-5xl font-bold text-red-500 mb-4">GAME OVER</h2>
+        <h2 class="text-5xl font-bold text-red-500 mb-4">{{ t('mathRadar.gameOver') }}</h2>
         <p v-if="gameOverReason" class="text-xl text-yellow-300 mb-4">{{ gameOverReason }}</p>
-        <p class="text-2xl mb-2">Your final score is:</p>
+        <p class="text-2xl mb-2">{{ t('mathRadar.finalScore') }}</p>
         <p class="text-7xl font-bold mb-6">{{ score }}</p>
-        <p v-if="score >= highscore && highscore > 0" class="text-2xl text-yellow-400 mb-6">New Highscore!</p>
+        <p v-if="score >= highscore && highscore > 0" class="text-2xl text-yellow-400 mb-6">{{ t('mathRadar.newHighscore') }}</p>
         <button @click="startGame" class="w-1/2 py-3 px-4 themed-button rounded-lg text-2xl">
-            Play Again
+            {{ t('mathRadar.playAgain') }}
         </button>
       </div>
     </div>
@@ -145,6 +149,11 @@
 
 <script setup>
 import { ref, nextTick, onMounted, onUnmounted } from 'vue';
+// 1. ИМПОРТИРУЕМ useI18n
+import { useI18n } from 'vue-i18n';
+
+// 2. ИНИЦИАЛИЗИРУЕМ
+const { t } = useI18n();
 
 // --- Emits ---
 const emit = defineEmits(['completed']);
@@ -163,13 +172,13 @@ const {
 
 // --- Game State Refs ---
 const score = ref(0);
-const highscore = ref(0); // Will be loaded from localStorage
-const level = ref(1);
+const highscore = ref(0);
+const level = ref(1); // Fixed at 1
 const lives = ref(3);
 const blips = ref([]);
 const activeBlip = ref(null);
 const playerAnswer = ref('');
-const gameStatus = ref('menu'); // menu, playing, over
+const gameStatus = ref('menu');
 const gameOverReason = ref('');
 const showWarning = ref(false);
 const missiles = ref([]);
@@ -180,30 +189,24 @@ let missileInterval = null;
 let gameLoopId = null;
 let gameStartTime = 0;
 const answerInput = ref(null);
-const lastEquationText = ref('');
 
 // --- Lifecycle ---
 onMounted(() => {
-  // Load highscore from local storage
   highscore.value = parseInt(localStorage.getItem('mathRadarHighscore_v1') || 0);
 });
 
 onUnmounted(() => {
-  // Clean up all intervals and listeners
   clearInterval(missileInterval);
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
-  stopMusic(); // Stop music when component is unmounted
+  stopMusic(); 
+  gameStatus.value = 'menu'; // Reset status to stop recursive loops
 });
-
-
 
 // --- Game Core Functions ---
 
 async function startGame() {
-  
-  // --- 2. Reset Game State ---
   score.value = 0;
-  level.value = 1;
+  level.value = 1; // Always 1
   lives.value = 3;
   blips.value = [];
   playerMissiles.value = [];
@@ -212,13 +215,9 @@ async function startGame() {
   hasCompleted.value = false;
   gameStatus.value = 'playing';
 
-  // --- 3. Start Audio ---
   playSfx('start');
   playMusic();
 
-  // --- 4. Start Game Loops ---
-
-  
   if(missileInterval) clearInterval(missileInterval);
   missileInterval = setInterval(launchMissile, 4500);
   
@@ -226,7 +225,6 @@ async function startGame() {
   if(gameLoopId) cancelAnimationFrame(gameLoopId);
   gameLoop();
   
-  // Generate first blip immediately
   generateBlip();
   scheduleNextBlip();
 };
@@ -238,34 +236,27 @@ function gameLoop() {
   }
   
   const elapsedTime = (Date.now() - gameStartTime);
-  // This is the angle of the radar sweep (0-360)
   const currentAngleCSS = (elapsedTime / 3000) * 360 % 360; 
-  const detectionWidth = 15; // Width of the sweep line in degrees
+  const detectionWidth = 15;
 
   [...blips.value].forEach(blip => {
-    // --- 1. Move Detected Blips ---
     if (blip.isDetected && !blip.isDestroying) {
-      // Blips move towards the center (50, 50)
       const speed = (0.0005 + (level.value * 0.0001)) / 2;
       blip.x += (50 - blip.x) * speed;
       blip.y += (50 - blip.y) * speed;
       
       const distance = Math.sqrt(Math.pow(blip.x - 50, 2) + Math.pow(blip.y - 50, 2));
-      if (distance < 5) { // Reached the core
-        gameOver('An enemy reached the radar core!');
+      if (distance < 5) {
+        gameOver('mathRadar.reasonCore');
       }
     }
-
-    // --- 2. Detect New Blips ---
-    if (blip.isDetected) return; // Already detected, skip
+    if (blip.isDetected) return; 
     
-    // Calculate the blip's angle relative to the sweep
     const blipAngleCSS = (blip.angle + 90 + 360) % 360;
     let angleDifference = currentAngleCSS - blipAngleCSS;
     if (angleDifference < -180) angleDifference += 360;
     if (angleDifference > 180) angleDifference -= 360;
     
-    // Check if the sweep line is passing over the blip
     if (angleDifference >= 0 && angleDifference < detectionWidth) {
       blip.isDetected = true;
     }
@@ -273,62 +264,57 @@ function gameLoop() {
   
   gameLoopId = requestAnimationFrame(gameLoop);
 };
+
+// 4. НОВАЯ АДАПТИВНАЯ СКОРОСТЬ
 function scheduleNextBlip() {
   if (gameStatus.value !== 'playing') return;
 
-  const baseInterval = 7000; // 7 секунд (норма)
+  const baseInterval = 6000; // 6 секунд (норма)
   let delay = baseInterval;
 
   const blipCount = blips.value.length;
 
   if (blipCount >= 7) {
-    // СЛОЖНО: Замедляемся
     delay = baseInterval * 1.5; // 10.5 секунд
   } else if (blipCount >= 4) {
-    // НОРМА:
     delay = baseInterval; // 7 секунд
   } else if (blipCount >= 1) {
-    // ЛЕГКО: Немного ускоряемся
     delay = baseInterval * 0.65; // 4.5 секунды
   } else {
-    // ЭКРАН ПУСТ: Агрессивное ускорение
     delay = baseInterval * 0.35; // 2.5 секунды
   }
 
-  // Запланировать следующий вызов
   setTimeout(() => {
+    if (gameStatus.value !== 'playing') return; // Доп. проверка
     generateBlip();
     scheduleNextBlip(); // Рекурсивный вызов
   }, delay);
 }
+
 function generateBlip() {
   if (gameStatus.value !== 'playing' || blips.value.length >= 10) return;
 
   const angleRad = Math.random() * 2 * Math.PI;
-  const radius = Math.random() * 30; // 0-30% from edge
+  const radius = Math.random() * 30;
   const angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
 
   const blip = {
     id: Date.now(),
-    x: 50 + (radius + 15) * Math.cos(angleRad), // Start 15-45% from center
+    x: 50 + (radius + 15) * Math.cos(angleRad),
     y: 50 + (radius + 15) * Math.sin(angleRad),
     angle: angleDeg,
-    rotation: angleDeg + 180, // Point towards center
+    rotation: angleDeg + 180,
     isDetected: false,
     isDestroying: false,
-    equation: generateEquation() // Get v1 equation
+    equation: generateEquation()
   };
   blips.value.push(blip);
 
-  // Flash warning text
   showWarning.value = true;
   setTimeout(() => showWarning.value = false, 2000);
 };
 
-/**
- * --- MATH RADAR v1 ---
- * Generates simple addition/subtraction problems with answers <= 20.
- */
+// 5. НОВЫЙ ГЕНЕРАТОР УРАВНЕНИЙ
 function generateEquation() {
   let a, b, answer, text, operator;
   let isValid = false;
@@ -337,42 +323,43 @@ function generateEquation() {
     operator = Math.random() < 0.5 ? '+' : '-';
 
     if (operator === '+') {
-      // ... (логика сложения)
-      a = Math.floor(Math.random() * 8) + 3; 
-      const bRange = (20 - a) - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3;
+      a = Math.floor(Math.random() * 8) + 3; // a: 3-10
+      const bMax = (20 - a);
+      const bRange = bMax - 3 + 1;
+      b = Math.floor(Math.random() * bRange) + 3; // b: 3 to (20-a)
       answer = a + b;
     } else {
-      // ... (логика вычитания)
-      a = Math.floor(Math.random() * 16) + 5;
-      const bRange = (a - 1) - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3;
+      a = Math.floor(Math.random() * 16) + 5; // a: 5-20
+      const bMax = a - 3;
+      if (bMax < 3) { // Проверка, если a=5, bMax=2
+         isValid = false;
+         continue; // Пропускаем эту итерацию
+      }
+      const bRange = bMax - 3 + 1;
+      b = Math.floor(Math.random() * bRange) + 3; // b: 3 to (a-3)
       answer = a - b;
     }
-    
-    // Генерируем текст ЗДЕСЬ, для проверки
-    text = (operator === '+') ? `${a} + ${b}` : `${a} - ${b}`;
 
     // --- ПРАВИЛА ВАЛИДАЦИИ ---
-    if (answer === 1 || answer === 2) {
+    if (answer <= 2) {
       isValid = false;
-    } else if (a === 10 || b === 10) {
+    }
+    else if (a === 10 || b === 10) {
       isValid = false;
-    } else if (operator === '-' && (a % 10 === b % 10)) {
+    }
+    else if (operator === '-' && (a % 10 === b % 10)) {
       isValid = false;
-    } else if (text === lastEquationText.value) { // ✅ НОВАЯ ПРОВЕРКА
-      isValid = false;
-    } else {
+    }
+    else {
       isValid = true;
     }
 
-  } while (!isValid); 
+  } while (!isValid);
 
-  lastEquationText.value = text; // Сохраняем удачный пример в "память"
+  text = (operator === '+') ? `${a} + ${b}` : `${a} - ${b}`;
   return { text, answer };
 };
 
-// This is the background missile animation, purely cosmetic
 function launchMissile() {
   if (gameStatus.value !== 'playing') return;
   const duration = Math.random() * 3 + 4;
@@ -391,7 +378,6 @@ function selectBlip(blip) {
   activeBlip.value = blip;
   playSfx('blip');
   
-  // Focus the input field
   nextTick(() => {
     answerInput.value?.focus();
   });
@@ -403,18 +389,15 @@ function submitAnswer() {
   const isCorrect = parseInt(playerAnswer.value) === activeBlip.value.equation.answer;
   
   if (isCorrect) {
-    score.value += 10 * level.value;
+    score.value += 10 * level.value; // level.value всегда 1
     
-
-    // --- EMIT 'completed' LOGIC ---
     if (!hasCompleted.value && score.value >= 1000) {
       hasCompleted.value = true;
-      emit('completed');
-      // We don't stop the game, just emit the event
+      emit('completed'); // Пустой эмит
     }
     
-    playSfx('fire'); // Play sound on successful answer/fire
-    launchPlayerMissile(activeBlip.value); // Fire the visual missile
+    playSfx('fire');
+    launchPlayerMissile(activeBlip.value);
     activeBlip.value = null;
     playerAnswer.value = '';
 
@@ -423,14 +406,14 @@ function submitAnswer() {
     playerAnswer.value = '';
     playSfx('error');
     
-    // Add shake animation for error
     if(answerInput.value) {
       answerInput.value.classList.add('error');
       setTimeout(() => answerInput.value?.classList.remove('error'), 500);
     }
 
     if (lives.value <= 0) {
-      gameOver('You ran out of lives!');
+      // 6. ИСПОЛЬЗУЕМ КЛЮЧ ПЕРЕВОДА
+      gameOver('mathRadar.reasonLives');
     }
   }
 };
@@ -448,10 +431,6 @@ function launchPlayerMissile(target) {
   };
   playerMissiles.value.push(missile);
 
-  // This is the fix.
-  // We wait for the DOM to update (nextTick),
-  // THEN we wait for the browser to PAINT (setTimeout),
-  // and only THEN we update the coordinates to trigger the transition.
   nextTick(() => {
     setTimeout(() => {
       const launchedMissile = playerMissiles.value.find(m => m.id === missile.id);
@@ -459,15 +438,13 @@ function launchPlayerMissile(target) {
         launchedMissile.x = target.x;
         launchedMissile.y = target.y;
       }
-    }, 20); // 20ms is enough to force a paint cycle
+    }, 20); 
   });
 
-  // This part remains the same
   setTimeout(() => {
     missileHit(missile);
-  }, 500); // 500ms matches the CSS transition duration
+  }, 500);
 };
-
 
 function missileHit(missile) {
   const targetBlip = blips.value.find(b => b.id === missile.targetId);
@@ -475,41 +452,35 @@ function missileHit(missile) {
     targetBlip.isDestroying = true;
     playSfx('hit');
     
-    // remove blip after explosion animation
     setTimeout(() => {
       blips.value = blips.value.filter(b => b.id !== missile.targetId);
     }, 500);
   }
-  // remove missile
   playerMissiles.value = playerMissiles.value.filter(m => m.id !== missile.id);
 };
 
-function gameOver(reason = '') {
-  if (gameStatus.value === 'over') return; // Prevent multiple calls
+// 7. ОБНОВЛЕННАЯ GAME OVER
+function gameOver(reasonKey = 'mathRadar.reasonCore') {
+  if (gameStatus.value === 'over') return; 
   
   gameStatus.value = 'over';
-  gameOverReason.value = reason;
+  gameOverReason.value = t(reasonKey); // Переводим ключ
   
-  // Stop all game loops
+  if (gameLoopId) cancelAnimationFrame(gameLoopId);
   clearInterval(missileInterval);
-  if(gameLoopId) cancelAnimationFrame(gameLoopId);
   
-  // Stop audio
   playSfx('gameOver');
   stopMusic();
   
-  // Save highscore
   if (score.value > highscore.value) {
     highscore.value = score.value;
     localStorage.setItem('mathRadarHighscore_v1', score.value.toString());
   }
-
 };
-
 </script>
 
 <style scoped>
-/* --- Base Game Styles (from original) --- */
+/* Стили остаются без изменений */
 .math-radar-game {
   font-family: 'Orbitron', sans-serif;
   background-color: #0d1117;
@@ -519,7 +490,6 @@ function gameOver(reason = '') {
   height: 100%;
   position: relative;
 }
-
 .radar-container {
   width: 300px;
   height: 300px;
@@ -537,9 +507,8 @@ function gameOver(reason = '') {
   border: 3px solid #00ff41;
   box-shadow: 0 0 25px rgba(0, 255, 65, 0.5), inset 0 0 25px rgba(0, 255, 65, 0.5);
   position: relative;
-  flex-shrink: 0; /* Prevent shrinking in flex container */
+  flex-shrink: 0;
 }
-
 .radar-sweep {
   width: 100%;
   height: 100%;
@@ -551,12 +520,10 @@ function gameOver(reason = '') {
   transform-origin: 50% 50%;
   animation: sweep 3s linear infinite;
 }
-
 @keyframes sweep {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
-
 .radar-core-boat {
   position: absolute;
   left: 50%;
@@ -570,7 +537,6 @@ function gameOver(reason = '') {
   filter: drop-shadow(0 0 8px #00e5ff);
   z-index: 2;
 }
-
 .blip {
   width: 20px;
   height: 15px;
@@ -579,7 +545,6 @@ function gameOver(reason = '') {
   opacity: 0.2;
   z-index: 10;
 }
-
 .blip svg {
   width: 100%;
   height: 100%;
@@ -589,23 +554,17 @@ function gameOver(reason = '') {
   filter: drop-shadow(0 0 6px #ff4747);
   transform: scale(0.8);
 }
-
 .blip.destroying svg {
-  /* This animation will run on the SVG element */
   animation: blip-explode 0.5s ease-out forwards;
-  /* Force colors to yellow/white during explosion */
   fill: #ffc700;
   stroke: #ffffff;
 }
-
 .blip-detected {
   opacity: 1;
 }
-
 .blip-detected svg {
   animation: pulse-red-svg 1.5s infinite;
 }
-
 .blip-active svg, .blip-detected:hover svg {
   fill: rgba(255, 199, 0, 0.8);
   stroke: #ffc700;
@@ -613,13 +572,11 @@ function gameOver(reason = '') {
   transform: scale(1.5);
   transition: all 0.2s ease-out;
 }
-
 @keyframes pulse-red-svg {
   0% { transform: scale(1); }
   50% { transform: scale(1.2); }
   100% { transform: scale(1); }
 }
-
 .warning-text {
   color: #ff4747;
   font-size: 1.25rem;
@@ -629,12 +586,10 @@ function gameOver(reason = '') {
   text-transform: uppercase;
   pointer-events: none;
 }
-
 @keyframes flash-warning {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
-
 .player-missile {
   position: absolute;
   width: 4px;
@@ -646,7 +601,6 @@ function gameOver(reason = '') {
   transition: top 0.5s linear, left 0.5s linear;
   z-index: 5;
 }
-
 .missile {
   position: fixed;
   left: -10%;
@@ -658,16 +612,13 @@ function gameOver(reason = '') {
   pointer-events: none;
   z-index: 20;
 }
-
 .missile::before {
   content: '►';
   margin-right: 10px;
 }
-
 @keyframes fly-by {
   to { left: 110%; }
 }
-
 .themed-input {
   background-color: #0d1117;
   border: 1px solid #00ff41;
@@ -682,18 +633,15 @@ function gameOver(reason = '') {
   outline: none;
   box-shadow: 0 0 10px #00ff41;
 }
-
 .themed-input.error {
   border-color: #ff4747;
   animation: shake 0.5s;
 }
-
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
-
 .themed-button {
   background-color: #0d1117;
   border: 1px solid #00ff41;
@@ -705,9 +653,6 @@ function gameOver(reason = '') {
   color: #0d1117;
   box-shadow: 0 0 15px #00ff41;
 }
-
-/* --- New Mobile-First Styles --- */
-
 .game-panel {
   background-color: rgba(0, 0, 0, 0.3);
   padding: 1rem;
@@ -716,7 +661,6 @@ function gameOver(reason = '') {
   box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
   text-align: center;
 }
-
 .panel-title {
   font-size: 1.25rem;
   font-weight: bold;
@@ -733,7 +677,6 @@ function gameOver(reason = '') {
   font-weight: bold;
   text-align: center;
 }
-
 .themed-icon-button {
   background-color: #0d1117;
   border: 1px solid #00ff41;
@@ -747,13 +690,8 @@ function gameOver(reason = '') {
   color: #0d1117;
   box-shadow: 0 0 15px #00ff41;
 }
-
-/* These two classes ensure the Engagement block
-  has a consistent height whether a target is 
-  selected or not, preventing layout jump.
-*/
 .engagement-active, .engagement-placeholder {
-  min-height: 130px; /* Adjust as needed */
+  min-height: 130px; 
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -773,11 +711,11 @@ function gameOver(reason = '') {
 }
 @keyframes blip-explode {
   0% {
-    transform: scale(1.5); /* Start at the 'active' size */
+    transform: scale(1.5);
     opacity: 1;
   }
   100% {
-    transform: scale(6); /* Explode outwards */
+    transform: scale(6);
     opacity: 0;
   }
 }
