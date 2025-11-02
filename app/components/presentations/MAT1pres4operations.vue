@@ -31,7 +31,7 @@
 <script setup>
 import { ref, computed, nextTick, onMounted } from 'vue';
 
-// --- Логика Emit (Без изменений) ---
+// --- Emit ---
 const emit = defineEmits(['completed']);
 const pressedOperations = ref(new Set());
 const hasCompleted = ref(false);

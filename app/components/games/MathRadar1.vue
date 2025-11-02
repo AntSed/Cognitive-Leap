@@ -180,6 +180,7 @@ let missileInterval = null;
 let gameLoopId = null;
 let gameStartTime = 0;
 const answerInput = ref(null);
+const lastEquationText = ref('');
 
 // --- Lifecycle ---
 onMounted(() => {
@@ -336,43 +337,38 @@ function generateEquation() {
     operator = Math.random() < 0.5 ? '+' : '-';
 
     if (operator === '+') {
-      // Сложение (a + b)
-      a = Math.floor(Math.random() * 8) + 3; // a: 3-10
-      const bMax = (20 - a); // (e.g., if a=10, bMax=10)
-      const bRange = bMax - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3; // b: 3 to (20-a)
+      // ... (логика сложения)
+      a = Math.floor(Math.random() * 8) + 3; 
+      const bRange = (20 - a) - 3 + 1;
+      b = Math.floor(Math.random() * bRange) + 3;
       answer = a + b;
     } else {
-      // Вычитание (a - b)
-      a = Math.floor(Math.random() * 16) + 5; // a: 5-20
-      const bMax = a - 3; // (e.g., if a=5, bMax=2. Fails rule 1. Correct.)
-      const bRange = bMax - 3 + 1;
-      b = Math.floor(Math.random() * bRange) + 3; // b: 3 to (a-3)
+      // ... (логика вычитания)
+      a = Math.floor(Math.random() * 16) + 5;
+      const bRange = (a - 1) - 3 + 1;
+      b = Math.floor(Math.random() * bRange) + 3;
       answer = a - b;
     }
+    
+    // Генерируем текст ЗДЕСЬ, для проверки
+    text = (operator === '+') ? `${a} + ${b}` : `${a} - ${b}`;
 
     // --- ПРАВИЛА ВАЛИДАЦИИ ---
-
-    // 1. Убираем 1 и 2 в ответе
     if (answer === 1 || answer === 2) {
       isValid = false;
-    }
-    // 2. Убираем 10 в операндах
-    else if (a === 10 || b === 10) {
+    } else if (a === 10 || b === 10) {
       isValid = false;
-    }
-    // 3. Убираем "13 - 3" или "15 - 5"
-    else if (operator === '-' && (a % 10 === b % 10)) {
+    } else if (operator === '-' && (a % 10 === b % 10)) {
       isValid = false;
-    }
-    // 4. Убираем "13 - 10" (не нужно, b=10 уже отсеяно)
-    else {
+    } else if (text === lastEquationText.value) { // ✅ НОВАЯ ПРОВЕРКА
+      isValid = false;
+    } else {
       isValid = true;
     }
 
-  } while (!isValid); // Повторяем, пока не получим хороший пример
+  } while (!isValid); 
 
-  text = (operator === '+') ? `${a} + ${b}` : `${a} - ${b}`;
+  lastEquationText.value = text; // Сохраняем удачный пример в "память"
   return { text, answer };
 };
 
@@ -413,7 +409,7 @@ function submitAnswer() {
     // --- EMIT 'completed' LOGIC ---
     if (!hasCompleted.value && score.value >= 1000) {
       hasCompleted.value = true;
-      emit('completed', { score: score.value });
+      emit('completed');
       // We don't stop the game, just emit the event
     }
     
