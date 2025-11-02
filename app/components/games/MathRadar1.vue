@@ -1,5 +1,5 @@
 <template>
-  <div class="math-radar-game" ref="gameRootRef">
+  <div class="math-radar-game">
     
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
       <div v-for="missile in missiles" :key="missile.id"
@@ -21,60 +21,51 @@
 
         <div class="w-full md:w-64 order-3 md:order-1 flex-shrink-0 space-y-3">
         
-        <div class="game-panel p-3">
-            <div class="flex flex-wrap justify-around items-center gap-x-4 gap-y-2">
+       <div class="game-panel p-3">
+            <div class="flex flex-wrap justify-around items-center gap-x-4 gap-y-2 md:flex-col md:gap-y-8">
+            
             <div class="text-center">
-                <h2 class="panel-title-sm">SCORE</h2>
-                <p class="panel-value-lg leading-tight">{{ score }}</p>
+              <h2 class="panel-title-sm">SCORE</h2>
+              <p class="panel-value-lg leading-tight">{{ score }}</p>
             </div>
+            
             <div class="text-center">
-                <h2 class="panel-title-sm">LIVES</h2>
-                <div class="flex justify-center items-center gap-1.5 mt-1">
+              <h2 class="panel-title-sm">LIVES</h2>
+              <div class="flex justify-center items-center gap-1.5 mt-1">
                 <svg v-for="n in lives" :key="n" class="w-7 h-7 text-red-500 drop-shadow-[0_0_5px_rgba(255,0,0,0.7)]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
-                </div>
+              </div>
             </div>
+            
             <div class="text-center">
-                <h2 class="panel-title-sm">LEVEL</h2>
-                <p class="panel-value-md leading-tight">{{ level }}</p>
+              <h2 class="panel-title-sm">LEVEL</h2>
+              <p class="panel-value-md leading-tight">{{ level }}</p>
             </div>
+            
             <div class="text-center">
-                <h2 class="panel-title-sm">HIGHSCORE</h2>
-                <p class="panel-value-md leading-tight">{{ highscore }}</p>
+              <h2 class="panel-title-sm">HIGHSCORE</h2>
+              <p class="panel-value-md leading-tight">{{ highscore }}</p>
             </div>
-            </div>
+
+            <button @click="toggleMusicMute" :title="isMusicMuted ? 'Unmute Music' : 'Mute Music'" class="themed-icon-button">
+              <svg v-if="!isMusicMuted" class="w-6 h-6" viewBox="0 -960 960 960" fill="currentColor">
+                <path d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z"/>
+              </svg>
+              <svg v-else class="w-6 h-6" viewBox="0 -960 960 960" fill="currentColor">
+                <path d="M792-56 56-792l56-56 736 736-56 56ZM560-514l-80-80v-246h240v160H560v166ZM400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-62l80 80v120q0 66-47 113t-113 47Z"/>
+              </svg>
+            </button>
+            
+            <button @click="toggleSfxMute" :title="isSfxMuted ? 'Unmute SFX' : 'Mute SFX'" class="themed-icon-button">
+              <svg v-if="!isSfxMuted" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm7-.17v6.34L7.83 13H5v-2h2.83L10 8.83zM16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+              </svg>
+              <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4.34 2.93L2.93 4.34 7.29 8.7 7 9H3v6h4l5 5v-6.59l4.18 4.18c-.65.49-1.38.88-2.18 1.11v2.06c1.34-.3 2.57-.92 3.61-1.75l2.05 2.05 1.41-1.41L4.34 2.93zM10 15.17L7.83 13H5v-2h2.83l.88-.88L10 11.41v3.76zM19 12c0 .82-.15 1.61-.41 2.34l1.53 1.53c.56-1.17.88-2.48.88-3.87 0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zm-7-8l-1.88 1.88L12 7.76zm4.5 8c0-1.77-1.02-3.29-2.5-4.03v1.79l2.48 2.48c.01-.08.02-.16.02-.24z"/>
+              </svg>
+            </button>
+            
+          </div>
         </div>
-
-        <div class="game-panel flex justify-center gap-4 p-2.5">
-
-        <button @click="toggleMusicMute" :title="isMusicMuted ? 'Unmute Music' : 'Mute Music'" class="themed-icon-button">
-            <svg v-if="!isMusicMuted" class="w-6 h-6" viewBox="0 -960 960 960" fill="currentColor">
-            <path d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z"/>
-            </svg>
-            <svg v-else class="w-6 h-6" viewBox="0 -960 960 960" fill="currentColor">
-            <path d="M792-56 56-792l56-56 736 736-56 56ZM560-514l-80-80v-246h240v160H560v166ZM400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-62l80 80v120q0 66-47 113t-113 47Z"/>
-            </svg>
-        </button>
-        
-        <button @click="toggleSfxMute" :title="isSfxMuted ? 'Unmute SFX' : 'Mute SFX'" class="themed-icon-button">
-            <svg v-if="!isSfxMuted" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm7-.17v6.34L7.83 13H5v-2h2.83L10 8.83zM16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
-            </svg>
-            <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4.34 2.93L2.93 4.34 7.29 8.7 7 9H3v6h4l5 5v-6.59l4.18 4.18c-.65.49-1.38.88-2.18 1.11v2.06c1.34-.3 2.57-.92 3.61-1.75l2.05 2.05 1.41-1.41L4.34 2.93zM10 15.17L7.83 13H5v-2h2.83l.88-.88L10 11.41v3.76zM19 12c0 .82-.15 1.61-.41 2.34l1.53 1.53c.56-1.17.88-2.48.88-3.87 0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zm-7-8l-1.88 1.88L12 7.76zm4.5 8c0-1.77-1.02-3.29-2.5-4.03v1.79l2.48 2.48c.01-.08.02-.16.02-.24z"/>
-            </svg>
-        </button>
-        
-        <button @click="toggleGameFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen (Portrait)'" class="themed-icon-button">
-            <svg v-if="!isFullscreen" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="21,11 21,3 13,3 16.29,6.29 6.29,16.29 3,13 3,21 11,21 7.71,17.71 17.71,7.71"/>
-            </svg>
-            <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M22,3.41l-5.29,5.29L20,12h-8V4l3.29,3.29L20.59,2L22,3.41z M3.41,22l5.29-5.29L12,20v-8H4l3.29,3.29L2,20.59L3.41,22z"/>
-            </svg>
-        </button>
-        
-        </div>
-
         </div>
 
       <div class="flex flex-col flex-1 order-1 md:order-2 gap-4">
@@ -178,7 +169,6 @@ const lives = ref(3);
 const blips = ref([]);
 const activeBlip = ref(null);
 const playerAnswer = ref('');
-const isFullscreen = ref(false);
 const gameStatus = ref('menu'); // menu, playing, over
 const gameOverReason = ref('');
 const showWarning = ref(false);
@@ -187,55 +177,24 @@ const playerMissiles = ref([]);
 
 // --- Internal Refs ---
 let missileInterval = null;
-let blipInterval = null;
 let gameLoopId = null;
 let gameStartTime = 0;
 const answerInput = ref(null);
-const gameRootRef = ref(null); // For fullscreen
 
 // --- Lifecycle ---
 onMounted(() => {
   // Load highscore from local storage
   highscore.value = parseInt(localStorage.getItem('mathRadarHighscore_v1') || 0);
-  
-  // Listen for fullscreen exit (e.g., user pressing ESC)
-  document.addEventListener('fullscreenchange', onFullscreenChange);
 });
 
 onUnmounted(() => {
   // Clean up all intervals and listeners
-  clearInterval(blipInterval);
   clearInterval(missileInterval);
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
-  document.removeEventListener('fullscreenchange', onFullscreenChange);
   stopMusic(); // Stop music when component is unmounted
 });
 
-// --- Fullscreen Handling ---
-const onFullscreenChange = () => {
-  isFullscreen.value = !!document.fullscreenElement;
-};
 
-const toggleGameFullscreen = async () => {
-  if (!document.fullscreenElement) {
-    // --- Логика ВХОДА ---
-    if (!gameRootRef.value) return;
-    try {
-      await gameRootRef.value.requestFullscreen();
-      await screen.orientation.lock('portrait-primary');
-    } catch (err) {
-      console.error('Failed to enter fullscreen or lock orientation:', err);
-    }
-  } else {
-    // --- Логика ВЫХОДА ---
-    if (document.exitFullscreen) {
-      await document.exitFullscreen();
-      if ('orientation' in screen && typeof screen.orientation.unlock === 'function') {
-        screen.orientation.unlock();
-      }
-    }
-  }
-};
 
 // --- Game Core Functions ---
 
@@ -257,8 +216,7 @@ async function startGame() {
   playMusic();
 
   // --- 4. Start Game Loops ---
-  if(blipInterval) clearInterval(blipInterval);
-  blipInterval = setInterval(generateBlip, 7000); 
+
   
   if(missileInterval) clearInterval(missileInterval);
   missileInterval = setInterval(launchMissile, 4500);
@@ -269,6 +227,7 @@ async function startGame() {
   
   // Generate first blip immediately
   generateBlip();
+  scheduleNextBlip();
 };
 
 function gameLoop() {
@@ -313,7 +272,34 @@ function gameLoop() {
   
   gameLoopId = requestAnimationFrame(gameLoop);
 };
+function scheduleNextBlip() {
+  if (gameStatus.value !== 'playing') return;
 
+  const baseInterval = 7000; // 7 секунд (норма)
+  let delay = baseInterval;
+
+  const blipCount = blips.value.length;
+
+  if (blipCount >= 7) {
+    // СЛОЖНО: Замедляемся
+    delay = baseInterval * 1.5; // 10.5 секунд
+  } else if (blipCount >= 4) {
+    // НОРМА:
+    delay = baseInterval; // 7 секунд
+  } else if (blipCount >= 1) {
+    // ЛЕГКО: Немного ускоряемся
+    delay = baseInterval * 0.65; // 4.5 секунды
+  } else {
+    // ЭКРАН ПУСТ: Агрессивное ускорение
+    delay = baseInterval * 0.35; // 2.5 секунды
+  }
+
+  // Запланировать следующий вызов
+  setTimeout(() => {
+    generateBlip();
+    scheduleNextBlip(); // Рекурсивный вызов
+  }, delay);
+}
 function generateBlip() {
   if (gameStatus.value !== 'playing' || blips.value.length >= 10) return;
 
@@ -343,23 +329,50 @@ function generateBlip() {
  * Generates simple addition/subtraction problems with answers <= 20.
  */
 function generateEquation() {
-  const operator = Math.random() < 0.5 ? '+' : '-';
-  let a, b, text, answer;
+  let a, b, answer, text, operator;
+  let isValid = false;
 
-  if (operator === '+') {
-    // Addition: a + b <= 20
-    a = Math.floor(Math.random() * 10) + 1; // a is 1-10
-    b = Math.floor(Math.random() * (20 - a)) + 1; // b is 1 to (20-a)
-    answer = a + b;
-    text = `${a} + ${b}`;
-  } else {
-    // Subtraction: a - b > 0 and a <= 20
-    a = Math.floor(Math.random() * 18) + 2; // a is 2-19
-    b = Math.floor(Math.random() * (a - 1)) + 1; // b is 1 to (a-1)
-    answer = a - b;
-    text = `${a} - ${b}`;
-  }
-  
+  do {
+    operator = Math.random() < 0.5 ? '+' : '-';
+
+    if (operator === '+') {
+      // Сложение (a + b)
+      a = Math.floor(Math.random() * 8) + 3; // a: 3-10
+      const bMax = (20 - a); // (e.g., if a=10, bMax=10)
+      const bRange = bMax - 3 + 1;
+      b = Math.floor(Math.random() * bRange) + 3; // b: 3 to (20-a)
+      answer = a + b;
+    } else {
+      // Вычитание (a - b)
+      a = Math.floor(Math.random() * 16) + 5; // a: 5-20
+      const bMax = a - 3; // (e.g., if a=5, bMax=2. Fails rule 1. Correct.)
+      const bRange = bMax - 3 + 1;
+      b = Math.floor(Math.random() * bRange) + 3; // b: 3 to (a-3)
+      answer = a - b;
+    }
+
+    // --- ПРАВИЛА ВАЛИДАЦИИ ---
+
+    // 1. Убираем 1 и 2 в ответе
+    if (answer === 1 || answer === 2) {
+      isValid = false;
+    }
+    // 2. Убираем 10 в операндах
+    else if (a === 10 || b === 10) {
+      isValid = false;
+    }
+    // 3. Убираем "13 - 3" или "15 - 5"
+    else if (operator === '-' && (a % 10 === b % 10)) {
+      isValid = false;
+    }
+    // 4. Убираем "13 - 10" (не нужно, b=10 уже отсеяно)
+    else {
+      isValid = true;
+    }
+
+  } while (!isValid); // Повторяем, пока не получим хороший пример
+
+  text = (operator === '+') ? `${a} + ${b}` : `${a} - ${b}`;
   return { text, answer };
 };
 
@@ -396,11 +409,7 @@ function submitAnswer() {
   if (isCorrect) {
     score.value += 10 * level.value;
     
-    // Check for level up
-    if (score.value > 0 && score.value % (50 * level.value) === 0) {
-      level.value++;
-    }
-    
+
     // --- EMIT 'completed' LOGIC ---
     if (!hasCompleted.value && score.value >= 1000) {
       hasCompleted.value = true;
@@ -443,18 +452,26 @@ function launchPlayerMissile(target) {
   };
   playerMissiles.value.push(missile);
 
+  // This is the fix.
+  // We wait for the DOM to update (nextTick),
+  // THEN we wait for the browser to PAINT (setTimeout),
+  // and only THEN we update the coordinates to trigger the transition.
   nextTick(() => {
-    const launchedMissile = playerMissiles.value.find(m => m.id === missile.id);
-    if (launchedMissile) {
-      launchedMissile.x = target.x;
-      launchedMissile.y = target.y;
-    }
+    setTimeout(() => {
+      const launchedMissile = playerMissiles.value.find(m => m.id === missile.id);
+      if (launchedMissile) {
+        launchedMissile.x = target.x;
+        launchedMissile.y = target.y;
+      }
+    }, 20); // 20ms is enough to force a paint cycle
   });
 
+  // This part remains the same
   setTimeout(() => {
     missileHit(missile);
   }, 500); // 500ms matches the CSS transition duration
 };
+
 
 function missileHit(missile) {
   const targetBlip = blips.value.find(b => b.id === missile.targetId);
@@ -478,7 +495,6 @@ function gameOver(reason = '') {
   gameOverReason.value = reason;
   
   // Stop all game loops
-  clearInterval(blipInterval);
   clearInterval(missileInterval);
   if(gameLoopId) cancelAnimationFrame(gameLoopId);
   
@@ -492,10 +508,6 @@ function gameOver(reason = '') {
     localStorage.setItem('mathRadarHighscore_v1', score.value.toString());
   }
 
-  // Exit fullscreen if we are in it
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  }
 };
 
 </script>

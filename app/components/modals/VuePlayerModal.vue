@@ -1,9 +1,7 @@
-// app/components/modals/VuePlayerModal.vue
 <template>
   <div class="vue-player-overlay" @click="closeOnOverlayClick" ref="playerOverlayRef">
     <header class="player-header">
-      <!-- Fullscreen Button Added -->
-      <button @click="toggleFullscreen" :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen & Rotate'" class="fullscreen-button">
+      <button @click="toggleFullscreen" :title="fullscreenTitle" class="fullscreen-button">
         <svg v-if="!isFullscreen" class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"></path></svg>
         <svg v-else class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg>
       </button>
@@ -29,7 +27,8 @@
 </template>
 
 <script setup>
-import { ref, shallowRef, defineAsyncComponent, onMounted, onUnmounted } from 'vue';
+// 1. ADDED 'computed'
+import { ref, shallowRef, defineAsyncComponent, onMounted, onUnmounted, computed } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
 import { useSupabaseClient, useSupabaseUser } from '#imports';
 
@@ -56,7 +55,6 @@ const activeComponent = shallowRef(null);
 if (importer) {
   activeComponent.value = defineAsyncComponent(importer);
 } else {
-  // Cleaned up error log
   console.error(`[VuePlayerModal] Component not found. Attempted key: ${componentPath}`);
 }
 
@@ -93,22 +91,45 @@ async function handleMaterialCompleted(payload) {
 
 // --- 3. FULLSCREEN LOGIC ---
 
+// 2. ADDED computed property for dynamic title
+const fullscreenTitle = computed(() => {
+  if (isFullscreen.value) {
+    return 'Exit Fullscreen';
+  }
+  // Check player_options from props.material
+  if (props.material.player_options?.orientation === 'v') {
+    return 'Enter Fullscreen (Portrait)';
+  }
+  return 'Enter Fullscreen (Landscape)'; // Default
+});
+
 const onFullscreenChange = () => {
   isFullscreen.value = !!document.fullscreenElement;
 };
 
+// 3. UPDATED toggleFullscreen logic
 const toggleFullscreen = async () => {
   const element = playerOverlayRef.value; 
   if (!element) return;
 
   if (!document.fullscreenElement) {
+    // --- ENTERING FULLSCREEN ---
+    
+    // Determine desired orientation from props
+    let desiredOrientation = 'landscape-primary'; // Default
+    if (props.material.player_options?.orientation === 'v') {
+      desiredOrientation = 'portrait-primary';
+    }
+
     try {
       await element.requestFullscreen();
       if ('orientation' in screen && typeof screen.orientation.lock === 'function') {
-        await screen.orientation.lock('landscape');
+        // Use the dynamic orientation
+        await screen.orientation.lock(desiredOrientation);
       }
     } catch (err) { console.error('Failed to enter fullscreen:', err); }
   } else {
+    // --- EXITING FULLSCREEN ---
     if (document.exitFullscreen) {
       await document.exitFullscreen();
       if ('orientation' in screen && typeof screen.orientation.unlock === 'function') {
@@ -135,11 +156,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Styles remain unchanged */
 .icon { 
   width: 24px; 
   height: 24px; 
 }
-
 .vue-player-overlay {
   position: fixed;
   inset: 0;
@@ -149,7 +170,6 @@ onUnmounted(() => {
   place-items: center;
   padding: 1rem;
 }
-
 .player-header {
   position: absolute;
   top: 0;
@@ -165,7 +185,6 @@ onUnmounted(() => {
 .player-header > * {
   pointer-events: auto;
 }
-
 .fullscreen-button {
   width: 32px;
   height: 32px;
@@ -183,7 +202,6 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
 }
-
 .close-button {
   background: none;
   border: none;
@@ -193,14 +211,12 @@ onUnmounted(() => {
   cursor: pointer;
   padding: 0;
 }
-
 .vue-player-content {
   position: relative;
   z-index: 1;
   max-width: 90vw;
   max-height: 90vh;
 }
-
 .loading-error {
   color: #ffcccc;
   background: #330000;
@@ -218,4 +234,3 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 </style>
-
