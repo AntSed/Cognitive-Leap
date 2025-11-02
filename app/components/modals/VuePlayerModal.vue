@@ -1,3 +1,4 @@
+// app/components/modals/VuePlayerModal.vue
 <template>
   <div class="vue-player-overlay" @click="closeOnOverlayClick" ref="playerOverlayRef">
     <header class="player-header">
