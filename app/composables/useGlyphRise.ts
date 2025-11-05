@@ -272,37 +272,43 @@ export function useGlyphRise(stageSize: Ref<StageSize>) {
   }
 
   function updatePrincess() {
-    const nonMovingBlocks = blocks.filter(b => !b.isClearing && !b.targetY)
-    
-    let highestBlockY: number
-    let highestBlockX: number
-    let highestBlockSize: number
-    
-    if (nonMovingBlocks.length > 0) {
-      const highestBlock = nonMovingBlocks.reduce((prev, curr) => (prev.y < curr.y ? prev : curr))
-      highestBlockY = highestBlock.y
-      highestBlockX = highestBlock.x
-      highestBlockSize = highestBlock.size
-    } else {
-      highestBlockY = 0 
-      highestBlockX = stageSize.value.width / 2
-      highestBlockSize = 0
-    }
+    const nonMovingBlocks = blocks.filter(b => !b.isClearing && !b.targetY)
+    
+    let highestBlockY: number
+    let highestBlockX: number
+    let highestBlockSize: number
+    
+    if (nonMovingBlocks.length > 0) {
+      const highestBlock = nonMovingBlocks.reduce((prev, curr) => (prev.y < curr.y ? prev : curr))
+      highestBlockY = highestBlock.y
+      highestBlockX = highestBlock.x
+      highestBlockSize = highestBlock.size
+    } else {
+      highestBlockY = 0 
+      highestBlockX = stageSize.value.width / 2
+      highestBlockSize = 0
+    }
 
-    princess.y = highestBlockY - princess.height
-    princess.x = highestBlockX + (highestBlockSize / 2) - (princess.width / 2)
+    princess.y = highestBlockY - princess.height
+    princess.x = highestBlockX + (highestBlockSize / 2) - (princess.width / 2)
 
-    const princessScreenY = princess.y - layerY.value
-    const scaredThreshold = stageSize.value.height * (2 / 3)
-    
-    if (gameEnded.value) {
-      princess.animation = 'gameover'
-    } else if (princessScreenY > scaredThreshold) {
-      princess.animation = 'scared_idle'
-    } else {
-      princess.animation = 'happy_idle'
+    const princessScreenY = princess.y - layerY.value
+    const screenHeight = stageSize.value.height
+
+    // Пороги (0 = верх экрана, screenHeight = низ)
+    const scaredThreshold = screenHeight * (1 / 2) // Середина экрана (верхняя половина)
+    const gameOverThreshold = screenHeight * (1 / 16) // Верхняя восьмая
+
+    if (gameEnded.value) {
+      princess.animation = 'gameover'
+    } else if (princessScreenY < gameOverThreshold) { // Меньше = выше на экране
+      princess.animation = 'gameover' // Ангелочек
+    } else if (princessScreenY < scaredThreshold) { // Меньше = выше на экране
+      princess.animation = 'scared_idle' // Плачет
+    } else {
+      princess.animation = 'happy_idle' // Счастливая
+    }
     }
-  }
 
   function checkGameOver() {
     if (gameEnded.value) return
