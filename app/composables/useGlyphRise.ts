@@ -188,7 +188,7 @@ export function useGlyphRise(stageSize: Ref<StageSize>) {
     const sortedClearedRows = Array.from(clearedRowYCoords).sort((a, b) => a - b)
     
     blocks.forEach(block => {
-      if (block.isClearing || block.targetY || block.id === draggedBlock.value?.id) {
+      if (block.isClearing || block.targetY) {
         return
       }
 
