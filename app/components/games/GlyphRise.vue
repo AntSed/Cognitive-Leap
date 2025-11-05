@@ -5,7 +5,7 @@
  
   <div 
    ref="stageContainer" 
-   class="overflow-hidden bg-[#4a2c2a] h-[92vh] md:h-[80vh]"
+   class="overflow-hidden bg-[#4a2c2a] h-[90vh] md:h-[80vh]"
   >
    <v-stage :config="stageConfig" ref="stageRef">
     
@@ -134,6 +134,9 @@ import {
  BLOCK_3D_OFFSET, 
  CLEAR_ANIMATION_DURATION 
 } from '~/composables/useGlyphRise'
+
+// --- Emit ---
+const emit = defineEmits(['completed'])
 
 // --- Stage Sizing ---
 const stageContainer = ref(null)
@@ -272,7 +275,13 @@ watch(gameEnded, (hasEnded) => {
   }, 50)
  }
 })
-
+// --- Completion Emitter ---
+watch(score, (newScore) => {
+  if (newScore === 100) {
+    emit('completed')
+    // console.log('GlyphRise: Material completed event emitted.')
+  }
+})
 // --- Event Handlers ---
 
 function onStartClick() {
