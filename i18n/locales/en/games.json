@@ -20,5 +20,15 @@
       "playAgain": "Play Again",
       "reasonCore": "An enemy reached the radar core!",
       "reasonLives": "You ran out of lives!"
-    }
+    },
+"mathJump": {
+    "title": "Math Jump",
+    "character": "Your character",
+    "startBtn": "Start!",
+    "gameOverTitle": "Game Over!",
+    "winTitle": "You Win!",
+    "yourScore": "Your Score:",
+    "tryAgainBtn": "Try Again!",
+    "playAgainBtn": "Play Again!"
+  }
 }

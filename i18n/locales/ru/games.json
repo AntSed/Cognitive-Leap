@@ -21,5 +21,15 @@
       "playAgain": "Играть снова",
       "reasonCore": "Враг достиг ядра радара!",
       "reasonLives": "Закончились жизни!"
-    }
+    },
+  "mathJump": {
+    "title": "Мат. Прыжок",
+    "character": "Твой персонаж",
+    "startBtn": "Начать!",
+    "gameOverTitle": "Игра окончена!",
+    "winTitle": "Победа!",
+    "yourScore": "Твой счет:",
+    "tryAgainBtn": "Еще раз!",
+    "playAgainBtn": "Сыграть снова!"
   }
+}

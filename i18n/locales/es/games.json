@@ -21,5 +21,15 @@
     "playAgain": "Jugar de Nuevo",
     "reasonCore": "¡Un enemigo alcanzó el núcleo!",
     "reasonLives": "¡Te quedaste sin vidas!"
+    },
+"mathJump": {
+  "title": "Salto Matemático",  
+  "character": "Tu personaje",
+  "startBtn": "¡Comenzar!",
+  "gameOverTitle": "¡Fin del Juego!",
+  "winTitle": "¡Ganaste!",
+  "yourScore": "Tu Puntuación:",
+  "tryAgainBtn": "¡Inténtalo de Nuevo!",
+  "playAgainBtn": "¡Jugar de Nuevo!"
     }
 }
