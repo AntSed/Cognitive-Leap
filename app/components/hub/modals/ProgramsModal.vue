@@ -125,13 +125,17 @@ const fetchUserPrograms = async () => {
   }
 };
 
+
 const handleCreateProgram = async () => {
   if (!newProgramTitle.value.trim() || isCreating.value) return;
   isCreating.value = true;
   try {
     const { data, error } = await supabase
       .from('programs')
-      .insert({ title: newProgramTitle.value })
+      .insert({ 
+        title: newProgramTitle.value,
+        skin_id: '38c24e69-24f9-4a7c-a003-84d298280c14' // <-- Add default skin
+      })
       .select()
       .single();
     if (error) throw error;
@@ -170,7 +174,6 @@ const handleDeleteProgram = (programToDelete) => {
 
 const handleSelectProgram = (program) => {
   props.onSelect(program);
-  // FIX: The component now closes itself directly using the modal store.
   modalStore.close();
 };
 

@@ -1,3 +1,4 @@
+// app/composables/useR2Uploader.ts
 import { ref } from 'vue'
 import imageCompression from 'browser-image-compression'
 
