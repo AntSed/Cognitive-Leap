@@ -121,20 +121,17 @@ serve(async (req) => {
       
     if (dbError) throw dbError;
 
-    // FIX 3: Handle multiple lesson attachments
+// FIX 3: Handle multiple lesson attachments
     if (lessonIdsString) {
       const lessonIds = JSON.parse(lessonIdsString);
       if (Array.isArray(lessonIds) && lessonIds.length > 0) {
         
-        const linksToInsert = lessonIds.map((lessonId: string) => ({
-          lesson_id: lessonId,
-          material_id: materialId,
-          position: 999, // Use a default high position
-        }));
-        
         const { error: linkError } = await supabaseClient
-            .from('lesson_materials')
-            .insert(linksToInsert);
+            .rpc('link_material_to_lessons', {
+                p_material_id: materialId,
+                p_lesson_ids: lessonIds,
+                p_material_purpose: coreData.material_purpose // 'purpose' уже есть в coreData
+            });
             
         if (linkError) throw linkError;
       }

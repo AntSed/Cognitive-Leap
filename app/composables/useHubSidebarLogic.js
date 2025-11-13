@@ -300,16 +300,20 @@ export function useHubSidebarLogic(activeProgramRef) {
         return;
       }
 
-      const lesson = lessons.value.find(l => l.id === targetLesson.id);
-      const currentCount = (hubContext === 'exam' ? lesson?.exam_count : lesson?.study_count) || 0;
-      const newPosition = currentCount + 1;
+      const { data: newOrderIndex, error: indexError } = await supabase
+        .rpc('get_next_material_order_index', {
+          p_lesson_id: targetLesson.id,
+          p_material_purpose: hubContext // hubContext тут уже есть!
+        });
 
+      if (indexError) throw indexError;
+      
       const { error: insertError } = await supabase
         .from('lesson_materials')
         .insert({
           lesson_id: targetLesson.id,
           material_id: droppedMaterial.id,
-          position: newPosition
+          order_index: newOrderIndex // <-- Используем order_index
         });
 
       if (insertError) throw insertError;

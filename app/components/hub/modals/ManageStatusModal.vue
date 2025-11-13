@@ -126,11 +126,12 @@ const handleSubmit = async () => {
     const lessonsToPin = [...attachedLessonIds.value].filter(id => !initialAttachedLessonIds.value.has(id));
     const lessonsToUnpin = [...initialAttachedLessonIds.value].filter(id => !attachedLessonIds.value.has(id));
 
-    // 3. Создаем запросы на открепление
+// 3. Создаем запросы на открепление (ИСПРАВЛЕНО)
     if (lessonsToUnpin.length > 0) {
       promises.push(
         ...lessonsToUnpin.map(lessonId => 
-          supabase.rpc('unpin_material_and_reorder', {
+          // Используем нашу НОВУЮ, простую RPC-функцию
+          supabase.rpc('unpin_material', {
             p_lesson_id: lessonId,
             p_material_id: props.material.id
           })
@@ -138,14 +139,16 @@ const handleSubmit = async () => {
       );
     }
     
-    // 4. Создаем запросы на прикрепление (логика определения position остается упрощенной)
+    // 4. Создаем запросы на прикрепление (ИСПРАВЛЕНО)
     if (lessonsToPin.length > 0) {
-       const newLinks = lessonsToPin.map((lessonId, index) => ({
-        material_id: props.material.id,
-        lesson_id: lessonId,
-        position: 999, // Placeholder, reordering is a separate task
-      }));
-      promises.push(supabase.from('lesson_materials').insert(newLinks));
+      // Используем нашу НОВУЮ RPC, которая сама разберется с order_index
+       promises.push(
+         supabase.rpc('link_material_to_lessons', {
+           p_material_id: props.material.id,
+           p_lesson_ids: lessonsToPin,
+           p_material_purpose: props.material.material_purpose // Передаем purpose
+         })
+       );
     }
 
     // 5. Выполняем все запросы параллельно

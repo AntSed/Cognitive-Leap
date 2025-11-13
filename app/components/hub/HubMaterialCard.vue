@@ -5,12 +5,11 @@
     :class="[borderClass]"
   >
     <EditablePosition
-      v-if="material.position && (isAdmin || isEditor)"
-      :model-value="material.position"
+      v-if="selectedLessonId && displayIndex && (isAdmin || isEditor || isProgramOwner)"
+      :model-value="displayIndex"
       class="absolute right-2 top-2 z-20"
       @update:modelValue="handlePositionUpdate"
     />
-
     <HubCardImage
       :material="material"
       :thumbnail-url="material.thumbnail_url"
@@ -228,6 +227,8 @@ const props = defineProps({
   selectedLessonId: { type: String, default: null },
   updateTools: { type: Object, required: true },
   allProgramLessons: { type: Array, required: true },
+  displayIndex: { type: Number, default: null },
+  isProgramOwner: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['update-position']);

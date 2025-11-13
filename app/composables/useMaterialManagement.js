@@ -45,12 +45,10 @@ export function useMaterialManagement() {
         try {
           // --- UPDATED ---
           // Call the new RPC function that is context-aware
-          const { error } = await supabase.rpc('unpin_material_and_reorder_context', {
+          const { error } = await supabase.rpc('unpin_material', {
             p_lesson_id: lessonId,
-            p_material_id: material.id,
-            p_material_purpose: material.material_purpose // Pass the material's purpose
+            p_material_id: material.id
           });
-          // --- END UPDATE ---
 
           if (error) throw error;
 

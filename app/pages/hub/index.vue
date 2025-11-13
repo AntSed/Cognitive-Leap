@@ -203,7 +203,7 @@
         :group="{ name: 'materials', pull: 'clone', put: false }"
         item-key="id" :sort="false" :drag-class="'dragging-card'"
       >
-        <template #item="{ element: material }">
+        <template #item="{ element: material, index }">
           <HubMaterialCard
             :material="material"
             :current-user="currentUserProfile"
@@ -211,7 +211,7 @@
             :all-program-lessons="lessons"
             :update-tools="hubUpdateTools"
             
-            @update-position="handlePositionUpdate" />
+            :display-index="index + 1" @update-position="handlePositionUpdate" />
         </template>
       </draggable>
       </div>

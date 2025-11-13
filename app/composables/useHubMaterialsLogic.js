@@ -55,9 +55,9 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram, hubContext, 
   const creatorFilter = ref('');
 
   // --- COMPUTED ---
-  const displayedMaterials = computed(() => {
-    return materials.value;
-  });
+const displayedMaterials = computed(() => {
+  return materials.value;
+});
 
   // --- METHODS ---
 const fetchMaterials = async () => {
@@ -78,9 +78,10 @@ const fetchMaterials = async () => {
         // Запрос select с { count: 'exact' }
         query = supabase
           .from('lesson_materials')
-          .select('position, learning_apps!inner ( * )', { count: 'exact' }) // <-- ДОБАВЛЕН COUNT
+          // ЗАПРАШИВАЕМ order_index ВМЕСТО position
+          .select('order_index, learning_apps!inner ( * )', { count: 'exact' }) 
           .eq('lesson_id', selectedLesson.value.id)
-          .eq('learning_apps.material_purpose', hubContext.value); 
+          .eq('learning_apps.material_purpose', hubContext.value);
         if (statusFilter.value) query = query.eq('learning_apps.status', statusFilter.value);
         if (typeFilter.value) query = query.eq('learning_apps.material_type', typeFilter.value);
         if (searchQuery.value) {
@@ -104,8 +105,9 @@ const fetchMaterials = async () => {
         }
         
         query = query
-          .order('position', { ascending: true })
-          .range(from, to); 
+          .order('order_index', { ascending: true }) 
+          .order('id', { ascending: true, foreignTable: 'learning_apps' })
+          .range(from, to);
 
       } else {
 
@@ -155,7 +157,7 @@ const fetchMaterials = async () => {
       if (selectedLesson.value) {
         materials.value = data.map(item => ({
           ...item.learning_apps,
-          position: item.position
+          order_index: item.order_index
         })).filter(Boolean);
       } else {
         materials.value = data;
@@ -169,51 +171,88 @@ const fetchMaterials = async () => {
       isLoading.value = false;
     }
   };
-  /**
-   * Handles reordering of materials within a lesson (optimistic update).
-   * @param {object} payload - The event payload.
-   * @param {string} payload.materialId - The ID of the material being moved.
-   * @param {number} payload.newPosition - The new position for the material.
-   */
-  const handlePositionUpdate = async ({ materialId, newPosition }) => {
-    if (!selectedLesson.value) return;
-    const material = materials.value.find(m => m.id === materialId);
-    if (!material) return;
-    const oldPosition = material.position;
-    if (oldPosition === newPosition || newPosition <= 0) return;
-    const originalMaterials = JSON.parse(JSON.stringify(materials.value));
-    materials.value.forEach(m => {
-      if (m.id === materialId) {
-        m.position = newPosition;
-      } 
-      else {
-        if (newPosition < oldPosition && m.position >= newPosition && m.position < oldPosition) {
-          m.position++;
-        }
-        else if (newPosition > oldPosition && m.position <= newPosition && m.position > oldPosition) {
-          m.position--;
-        }
+/**
+ * Handles reordering based on "virtual" display index.
+ * Calculates a new float order_index and calls the new RPC.
+ * @param {object} payload - The event payload.
+ * @param {string} payload.materialId - The ID of the material being moved.
+ * @param {number} payload.newPosition - The new *virtual* (1-based) position.
+ */
+const handlePositionUpdate = async ({ materialId, newPosition }) => {
+  if (!selectedLesson.value) return;
+  const totalItems = materials.value.length;
+  const clampedNewPosition = Math.max(1, Math.min(newPosition, totalItems));
+  // 1. Найти материал и его текущий *виртуальный* индекс
+  const materialToMove = materials.value.find(m => m.id === materialId);
+  if (!materialToMove) return;
+
+  const oldVirtualIndex = materials.value.indexOf(materialToMove);
+  const newVirtualIndex = clampedNewPosition - 1; // 1-based to 0-based
+
+  if (oldVirtualIndex === newVirtualIndex) return; 
+
+  // Сохраняем для отката в случае ошибки
+  const originalMaterials = JSON.parse(JSON.stringify(materials.value));
+
+  // 2. Вычислить новый float order_index
+  let newOrderIndex;
+
+  if (newVirtualIndex === 0) {
+    // --- Перемещение в НАЧАЛО ---
+    const firstItemOrder = materials.value[0].order_index;
+    newOrderIndex = firstItemOrder / 2;
+  } else if (newVirtualIndex === materials.value.length - 1) {
+    // --- Перемещение в КОНЕЦ ---
+    const lastItemOrder = materials.value[materials.value.length - 1].order_index;
+    newOrderIndex = lastItemOrder + 1.0;
+  } else {
+    // --- Перемещение в СЕРЕДИНУ ---
+    // Нам нужны соседи *в новой* позиции
+    
+    // Если движем ВВЕРХ (e.g., 5 -> 2)
+    // 'соседи' - это [index 1] и [index 2]
+    if (newVirtualIndex < oldVirtualIndex) {
+      const orderBefore = materials.value[newVirtualIndex - 1].order_index;
+      const orderAfter = materials.value[newVirtualIndex].order_index;
+      newOrderIndex = (orderBefore + orderAfter) / 2;
+    } 
+    // Если движем ВНИЗ (e.g., 2 -> 5)
+    // 'соседи' - это [index 5] и [index 6]
+    else {
+      const orderBefore = materials.value[newVirtualIndex].order_index;
+      const orderAfter = materials.value[newVirtualIndex + 1]?.order_index; // '?' на случай, если это был баг, но newVirtualIndex === length - 1 обработан выше
+      
+      if (orderAfter) {
+         newOrderIndex = (orderBefore + orderAfter) / 2;
+      } else {
+         // Фолбэк, если что-то пошло не так (попали в конец, но не через newVirtualIndex === length - 1)
+         newOrderIndex = orderBefore + 1.0;
       }
+    }
+  }
+
+  // 3. Оптимистичное обновление
+  materialToMove.order_index = newOrderIndex;
+  // Пересортируем локальный массив. 'displayedMaterials' (computed) подхватит
+  materials.value.sort((a, b) => a.order_index - b.order_index);
+
+  // 4. Асинхронный вызов RPC
+  try {
+    const { error: rpcError } = await supabase.rpc('update_material_order', {
+      p_lesson_id: selectedLesson.value.id,
+      p_material_id: materialId,
+      p_new_order_index: newOrderIndex // <-- Отправляем float!
     });
 
-    materials.value.sort((a, b) => a.position - b.position);
-    try {
-      const { error: rpcError } = await supabase.rpc('reorder_lesson_materials_context', {
-        p_lesson_id: selectedLesson.value.id,
-        p_material_id: materialId,
-        p_new_position: newPosition,
-        p_material_purpose: hubContext.value
-      });
-
-      if (rpcError) throw rpcError;
-      
-    } catch (e) {
-      console.error('Failed to reorder material:', e);
-      alert(t('hub.errors.reorderMaterialFailed'));
-      materials.value = originalMaterials;
-    }
-  };
-
+    if (rpcError) throw rpcError;
+    
+  } catch (e) {
+    console.error('Failed to reorder material:', e);
+    alert(t('hub.errors.reorderMaterialFailed'));
+    // Откат
+    materials.value = originalMaterials;
+  }
+};
 
   watch([searchQuery, statusFilter, typeFilter, languageFilter, ageFilter, creatorFilter, hubContext], 
     () => {
