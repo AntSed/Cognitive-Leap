@@ -38,5 +38,18 @@
     "winTitle": "¡Ganaste!",
     "winMessage": "¡Encontraste todos los pares en {moves} movimientos y {time} segundos!",
     "playAgain": "Jugar de Nuevo"
+  },
+  "howMany": {
+    "scoreLabel": "Puntos",
+    "question": "¿Cuántos hay?",
+    "checkButton": "Verificar",
+    "feedback": {
+      "correctPoints": "¡Excelente! +{points}",
+      "correct": "¡Correcto!",
+      "milestone": "¡Súper! Faltan {remaining} puntos.",
+      "win": "¡Hurra, ganaste!",
+      "incorrect": "¡Incorrecto! -{points}",
+      "timeUp": "¡Se acabó el tiempo! -{points}"
+    }
   }
 }

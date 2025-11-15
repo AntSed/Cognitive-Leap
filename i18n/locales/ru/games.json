@@ -38,5 +38,18 @@
     "winTitle": "Победа!",
     "winMessage": "Вы нашли все пары за {moves} ходов и {time} секунд!",
     "playAgain": "Играть снова"
+  },
+  "howMany": {
+    "scoreLabel": "Счет",
+    "question": "Сколько?",
+    "checkButton": "Проверить",
+    "feedback": {
+      "correctPoints": "Отлично! +{points}",
+      "correct": "Верно!",
+      "milestone": "Супер! Осталось {remaining} очков.",
+      "win": "Ура, ты выиграл!",
+      "incorrect": "Неверно! -{points}",
+      "timeUp": "Время вышло! -{points}"
+    }
   }
 }

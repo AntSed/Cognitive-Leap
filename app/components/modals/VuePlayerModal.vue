@@ -214,8 +214,8 @@ onUnmounted(() => {
 .vue-player-content {
   position: relative;
   z-index: 1;
-  max-width: 90vw;
-  max-height: 90vh;
+  width: 90vw;
+  height: 90vh;
 }
 .loading-error {
   color: #ffcccc;

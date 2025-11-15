@@ -38,5 +38,18 @@
     "winTitle": "You Win!",
     "winMessage": "You found all pairs in {moves} moves and {time} seconds!",
     "playAgain": "Play Again"
+  },
+  "howMany": {
+    "scoreLabel": "Score",
+    "question": "How many?",
+    "checkButton": "Check",
+    "feedback": {
+      "correctPoints": "Excellent! +{points}",
+      "correct": "Correct!",
+      "milestone": "Super! {remaining} points to go.",
+      "win": "Hooray, you won!",
+      "incorrect": "Incorrect! -{points}",
+      "timeUp": "Time's up! -{points}"
+    }
   }
 }
