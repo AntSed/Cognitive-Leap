@@ -1,5 +1,5 @@
 <template>
-  <div class="how-many-game">
+  <div class="how-many-game" @click="focusInput">
     <div class="game-world" ref="worldEl">
       <div
         class="ball"
@@ -11,10 +11,11 @@
 
     <div class="game-ui">
       <div class="score-display" :style="{ color: scoreColor }">
-        {{ t('howMany.scoreLabel') }}: {{ score }}
+        {{ score }}
       </div>
       <div
         class="input-area"
+        ref="inputAreaEl"
         v-if="
           gameState === 'awaitingInput' ||
           gameState === 'feedback'
@@ -28,12 +29,20 @@
           ref="inputEl"
           :disabled="gameState === 'feedback'"
         />
-        <button @click="checkAnswer" :disabled="gameState === 'feedback'">{{ t('howMany.checkButton') }}</button>
-        <p class="feedback" :class="feedback.type">
-          {{ feedback.message }}
-        </p>
         <div class="timer-bar-container">
           <div class="timer-bar" :style="{ width: timerProgress + '%' }"></div>
+        </div>
+      </div>
+      
+      <!-- New Notification System -->
+      <div class="notification-container">
+        <div
+          v-for="n in notifications"
+          :key="n.id"
+          class="floating-text"
+          :class="n.type"
+        >
+          {{ n.message }}
         </div>
       </div>
     </div>
@@ -66,9 +75,10 @@ interface Ball {
   }
 }
 
-interface Feedback {
+interface Notification {
+  id: number
   message: string
-  type: 'correct' | 'incorrect' | 'neutral' | ''
+  type: 'correct' | 'incorrect' | 'neutral' | 'milestone'
 }
 
 // --- 2. Реактивное состояние ---
@@ -77,7 +87,6 @@ const gameState = ref<GameState>('intro')
 const balls = ref<Ball[]>([])
 const targetCount = ref(0)
 const userGuess = ref<number | null>(null)
-const feedback = ref<Feedback>({ message: '', type: '' })
 const roundsPlayed = ref(0);
 const score = ref(0);
 const scoreColor = ref('white');
@@ -87,10 +96,14 @@ const isTimeUp = ref(false);
 const timerProgress = ref(0);
 const roundTimer = ref<number | null>(null);
 
+const notifications = ref<Notification[]>([]);
+let notificationIdCounter = 0;
+
 
 // Ссылки на DOM-элементы
 const worldEl = ref<HTMLElement | null>(null)
 const inputEl = ref<HTMLInputElement | null>(null)
+const inputAreaEl = ref<HTMLElement | null>(null)
 
 // --- 3. Игровой цикл ---
 
@@ -98,13 +111,18 @@ onMounted(() => {
   setupRound();
 });
 
+const focusInput = () => {
+  if (gameState.value === 'awaitingInput') {
+    inputEl.value?.focus();
+  }
+}
+
 /**
  * 1. Настраивает новый раунд
  */
 const setupRound = () => {
   stopRoundTimer();
   gameState.value = 'flying'
-  feedback.value = { message: '', type: '' }
   userGuess.value = null
   roundsPlayed.value++;
   attempts.value = 0;
@@ -175,10 +193,14 @@ const animateGrouping = () => {
   const centerX = width / 2;
   const centerY = height / 2;
 
+  // Dynamically get the height of the input area to use as a top offset
+  const topOffset = (inputAreaEl.value?.offsetHeight || 150) + 20; // Add some padding
+
   const ballPositions = generateLayoutPositions(
     targetCount.value,
     width,
-    height
+    height,
+    topOffset
   )
 
   balls.value.forEach((ball, index) => {
@@ -215,29 +237,22 @@ const checkAnswer = () => {
       if (isCorrect) {
         const oldScore = score.value;
         if (wasOnTime && attempts.value === 1) {
-          let points;
-          if (score.value >= 300 && targetCount.value > 15) {
-            points = 30;
-          } else if (targetCount.value > 10) {
-            points = 20;
-          } else {
-            points = 10;
-          }
+          const points = score.value >= 300 && targetCount.value > 15 ? 30 : (targetCount.value > 10 ? 20 : 10);
           score.value += points;
-          feedback.value = { message: t('howMany.feedback.correctPoints', { points }), type: 'correct' };
+          spawnNotification(`+${points}`, 'correct');
           scoreColor.value = '#2ecc71';
         } else {
-          feedback.value = { message: t('howMany.feedback.correct'), type: 'neutral' };
+          spawnNotification(t('howMany.feedback.correct'), 'neutral');
           scoreColor.value = 'white';
         }
   
         // Milestone check
         if (score.value > oldScore && Math.floor(oldScore / 100) < Math.floor(score.value / 100)) {
           if (score.value >= 1000) {
-            feedback.value = { message: t('howMany.feedback.win'), type: 'correct' };
+            spawnNotification(t('howMany.feedback.win'), 'milestone');
             emit('completed');
           } else {
-            feedback.value = { message: t('howMany.feedback.milestone', { remaining: 1000 - score.value }), type: 'correct' };
+            spawnNotification(t('howMany.feedback.milestone', { remaining: 1000 - score.value }), 'milestone');
           }
         }
         
@@ -246,11 +261,11 @@ const checkAnswer = () => {
       } else {
         // Incorrect answer
         score.value -= 20;
-        feedback.value = { message: t('howMany.feedback.incorrect', { points: 20 }), type: 'incorrect' };
+        spawnNotification('-20', 'incorrect');
         scoreColor.value = '#e74c3c';
         
         if (isTimeUp.value) { // If time was already up, move to next round after feedback
-          setTimeout(setupRound, 2000); // Use the same delay as correct answer
+          setTimeout(setupRound, 2000);
         } else { // Otherwise, let user try again
           setTimeout(() => {
             gameState.value = 'awaitingInput';
@@ -266,6 +281,14 @@ const checkAnswer = () => {
 };
 
 // --- 5. Вспомогательные функции ---
+
+const spawnNotification = (message: string, type: Notification['type']) => {
+  const id = notificationIdCounter++;
+  notifications.value.push({ id, message, type });
+  setTimeout(() => {
+    notifications.value = notifications.value.filter(n => n.id !== id);
+  }, 1900); // Should be slightly less than animation duration
+};
 
 const TIME_LIMIT = 10000; // 10 seconds
 
@@ -298,7 +321,7 @@ const handleTimeUp = () => {
   score.value -= 20;
   scoreColor.value = 'red';
   setTimeout(() => { scoreColor.value = 'white'; }, 1500);
-  feedback.value = { message: t('howMany.feedback.timeUp', { points: 20 }), type: 'incorrect' };
+  spawnNotification(t('howMany.feedback.timeUp', { points: 20 }), 'incorrect');
   
   // Make balls black
   balls.value.forEach(ball => {
@@ -310,13 +333,14 @@ const handleTimeUp = () => {
 function generateLayoutPositions(
   count: number,
   worldWidth: number,
-  worldHeight: number
+  worldHeight: number,
+  topOffset: number
 ): { x: number; y: number }[] {
   const ballSize = 40;
   const padding = 10;
   const totalSize = ballSize + padding;
   const groupSizes = decomposeNumber(count);
-  const groupCenters = getGroupCenters(groupSizes.length, worldWidth, worldHeight);
+  const groupCenters = getGroupCenters(groupSizes.length, worldWidth, worldHeight, topOffset);
   const allPositions: { x: number; y: number }[] = [];
 
   groupSizes.forEach((size, groupIndex) => {
@@ -372,16 +396,24 @@ function decomposeNumber(n: number): number[] {
   return parts;
 }
 
-function getGroupCenters(numGroups: number, worldWidth: number, worldHeight: number): { x: number; y: number }[] {
-  const topMargin = 250; // Approximate height in pixels of the top UI
-  const availableHeight = worldHeight - topMargin;
-  
+function getGroupCenters(numGroups: number, worldWidth: number, worldHeight: number, topOffset: number): { x: number; y: number }[] {
   const centers: { x: number; y: number }[] = [];
   const centerX = worldWidth / 2;
-  // Calculate centerY based on the *available* height, then add the margin back.
-  const centerY = topMargin + (availableHeight * 0.4);
+
+  // The top boundary is the bottom of the input area UI.
+  const topBoundary = topOffset; 
+  // The bottom boundary is the vertical midpoint of the screen.
+  const bottomBoundary = worldHeight / 2;
+
+  // The available space is between these two boundaries.
+  const availableHeight = bottomBoundary - topBoundary;
+
+  // The vertical center for patterns is the middle of that available space.
+  const centerY = topBoundary + (availableHeight / 2); 
+  
   const offsetX = worldWidth / 4;
-  const offsetY = availableHeight / 8;
+  // Make offsetY relative to the new available height to prevent overlap
+  const offsetY = availableHeight / 3;
 
   switch (numGroups) {
     case 1:
@@ -392,9 +424,9 @@ function getGroupCenters(numGroups: number, worldWidth: number, worldHeight: num
       centers.push({ x: centerX + offsetX, y: centerY });
       break;
     case 3:
-      centers.push({ x: centerX, y: centerY - offsetY });
-      centers.push({ x: centerX - offsetX, y: centerY + offsetY });
-      centers.push({ x: centerX + offsetX, y: centerY + offsetY });
+      centers.push({ x: centerX, y: centerY - offsetY * 0.75 });
+      centers.push({ x: centerX - offsetX, y: centerY + offsetY * 0.75 });
+      centers.push({ x: centerX + offsetX, y: centerY + offsetY * 0.75 });
       break;
     case 4:
       centers.push({ x: centerX - offsetX, y: centerY - offsetY });
@@ -463,82 +495,62 @@ function getRandomColor(): string {
 }
 
 .score-display {
-  margin-top: 20px;
-  font-size: 1.5rem;
-  font-weight: bold;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  font-size: 2.5rem; /* Larger font */
+  font-weight: 900; /* Bolder */
   transition: color 0.3s;
+  z-index: 20; /* Ensure score is above input area */
+  width: 200px; /* Wider area */
+  text-align: left;
+  -webkit-text-stroke: 1px rgba(0,0,0,0.3); /* Add a subtle outline */
 }
 
 .input-area {
   pointer-events: auto;
-  margin-top: 20px;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 20px;
-  padding-bottom: 30px; /* Space for timer */
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+  padding: 10px;
+  padding-bottom: 20px;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 5px;
   z-index: 10;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
   position: relative; /* For timer positioning */
+  width: 130px; /* More square-like */
 }
 
 .input-area h2 {
   margin: 0;
   font-weight: bold;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
 .input-area input {
-  font-size: 2rem;
-  width: 120px;
+  font-size: 2.5rem;
+  width: 100px;
   text-align: center;
-  background: #333;
-  color: white;
-  border: 2px solid #555;
-  border-radius: 8px;
-  padding: 5px;
-}
-
-.input-area button {
-  font-size: 1.2rem;
-  padding: 10px 25px;
-  cursor: pointer;
-  background-color: #3498db;
+  background: rgba(51, 51, 51, 0.5);
   color: white;
   border: none;
   border-radius: 8px;
-  transition: background-color 0.2s;
-  border-bottom: 3px solid #2980b9;
+  padding: 5px;
+  -moz-appearance: textfield; /* Firefox */
 }
-
-.input-area button:hover {
-  background-color: #4cabeb;
-}
-
-.input-area button:active {
-  transform: translateY(2px);
-  border-bottom-width: 1px;
-}
-
-.feedback {
-  font-size: 1.2rem;
+.input-area input::-webkit-outer-spin-button,
+.input-area input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
   margin: 0;
-  height: 20px;
-  font-weight: bold;
-  transition: color 0.3s;
 }
-.feedback.correct {
-  color: #2ecc71;
-}
-.feedback.incorrect {
-  color: #e74c3c;
-}
-.feedback.neutral {
-  color: #bdc3c7;
+
+.input-area button {
+  display: none; /* Button is removed */
 }
 
 .timer-bar-container {
@@ -556,5 +568,55 @@ function getRandomColor(): string {
   background-color: #e74c3c;
   border-radius: 2px;
   transition: width 0.1s linear;
+}
+
+/* --- Notification System Styles --- */
+.notification-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.floating-text {
+  position: absolute;
+  font-size: 4rem;
+  font-weight: 900;
+  -webkit-text-stroke: 2px black;
+  text-shadow: 0 0 15px black;
+  animation: shoot-out 2s forwards ease-out;
+}
+
+.floating-text.correct {
+  color: #2ecc71;
+}
+.floating-text.incorrect {
+  color: #e74c3c;
+}
+.floating-text.neutral {
+  color: #bdc3c7;
+  font-size: 2.5rem;
+}
+.floating-text.milestone {
+  color: #f1c40f;
+  font-size: 2rem;
+  animation-duration: 3s; /* Longer animation for milestones */
+}
+
+@keyframes shoot-out {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-150px) scale(1.2);
+    opacity: 0;
+  }
 }
 </style>
