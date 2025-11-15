@@ -1,27 +1,27 @@
 {
-"mathRadar": {
-      "title": "Мат Радар",
-      "description": "Защити ядро, решая вражеские уравнения!",
-      "play": "ИГРАТЬ",
-      "score": "СЧЕТ",
-      "lives": "ЖИЗНИ",
-      "level": "УРОВЕНЬ",
-      "highscore": "РЕКОРД",
-      "muteMusic": "Выкл. музыку",
-      "unmuteMusic": "Вкл. музыку",
-      "muteSfx": "Выкл. эффекты",
-      "unmuteSfx": "Вкл. эффекты",
-      "targetLocked": "ЦЕЛЬ ЗАХВАЧЕНА",
-      "answerPlaceholder": "ОТВЕТ",
-      "targetPlaceholder": "ЗАХВАТИТЕ ЦЕЛЬ",
-      "warning": "! ВРАГ ОБНАРУЖЕН !",
-      "gameOver": "ИГРА ОКОНЧЕНА",
-      "finalScore": "Ваш итоговый счет:",
-      "newHighscore": "Новый рекорд!",
-      "playAgain": "Играть снова",
-      "reasonCore": "Враг достиг ядра радара!",
-      "reasonLives": "Закончились жизни!"
-    },
+  "mathRadar": {
+    "title": "Мат Радар",
+    "description": "Защити ядро, решая вражеские уравнения!",
+    "play": "ИГРАТЬ",
+    "score": "СЧЕТ",
+    "lives": "ЖИЗНИ",
+    "level": "УРОВЕНЬ",
+    "highscore": "РЕКОРД",
+    "muteMusic": "Выкл. музыку",
+    "unmuteMusic": "Вкл. музыку",
+    "muteSfx": "Выкл. эффекты",
+    "unmuteSfx": "Вкл. эффекты",
+    "targetLocked": "ЦЕЛЬ ЗАХВАЧЕНА",
+    "answerPlaceholder": "ОТВЕТ",
+    "targetPlaceholder": "ЗАХВАТИТЕ ЦЕЛЬ",
+    "warning": "! ВРАГ ОБНАРУЖЕН !",
+    "gameOver": "ИГРА ОКОНЧЕНА",
+    "finalScore": "Ваш итоговый счет:",
+    "newHighscore": "Новый рекорд!",
+    "playAgain": "Играть снова",
+    "reasonCore": "Враг достиг ядра радара!",
+    "reasonLives": "Закончились жизни!"
+  },
   "mathJump": {
     "title": "Мат. Прыжок",
     "character": "Твой персонаж",
@@ -31,5 +31,12 @@
     "yourScore": "Твой счет:",
     "tryAgainBtn": "Еще раз!",
     "playAgainBtn": "Сыграть снова!"
+  },
+  "cognitiveCards": {
+    "moves": "Ходы",
+    "time": "Время",
+    "winTitle": "Победа!",
+    "winMessage": "Вы нашли все пары за {moves} ходов и {time} секунд!",
+    "playAgain": "Играть снова"
   }
 }

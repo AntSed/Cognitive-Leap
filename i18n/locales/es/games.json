@@ -1,5 +1,5 @@
 {
-"mathRadar": {
+  "mathRadar": {
     "title": "Radar Matemático",
     "description": "¡Defiende el núcleo resolviendo ecuaciones enemigas!",
     "play": "JUGAR",
@@ -21,15 +21,22 @@
     "playAgain": "Jugar de Nuevo",
     "reasonCore": "¡Un enemigo alcanzó el núcleo!",
     "reasonLives": "¡Te quedaste sin vidas!"
-    },
-"mathJump": {
-  "title": "Salto Matemático",  
-  "character": "Tu personaje",
-  "startBtn": "¡Comenzar!",
-  "gameOverTitle": "¡Fin del Juego!",
-  "winTitle": "¡Ganaste!",
-  "yourScore": "Tu Puntuación:",
-  "tryAgainBtn": "¡Inténtalo de Nuevo!",
-  "playAgainBtn": "¡Jugar de Nuevo!"
-    }
+  },
+  "mathJump": {
+    "title": "Salto Matemático",
+    "character": "Tu personaje",
+    "startBtn": "¡Comenzar!",
+    "gameOverTitle": "¡Fin del Juego!",
+    "winTitle": "¡Ganaste!",
+    "yourScore": "Tu Puntuación:",
+    "tryAgainBtn": "¡Inténtalo de Nuevo!",
+    "playAgainBtn": "¡Jugar de Nuevo!"
+  },
+  "cognitiveCards": {
+    "moves": "Movimientos",
+    "time": "Tiempo",
+    "winTitle": "¡Ganaste!",
+    "winMessage": "¡Encontraste todos los pares en {moves} movimientos y {time} segundos!",
+    "playAgain": "Jugar de Nuevo"
+  }
 }
