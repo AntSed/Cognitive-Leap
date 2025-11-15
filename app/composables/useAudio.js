@@ -7,59 +7,58 @@ import * as Tone from 'tone';
 const music = new Howl({
   src: ['/sounds/music_loop.ogg'],
   loop: true,
-  // ИЗМЕНЕНИЕ 1: Громкость музыки чуть выше
+  // Music volume slightly higher.
   volume: 0.5, 
   html5: false,
 });
 
-// ИЗМЕНЕНИЕ 2: Громкость SFX ЗНАЧИТЕЛЬНО выше (-8dB вместо -24dB)
+// SFX volume significantly higher.
 const sfxVolume = new Tone.Volume(-15).toDestination();
 
 // --- 2. SFX (Tone.js) ---
 
-// ИЗМЕНЕНИЕ 3: Новые "рецепты" для SFX
-
+// New SFX recipes.
 const sfx = {
-  start: new Tone.FMSynth({ // (Без изменений)
+  start: new Tone.FMSynth({ // No changes.
     harmonicity: 1,
     modulationIndex: 3.5,
     envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 },
     modulationEnvelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }
   }).connect(sfxVolume),
   
-  blip: new Tone.FMSynth({ // (Без изменений)
+  blip: new Tone.FMSynth({ // No changes.
     harmonicity: 0.5,
     modulationIndex: 1.5,
     envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 },
     modulationEnvelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }
   }).connect(sfxVolume),
   
-  // ИЗМЕНЕНИЕ 1: Рецепт 'fire'
+  // 'fire' recipe.
   fire: new Tone.Synth({
         volume: -12,
     oscillator: { type: 'triangle' },
-    // Главное: sustain: 1 (вместо 0)
+    // Main: sustain: 1 (instead of 0).
     envelope: { attack: 0.001, decay: 0.01, sustain: 1, release: 0.3 } 
   }).connect(sfxVolume),
   
-  // ИЗМЕНЕНИЕ 2: Рецепт 'hit_thud'
+  // 'hit_thud' recipe.
   hit_thud: new Tone.MembraneSynth({
     volume: -4,
     pitchDecay: 0.05,
     octaves: 2,
-    // Увеличиваем затухание (decay) до 0.5 сек
+    // Increase decay to 0.5 sec.
     envelope: { attack: 0.001, decay: 1, sustain: 0, release: 0.4 }
   }).connect(sfxVolume),
   
-  // ИЗМЕНЕНИЕ 3: Рецепт 'hit_noise'
+  // 'hit_noise' recipe.
   hit_noise: new Tone.NoiseSynth({
     volume: -8,
     noise: { type: 'white' },
-    // Увеличиваем затухание (decay) до 0.4 сек
+    // Increase decay to 0.4 sec.
     envelope: { attack: 0.001, decay: 0.8, sustain: 0, release: 0.3 }
   }).connect(sfxVolume),
   
-  error: new Tone.FMSynth({ // (Без изменений)
+  error: new Tone.FMSynth({ // No changes.
     harmonicity: 0.5,
     modulationIndex: 8,
     oscillator: { type: 'sawtooth' },
@@ -67,7 +66,7 @@ const sfx = {
     modulationEnvelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.1 }
   }).connect(sfxVolume),
   
-  gameOver: new Tone.FMSynth({ // (Без изменений)
+  gameOver: new Tone.FMSynth({ // No changes.
     harmonicity: 0.5,
     modulationIndex: 10,
     envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.1 },
@@ -136,25 +135,25 @@ export const useAudio = () => {
         sfx.blip.triggerAttackRelease('G5', '16n', now);
         break;
         
-      // ИЗМЕНЕНИЕ 4: Триггер 'fire'
+      // 'fire' trigger.
       case 'fire':
-        const fireDuration = 0.4; // Длительность "пиу"
+        const fireDuration = 0.4; // Duration of the sound.
         
-        // 1. (ВАЖНО) Сбрасываем detune на 0 перед атакой
+        // 1. (IMPORTANT) Reset detune to 0 before attack.
         sfx.fire.detune.setValueAtTime(0, now);
-        // 2. Атака (начинаем высоко)
+        // 2. Attack (start high).
         sfx.fire.triggerAttack('C4', now); 
-        // 3. Глиссандо: "съезжаем" на 2 октавы (-2400 центов)
+        // 3. Glissando: "slide down" 2 octaves (-2400 cents).
         sfx.fire.detune.rampTo(-2400, fireDuration, now);
-        // 4. Релиз (отпускаем ноту)
+        // 4. Release (release note).
         sfx.fire.triggerRelease(now + fireDuration);
         break;
         
-      // ИЗМЕНЕНИЕ 5: Триггер 'hit'
+      // 'hit' trigger.
       case 'hit':
-        // "Бум" на полной громкости (velocity: 1.0)
+        // "Boom" at full volume (velocity: 1.0).
         sfx.hit_thud.triggerAttackRelease('C2', '2n', now, 1.0);
-        // "Шшш" чуть тише (velocity: 0.7)
+        // "Shhh" a little quieter (velocity: 0.7).
         sfx.hit_noise.triggerAttackRelease('0.4', now, 0.4);
         break;
         

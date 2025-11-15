@@ -1,38 +1,36 @@
 // app/middleware/auth.js
 export default defineNuxtRouteMiddleware(async (to, from) => {
 
-  // 1. "Быстрый выход" (Guard Clause). Это самое важное изменение.
-  // Если маршрут НЕ начинается с /hub, немедленно прекращаем работу и пропускаем пользователя.
-  // Это решает проблему с /mindmap и любыми другими публичными страницами.
+  // 1. Guard Clause: If the route does NOT start with /hub, skip authentication and let the user pass.
+  // This ensures public pages like /mindmap are accessible.
   if (!to.path.startsWith('/hub')) {
     return;
   }
 
-  // --- Весь последующий код выполнится ТОЛЬКО для /hub ---
+  // All subsequent code executes ONLY for /hub routes.
 
-  // 2. Логика для сервера (когда process.server === true)
+  // 2. Server-side logic (when process.server === true).
   if (process.server) {
     const user = useSupabaseUser();
-    // На сервере мы можем сделать только быструю проверку наличия сессии в куках.
-    // Если user.value отсутствует, значит, пользователь точно не залогинен.
+    // On the server, perform a quick check for a session in cookies.
+    // If user.value is null, the user is not logged in.
     if (!user.value) {
       return navigateTo({ path: '/', query: { view: 'profile' } });
     }
-    // Если сессия есть (даже анонимная), сервер пропускает запрос дальше.
-    // Финальную, более строгую проверку проведет клиент.
+    // If a session exists (even anonymous), the server proceeds. The client will perform a stricter check.
     return;
   }
 
-  // 3. Логика для клиента (когда process.server === false)
+  // 3. Client-side logic (when process.server === false).
   const { $auth } = useNuxtApp();
 
-  // Терпеливо ждем, пока наш плагин подтвердит точный статус аутентификации.
+  // Wait for the authentication plugin to confirm the exact authentication status.
   await $auth.waitForAuth();
 
   const user = useSupabaseUser();
 
-  // Теперь, на клиенте, мы проводим финальную, строгую проверку.
-  // Если пользователь не залогинен ИЛИ является анонимом, отправляем на страницу входа.
+  // Perform a final, strict check on the client.
+  // If the user is not logged in OR is anonymous, redirect to the profile view.
   if (!user.value || user.value.is_anonymous) {
     return navigateTo({ path: '/', query: { view: 'profile' } });
   }

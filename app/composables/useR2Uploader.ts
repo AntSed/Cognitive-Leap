@@ -11,16 +11,16 @@ export function useR2Uploader() {
     error.value = null
 
     try {
-      // 1. Сжатие
+      // 1. Image compression.
       const options = {
         maxSizeMB: 0.2, // 200KB
         maxWidthOrHeight: 800,
         useWebWorker: true,
-        fileType: 'image/webp', // Принудительно в WebP
+        fileType: 'image/webp', // Force output to WebP.
       }
       const compressedFile = await imageCompression(file, options)
 
-      // 2. Получение "билета" с нашего сервера
+      // 2. Get a pre-signed URL from our server.
       const { uploadUrl, publicUrl } = await $fetch('/api/upload-prepare', {
         method: 'POST',
         body: {
@@ -29,7 +29,7 @@ export function useR2Uploader() {
         },
       })
 
-      // 3. Загрузка файла НАПРЯМУЮ в R2
+      // 3. Upload the file DIRECTLY to R2.
       await $fetch(uploadUrl, {
         method: 'PUT',
         body: compressedFile,
@@ -38,7 +38,7 @@ export function useR2Uploader() {
         },
       })
 
-      // 4. Успех! Возвращаем URL для сохранения в БД
+      // 4. Success! Return the public URL for database storage.
       return publicUrl
 
     } catch (e: any) {
@@ -50,5 +50,5 @@ export function useR2Uploader() {
     }
   }
 
-  return { upload, isLoading, error: error } // Возвращаем `error` как ref
+  return { upload, isLoading, error: error } // Return `error` as a ref.
 }

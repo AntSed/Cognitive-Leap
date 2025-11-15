@@ -16,13 +16,10 @@
 
 <script setup>
 import { useModalStore } from '~/composables/useModalStore';
-// 1. Импортируем useI18n
 import { useI18n } from 'vue-i18n';
 
-// 2. Получаем функцию `t` для переводов
 const { t } = useI18n();
 
-// 3. Обновляем props, чтобы принимать ключи и параметры
 const props = defineProps({
   titleKey: { type: String, required: true },
   messageKey: { type: String, required: true },
@@ -136,4 +133,3 @@ const handleClose = () => {
   background-color: #EF4444; /* red-500 */
 }
 </style>
-

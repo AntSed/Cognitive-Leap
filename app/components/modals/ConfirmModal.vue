@@ -22,12 +22,10 @@ defineProps({
 const modalStore = useModalStore();
 
 function confirm() {
-  // ИЗМЕНЕНО: Вызываем новый метод `submit`
   modalStore.submit(true);
 }
 
 function cancel() {
-  // ИЗМЕНЕНО: Вызываем новый метод `submit`
   modalStore.submit(false);
 }
 </script>
@@ -54,7 +52,7 @@ p {
   margin-bottom: 25px;
   color: #ccc;
   font-size: 16px;
-  white-space: pre-wrap; /* Для переноса строк в сообщении */
+  white-space: pre-wrap;
 }
 
 .modal-actions {

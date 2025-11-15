@@ -108,18 +108,15 @@ onMounted(async () => {
     
     const { skin_layouts, ...lessonDataFromDB } = data;
 
-    // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-    // Убеждаемся, что переводы всегда являются объектами, а не null
+    // Ensure translations are always objects to prevent errors.
     const safeLessonData = {
       ...lessonDataFromDB,
       topic_translations: lessonDataFromDB.topic_translations || { en: '' },
       description_translations: lessonDataFromDB.description_translations || { en: '' }
     };
     editableLesson.value = safeLessonData;
-    // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
 
     if (skin_layouts && skin_layouts.length > 0) {
-      // Проверяем, что coordinates не null
       const layoutData = skin_layouts[0];
       editableLayout.value = {
           ...layoutData,

@@ -59,9 +59,9 @@ import { useModalStore } from '~/composables/useModalStore';
 
 const props = defineProps({
   material: { type: Object, required: true },
-  // Получаем готовый список уроков
+  // The list of lessons for the program.
   programLessons: { type: Array, required: true },
-  // Получаем рабочий объект с инструментами
+  // Utility object for refreshing data.
   updateTools: { type: Object, required: true }
 });
 
@@ -70,7 +70,8 @@ const modalStore = useModalStore();
 const { t } = useI18n();
 
 // --- STATE ---
-const isLoading = ref(true); // Теперь загрузка будет очень быстрой
+// Loading state, typically very fast.
+const isLoading = ref(true); 
 const isSaving = ref(false);
 const currentStatus = ref(props.material.status);
 const attachedLessonIds = ref(new Set());
@@ -80,7 +81,7 @@ const expandedSubjects = ref(new Set());
 // --- COMPUTED ---
 const groupedLessons = computed(() => {
   const groups = {};
-  // Работаем с данными из пропсов, а не с `allLessons.value`
+  // Groups lessons by subject for display.
   props.programLessons.forEach(lesson => {
     const subject = lesson.subjects;
     if (!subject) return;
@@ -92,14 +93,11 @@ const groupedLessons = computed(() => {
     }
     groups[subjectId].lessons.push(lesson);
   });
-  // Сортировка по имени, как и раньше
+  // Sorts subjects by name.
   return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 });
 
 // --- METHODS ---
-// toggleSubject и handleSubmit остаются БЕЗ ИЗМЕНЕНИЙ.
-// Теперь handleSubmit будет работать, т.к. props.updateTools определен.
-
 const toggleSubject = (subjectId) => {
   if (expandedSubjects.value.has(subjectId)) {
     expandedSubjects.value.delete(subjectId);
@@ -112,7 +110,7 @@ const handleSubmit = async () => {
   try {
     const promises = [];
 
-    // 1. Обновляем статус, если он изменился
+    // Updates material status if changed.
     if (currentStatus.value !== props.material.status) {
       promises.push(
         supabase
@@ -122,15 +120,14 @@ const handleSubmit = async () => {
       );
     }
 
-    // 2. Вычисляем разницу в привязках
+    // Calculates lessons to pin and unpin.
     const lessonsToPin = [...attachedLessonIds.value].filter(id => !initialAttachedLessonIds.value.has(id));
     const lessonsToUnpin = [...initialAttachedLessonIds.value].filter(id => !attachedLessonIds.value.has(id));
 
-// 3. Создаем запросы на открепление (ИСПРАВЛЕНО)
+    // Creates unpin requests.
     if (lessonsToUnpin.length > 0) {
       promises.push(
         ...lessonsToUnpin.map(lessonId => 
-          // Используем нашу НОВУЮ, простую RPC-функцию
           supabase.rpc('unpin_material', {
             p_lesson_id: lessonId,
             p_material_id: props.material.id
@@ -139,29 +136,28 @@ const handleSubmit = async () => {
       );
     }
     
-    // 4. Создаем запросы на прикрепление (ИСПРАВЛЕНО)
+    // Creates pin requests.
     if (lessonsToPin.length > 0) {
-      // Используем нашу НОВУЮ RPC, которая сама разберется с order_index
        promises.push(
          supabase.rpc('link_material_to_lessons', {
            p_material_id: props.material.id,
            p_lesson_ids: lessonsToPin,
-           p_material_purpose: props.material.material_purpose // Передаем purpose
+           p_material_purpose: props.material.material_purpose // Pass purpose
          })
        );
     }
 
-    // 5. Выполняем все запросы параллельно
+    // Executes all database operations in parallel.
     const results = await Promise.all(promises);
     results.forEach(res => {
       if (res.error) throw res.error;
     });
 
-    // 6. Оптимистично обновляем счетчики, используя наши инструменты
+    // Optimistically updates lesson counters.
     lessonsToPin.forEach(lessonId => props.updateTools.increment(lessonId));
     lessonsToUnpin.forEach(lessonId => props.updateTools.decrement(lessonId));
     
-    // 7. Обновляем список материалов, чтобы увидеть новый статус
+    // Refreshes the material list to reflect changes.
     props.updateTools.refreshMaterials();
 
     modalStore.close();
@@ -178,8 +174,8 @@ const handleSubmit = async () => {
 onMounted(async () => {
   isLoading.value = true;
   try {
-    // УБИРАЕМ ЗАПРОС ЗА УРОКАМИ!
-    // Просто запрашиваем связи для текущего материала
+    // Fetches initial data for attached lessons.
+    // No longer fetches all lessons, only material links.
     const { data: links, error } = await supabase
       .from('lesson_materials')
       .select('lesson_id')

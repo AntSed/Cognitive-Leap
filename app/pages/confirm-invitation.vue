@@ -76,31 +76,30 @@ const isReady = computed(() => isSessionReady.value && confirmationToken.value);
 
 // --- LIFECYCLE HOOKS ---
 onMounted(() => {
-  // Strategy: Try to get the token from the URL first. This covers new and confirmed user invites.
-  // If it's not there, we'll wait for the session and check the metadata (for unconfirmed user invites).
+  // Strategy: First, try to get the token from the URL. This covers new and confirmed user invites.
+  // If not found, wait for the session and check metadata (for unconfirmed user invites).
   
-  // 1. Attempt to read the confirmation token from the URL query parameters immediately.
+  // 1. Attempt to read the confirmation token from URL query parameters immediately.
   const tokenFromUrl = route.query.token;
   if (tokenFromUrl && typeof tokenFromUrl === 'string') {
     confirmationToken.value = tokenFromUrl;
     console.log(`Confirmation token found in URL: ${confirmationToken.value}`);
   }
 
-  // 2. Listen for the auth state change. This is crucial for Magic Link flow.
+  // 2. Listen for auth state changes (crucial for Magic Link flow).
   const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
       if (session) {
         console.log('User session is ready!');
         isSessionReady.value = true;
         
-        // 3. If the token wasn't in the URL, try to get it from user metadata.
-        // This is the fallback for the "unconfirmed user" scenario.
+        // 3. If token not in URL, try to get it from user metadata (fallback for "unconfirmed user" scenario).
         if (!confirmationToken.value && session.user?.user_metadata?.confirmation_token) {
           confirmationToken.value = session.user.user_metadata.confirmation_token;
           console.log(`Confirmation token found in user metadata: ${confirmationToken.value}`);
         }
 
-        // 4. Final check: if after all this we still don't have a token, show an error.
+        // 4. Final check: if no token found, show an error.
         if (!confirmationToken.value) {
            console.error("Confirmation token could not be found in URL or user metadata.");
            errorMsg.value = t('error_missing_token', 'Ссылка-приглашение недействительна или устарела.');
@@ -109,7 +108,7 @@ onMounted(() => {
     }
   });
 
-  // Clean up the listener when the component is destroyed to prevent memory leaks.
+  // Clean up the listener on component unmount to prevent memory leaks.
   onUnmounted(() => {
     subscription.unsubscribe();
   });
@@ -128,13 +127,13 @@ const handleRegistration = async () => {
   errorMsg.value = '';
 
   try {
-    // STEP 1: Update the user's password. This confirms their account in Supabase Auth.
+    // STEP 1: Update the user's password to confirm their Supabase Auth account.
     const { error: updateUserError } = await supabase.auth.updateUser({
       password: password.value
     });
     if (updateUserError) throw updateUserError;
 
-    // STEP 2: Call our custom Edge Function, passing the unique token to confirm the relationship.
+    // STEP 2: Call custom Edge Function with the unique token to confirm the relationship.
     const { error: functionError } = await supabase.functions.invoke('confirm-invitation', {
       body: { token: confirmationToken.value }
     });

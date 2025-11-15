@@ -72,9 +72,9 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-// import { useSupabaseClient } from '#imports'; // Больше не нужен
+// import { useSupabaseClient } from '#imports';
 import { useI18n } from 'vue-i18n';
-import { useR2Uploader } from '~/composables/useR2Uploader'; // <-- ИМПОРТ
+import { useR2Uploader } from '~/composables/useR2Uploader';
 
 // --- PROPS & EMITS ---
 const props = defineProps({
@@ -88,7 +88,6 @@ const emit = defineEmits(['update:thumbnailUrl', 'play']);
 
 // --- COMPOSABLES ---
 const { t } = useI18n();
-// Управляется через composable:
 const { upload, isLoading, error: uploadError } = useR2Uploader(); 
 
 // --- STATE ---
@@ -102,12 +101,12 @@ const imageClass = computed(() => {
 
 const imageUrl = computed(() => {
   if (props.thumbnailUrl) {
-    // Используем updated_at для сброса кэша
+    // Use updated_at to clear the cache.
     const timestamp = new Date(props.material.updated_at).getTime();
     return `${props.thumbnailUrl}?t=${timestamp}`;
   }
 
-  // Логика фоллбэка
+  // Fallback logic for when no thumbnail is available.
   const text = encodeURIComponent(props.title);
   const isExam = props.material.material_purpose === 'exam';
   const color = isExam ? 'F87171' : '60A5FA';
@@ -137,14 +136,12 @@ const handleFileSelect = (event) => {
   uploadFile(file);
 };
 
-// --- !! ГЛАВНОЕ ИЗМЕНЕНИЕ БЫЛО ЗДЕСЬ !! ---
 const uploadFile = async (file) => {
-  
+  // Handles the file upload process.
   const newPublicUrl = await upload(file, props.material.id);
   
   if (newPublicUrl) {
-    // Сообщаем родителю (Хабу), что URL изменился.
-    // Родитель должен сохранить это в `learning_apps.thumbnail_url`
+    // Informs the parent component about the updated thumbnail URL.
     emit('update:thumbnailUrl', newPublicUrl);
   }
   

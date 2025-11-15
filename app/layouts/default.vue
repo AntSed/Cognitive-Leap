@@ -24,24 +24,19 @@ import PlayerModal from '~/components/modals/PlayerModal.vue';
 const modalStore = useModalStore();
 const nuxtApp = useNuxtApp();
 
-// --- ИСПРАВЛЕНИЕ ГИДРАТАЦИИ ---
-
-// 1. Мы ВСЕГДА (и на сервере, и на клиенте) начинаем с 'false'.
-//    Сервер отрендерит лоадер. Клиент при гидратации тоже будет
-//    считать, что isAuthReady = false, и увидит лоадер.
-//    Mismatch ИСЧЕЗНЕТ.
+// HYDRATION FIX:
+// 1. Always start with 'false' (both server and client) to ensure loader is rendered consistently.
+// This prevents hydration mismatches.
 const isAuthReady = ref(false);
 
-// 2. Вся логика, которая зависит от браузера и плагинов, остается в onMounted.
+// 2. All browser and plugin-dependent logic remains in onMounted.
 onMounted(() => {
-  // 3. Как только клиент "оживет", мы немедленно (immediate: true)
-  //    синхронизируем наш локальный isAuthReady с реальным
-  //    состоянием из твоего плагина.
+  // 3. Once the client is hydrated, immediately synchronize local isAuthReady with the actual plugin state.
   watch(nuxtApp.$auth.isAuthReady, (newValue) => {
     isAuthReady.value = newValue;
-  }, { immediate: true }); // 'immediate' запустит это сразу, не дожидаясь изменений
+  }, { immediate: true }); // 'immediate' ensures this runs once on mount without waiting for changes.
 
-  // --- Остальная логика твоего макета ---
+  // Rest of the layout logic.
   modalStore.initializeModalListeners();
 
   const { locale, setLocale } = useI18nService();

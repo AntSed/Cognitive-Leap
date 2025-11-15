@@ -158,7 +158,7 @@ const handleSave = async () => {
 </script>
 
 <style lang="css" scoped>
-/* Стили для полей формы */
+/* Form field styles */
 .label-style {
   @apply block mb-1.5 text-sm font-medium text-zinc-700;
 }
@@ -169,11 +169,9 @@ const handleSave = async () => {
   @apply focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30;
 }
 
-/* Поскольку ты используешь 'appearance-none' на select, 
-  нам нужно добавить свою собственную стрелку-индикатор.
-*/
+/* Custom arrow for select due to 'appearance-none' */
 select.input-field {
-  @apply pr-10; /* Оставляем место для стрелки */
+  @apply pr-10; /* Space for the custom arrow */
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.75rem center;
   background-repeat: no-repeat;
@@ -188,7 +186,7 @@ textarea.input-field {
   @apply text-xs text-zinc-500;
 }
 
-/* Стили для кнопок */
+/* Button styles */
 .button-primary {
   @apply px-5 py-2.5 rounded-lg font-semibold text-white bg-indigo-600;
   @apply transition-all duration-200 ease-in-out;

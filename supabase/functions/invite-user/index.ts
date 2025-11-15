@@ -2,22 +2,22 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { Resend } from 'npm:resend'
 
-// --- ИМПОРТ СЛОВАРЕЙ ---
-// Теперь все тексты живут в отдельных JSON файлах.
+// DICTIONARY IMPORTS.
+// All texts are now stored in separate JSON files.
 import ru from './ru.json' assert { type: 'json' }
 import en from './en.json' assert { type: 'json' }
 import es from './es.json' assert { type: 'json' }
 
 const translations = { ru, en, es };
 
-// --- ГЛАВНАЯ ФУНКЦИЯ ---
+// MAIN FUNCTION.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // 1. --- Инициализация и валидация ---
+    // 1. Initialization and validation.
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       throw new Error("Missing required fields or environment variables.");
     }
 
-    // 2. --- Подготовка данных для записи в БД ---
+    // 2. Prepare data for database entry.
     let studentId = null;
     let curatorId = null;
 
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       curatorId = inviterId;
     }
 
-    // 3. --- Создание/обновление записи о приглашении ---
+    // 3. Create/update invitation record.
     const { error: upsertError } = await supabaseAdmin.from('student_curator_relations').upsert({
       student_id: studentId,
       curator_id: curatorId,
@@ -52,13 +52,13 @@ Deno.serve(async (req) => {
 
     if (upsertError) throw upsertError;
 
-    // 4. --- Проверка пользователя и отправка письма ---
+    // 4. User check and email sending.
     const { data: { users }, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers({ email: inviteeEmail });
     if (listUsersError) throw listUsersError;
     const existingUser = users?.[0] || null;
 
     if (existingUser) {
-      // Сценарий A: Пользователь существует. Отправляем Magic Link через Resend.
+      // Scenario A: User exists. Send Magic Link via Resend.
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email: inviteeEmail,
@@ -66,8 +66,8 @@ Deno.serve(async (req) => {
       });
       if (linkError) throw linkError;
 
-      // --- ЛОГИКА РАБОТЫ СО СЛОВАРЯМИ ---
-      const lang = translations[inviterLang] ? inviterLang : 'en'; // Фоллбэк на английский
+      // DICTIONARY LOGIC.
+      const lang = translations[inviterLang] ? inviterLang : 'en'; // Fallback to English.
       const t = translations[lang];
 
       const subject = t.subject.replace('{{inviterName}}', inviterName);
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
           </a>
         </div>`;
 
-      // Инициализация Resend и отправка письма
+      // Initialize Resend and send email.
       const resend = new Resend(resendApiKey);
       await resend.emails.send({
         from: 'Cognitive Leap <noreply@cognitiveleap.app>',
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       });
 
     } else {
-      // Сценарий B: Новый пользователь. Используем стандартный инвайт Supabase.
+      // Scenario B: New user. Use standard Supabase invite.
       const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
         inviteeEmail, 
         { options: { redirectTo: `${siteUrl}/accept-invitation` } }

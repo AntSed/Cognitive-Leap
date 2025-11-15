@@ -31,8 +31,7 @@ const props = defineProps({
 const modalStore = useModalStore();
 
 /**
- * Преобразует обычную ссылку YouTube в URL для встраивания (embed)
- * и добавляет параметры для лучшего отображения.
+ * Converts a regular YouTube link to an embed URL and adds parameters for better display.
  */
 const embedUrl = computed(() => {
   if (!props.material.url) return '';
@@ -42,18 +41,18 @@ const embedUrl = computed(() => {
   const videoId = match && match[1];
 
   if (videoId) {
-    // Формируем URL с параметрами
+    // Construct the URL with parameters.
     const params = new URLSearchParams({
-      autoplay: '1',         // Автоматическое воспроизведение
-      rel: '0',              // Не показывать похожие видео с других каналов
-      modestbranding: '1',   // Уменьшить брендинг YouTube
-      iv_load_policy: '3',   // Отключить аннотации
-      controls: '1',         // Показать элементы управления
+      autoplay: '1',         // Autoplay video.
+      rel: '0',              // Do not show related videos from other channels.
+      modestbranding: '1',   // Reduce YouTube branding.
+      iv_load_policy: '3',   // Disable annotations.
+      controls: '1',         // Show video controls.
     });
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
   }
   
-  // Возвращаем исходный URL, если это не YouTube
+  // Return the original URL if it's not a YouTube link.
   return props.material.url;
 });
 
@@ -77,10 +76,10 @@ const closeOnOverlayClick = (event) => {
 }
 
 .modal-content {
-  background-color: #18181B; /* Темный фон */
+  background-color: #18181B; /* Dark background */
   border-radius: 12px;
   width: 100%;
-  max-width: 1100px; /* Ширина для видео */
+  max-width: 1100px; /* Max width for the video */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -119,7 +118,7 @@ const closeOnOverlayClick = (event) => {
 .video-container {
   position: relative;
   width: 100%;
-  /* Современный способ поддержания соотношения сторон */
+  /* Modern way to maintain aspect ratio */
   aspect-ratio: 16 / 9;
   background-color: #000;
 }

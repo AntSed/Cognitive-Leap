@@ -90,7 +90,6 @@ import { ref, onMounted } from 'vue';
 import { useSupabaseClient, useSupabaseUser, useI18n } from '#imports';
 import { useModalStore } from '~/composables/useModalStore';
 
-// FIX: The 'onClose' prop is no longer needed, as the component closes itself.
 const props = defineProps({
   activeProgram: { type: Object, default: null },
   onSelect: { type: Function, required: true },
@@ -134,7 +133,7 @@ const handleCreateProgram = async () => {
       .from('programs')
       .insert({ 
         title: newProgramTitle.value,
-        skin_id: '38c24e69-24f9-4a7c-a003-84d298280c14' // <-- Add default skin
+        skin_id: '38c24e69-24f9-4a7c-a003-84d298280c14' // Add default skin ID.
       })
       .select()
       .single();
@@ -249,16 +248,13 @@ onMounted(() => {
   @apply flex gap-1 sm:gap-2 flex-shrink-0; 
 }
 
-/* * Стили кнопок действий (Поделиться, Редакт., Удалить)
- * Делаем их квадратными, центрируем иконки 
- */
+/* Action button styles (Share, Edit, Delete) */
 .action-button {
   @apply flex items-center justify-center w-8 h-8 rounded-lg; /* 32x32px */
   @apply transition-all duration-150;
 }
 
-/* * Задаем размер для ВСЕХ иконок-SVG внутри кнопок 
- */
+/* Sets size for all SVG icons within buttons. */
 .action-button svg {
   @apply w-4 h-4; /* 16x16px */
 }
@@ -266,9 +262,7 @@ onMounted(() => {
 .share-button {
   @apply text-blue-600 hover:bg-blue-100;
 }
-/* * Стиль для состояния "Скопировано!" (когда кнопка :disabled)
- * Меняем цвет на зеленый.
- */
+/* Style for "Copied!" state (when button is :disabled). */
 .share-button:disabled {
   @apply text-green-600 bg-green-100 cursor-default;
 }
@@ -279,39 +273,28 @@ onMounted(() => {
 
 .delete-button {
   @apply text-red-600 hover:bg-red-100;
-  /* * Стилизуем символ '&times;' чтобы он был похож на иконку:
-   * делаем его большим, жирным и центрируем по вертикали.
-   */
+  /* Styles the '&times;' symbol to resemble an icon. */
   @apply text-2xl font-bold leading-none;
   padding-bottom: 2px; /* Легкая коррекция для оптического центра */
 }
-/* * 5. ПОДВАЛ (ФУТЕР)
- * Фиксированный подвал с формой создания.
- */
+/* Fixed footer with creation form. */
 .modal-footer {
   @apply p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0 rounded-b-xl;
 }
 
-/* * 6. АДАПТИВНАЯ ФОРМА СОЗДАНИЯ
- * Ключевой фикс для мобильных:
- * - По умолчанию: flex-col (инпут над кнопкой)
- * - На экранах sm и больше: flex-row (инпут слева от кнопки)
- */
+/* Responsive creation form: flex-col by default, flex-row on sm and larger screens. */
 .create-form {
   @apply flex flex-col sm:flex-row gap-3;
 }
 .create-form input {
-  @apply flex-1; /* Инпут занимает все доступное место */
+  @apply flex-1; /* Input takes up all available space. */
 }
 .create-form button {
-  @apply w-full sm:w-auto flex-shrink-0; /* Кнопка во всю ширину на мобилке */
+  @apply w-full sm:w-auto flex-shrink-0; /* Button full width on mobile. */
 }
 
 
-/* * 7. ОБЩИЕ СТИЛИ (из прошлого файла)
- * Добавляем базовые стили для инпутов и кнопок,
- * чтобы форма выглядела единообразно.
- */
+/* General styles for inputs and buttons for consistent form appearance. */
 .create-form input {
   @apply block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-zinc-900;
   @apply placeholder:text-gray-400 transition-all duration-200;

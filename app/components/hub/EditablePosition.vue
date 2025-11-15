@@ -31,9 +31,10 @@ const editablePosition = ref(props.modelValue);
 const inputRef = ref(null);
 
 const startEditing = async () => {
+  // Activates editing mode and focuses the input field.
   editablePosition.value = props.modelValue;
   isEditing.value = true;
-  await nextTick(); // Ждем, пока input появится в DOM
+  await nextTick();
   inputRef.value?.focus();
   inputRef.value?.select();
 };
@@ -81,14 +82,12 @@ const cancelEditing = () => {
   color: #f3f4f6;
 }
 
-/* --- НОВЫЕ ПРАВИЛА ДЛЯ УДАЛЕНИЯ СТРЕЛОК --- */
-/* Для Chrome, Safari, Edge, Opera */
+/* Styles to hide the number input spin buttons across browsers. */
 .position-input::-webkit-outer-spin-button,
 .position-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-/* Для Firefox */
 .position-input[type=number] {
   -moz-appearance: textfield;
 }

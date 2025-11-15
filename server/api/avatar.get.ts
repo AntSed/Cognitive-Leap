@@ -9,7 +9,7 @@ import * as miniavs from '@dicebear/miniavs';
 import * as pixelArt from '@dicebear/pixel-art';
 import * as lorelei from '@dicebear/lorelei';
 
-// Карта стилей, чтобы безопасно выбирать нужный
+// Map of available styles for safe selection.
 const styles = {
   adventurer,
   bottts,
@@ -20,23 +20,23 @@ const styles = {
 };
 
 export default defineEventHandler((event) => {
-  // Получаем параметры из URL (например, /api/avatar?seed=my-seed&style=adventurer)
+  // Get parameters from the URL (e.g., /api/avatar?seed=my-seed&style=adventurer).
   const query = getQuery(event);
   
   const seed = query.seed?.toString() || 'default-seed';
   const styleName = query.style?.toString() || 'adventurer';
 
-  // Выбираем стиль из нашей карты, по умолчанию adventurer
+  // Select the style from our map, defaulting to 'adventurer'.
   const selectedStyle = styles[styleName as keyof typeof styles] || styles.adventurer;
   
-  // Создаем аватар
+  // Create the avatar.
   const avatarSvg = createAvatar(selectedStyle, {
     seed: seed,
   }).toString();
 
-  // Устанавливаем правильный заголовок, чтобы браузер понял, что это изображение
+  // Set the correct header to indicate SVG image content.
   setHeader(event, 'Content-Type', 'image/svg+xml');
   
-  // Отправляем SVG в качестве ответа
+  // Send the SVG as the response.
   return avatarSvg;
 });

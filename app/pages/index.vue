@@ -113,14 +113,14 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
 .page-wrapper {
   display: flex;
   flex-direction: column;
-  /* ИСПОЛЬЗУЕМ --vh, который ты устанавливаешь в setVh() */
+  /* Uses --vh, which is set in setVh(). */
   height: calc(var(--vh, 1vh) * 100);
 }
 
 .main-content {
   flex-grow: 1;
   position: relative; 
-  overflow: hidden; /* Добавлено, чтобы предотвратить случайный скролл */
+  overflow: hidden; /* Added to prevent accidental scrolling. */
 }
 
 .view-container {
@@ -210,14 +210,14 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
   min-width: 44px;
 }
 .hide-scrollbar {
-  /* Для Firefox */
+  /* For Firefox. */
   scrollbar-width: none;
   
-  /* Для Internet Explorer и старых версий Edge */
+  /* For Internet Explorer and older versions of Edge. */
   -ms-overflow-style: none;
 }
 
-/* Для Chrome, Safari, Opera и других WebKit-браузеров */
+/* For Chrome, Safari, Opera, and other WebKit browsers. */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }

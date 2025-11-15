@@ -41,8 +41,8 @@ export function useHubMaterialsLogic(selectedLesson, activeProgram, hubContext, 
   const isLoading = ref(true);
   const error = ref(null);
 
-  // --- НОВОЕ СОСТОЯНИЕ ПАГИНАЦИИ ---
-  const pageSize = 20; // 20 материалов на странице. Можно сделать ref(), если хочешь дать юзеру выбор
+  // Pagination state.
+  const pageSize = 20; // Number of materials per page. Can be made ref() for user choice.
   const currentPage = ref(1);
   const totalMaterials = ref(0);
 
@@ -68,17 +68,17 @@ const fetchMaterials = async () => {
       let query;
       const { min: ageFilterMin, max: ageFilterMax } = parseAgeRange(ageFilter.value);
 
-      // --- ЛОГИКА ПАГИНАЦИИ ---
+      // Pagination logic.
       const from = (currentPage.value - 1) * pageSize;
       const to = from + pageSize - 1;
 
       if (selectedLesson.value) {
-        // --- Логика для ВЫБРАННОГО УРОКА ---
+        // Logic for a SELECTED LESSON.
         
-        // Запрос select с { count: 'exact' }
+        // Request select with { count: 'exact' }
         query = supabase
           .from('lesson_materials')
-          // ЗАПРАШИВАЕМ order_index ВМЕСТО position
+          // Request order_index instead of position.
           .select('order_index, learning_apps!inner ( * )', { count: 'exact' }) 
           .eq('lesson_id', selectedLesson.value.id)
           .eq('learning_apps.material_purpose', hubContext.value);
@@ -139,21 +139,21 @@ const fetchMaterials = async () => {
             query = query.gte('recommended_age_max', ageFilterMin);
         }
         
-        // Сортировка и .range()
+        // Sorting and ranging.
         query = query
           .order('created_at', { ascending: false })
-          .range(from, to); // <-- ДОБАВЛЕН RANGE
+          .range(from, to);
       }
 
-      // Выполняем запрос и получаем { data, error, count }
+      // Execute the query and get { data, error, count }
       const { data, error: fetchError, count } = await query;
       
       if (fetchError) throw fetchError;
 
-      // Сохраняем общее кол-во
+      // Save total count.
       totalMaterials.value = count || 0;
 
-      // ... (остальная логика обработки 'data' без изменений) ...
+      // Rest of 'data' processing logic unchanged.
       if (selectedLesson.value) {
         materials.value = data.map(item => ({
           ...item.learning_apps,
@@ -166,7 +166,7 @@ const fetchMaterials = async () => {
     } catch (e) {
       error.value = e;
       console.error("Error fetching materials:", e);
-      totalMaterials.value = 0; // Сброс в случае ошибки
+      totalMaterials.value = 0; // Reset in case of error.
     } finally {
       isLoading.value = false;
     }
@@ -182,7 +182,7 @@ const handlePositionUpdate = async ({ materialId, newPosition }) => {
   if (!selectedLesson.value) return;
   const totalItems = materials.value.length;
   const clampedNewPosition = Math.max(1, Math.min(newPosition, totalItems));
-  // 1. Найти материал и его текущий *виртуальный* индекс
+  // 1. Find material and its current *virtual* index.
   const materialToMove = materials.value.find(m => m.id === materialId);
   if (!materialToMove) return;
 
@@ -191,57 +191,56 @@ const handlePositionUpdate = async ({ materialId, newPosition }) => {
 
   if (oldVirtualIndex === newVirtualIndex) return; 
 
-  // Сохраняем для отката в случае ошибки
+  // Save for rollback in case of error.
   const originalMaterials = JSON.parse(JSON.stringify(materials.value));
 
-  // 2. Вычислить новый float order_index
+  // 2. Calculate new float order_index.
   let newOrderIndex;
 
   if (newVirtualIndex === 0) {
-    // --- Перемещение в НАЧАЛО ---
+    // Move to BEGINNING.
     const firstItemOrder = materials.value[0].order_index;
     newOrderIndex = firstItemOrder / 2;
   } else if (newVirtualIndex === materials.value.length - 1) {
-    // --- Перемещение в КОНЕЦ ---
+    // Move to END.
     const lastItemOrder = materials.value[materials.value.length - 1].order_index;
     newOrderIndex = lastItemOrder + 1.0;
   } else {
-    // --- Перемещение в СЕРЕДИНУ ---
-    // Нам нужны соседи *в новой* позиции
+    // Move to MIDDLE.
+    // We need neighbors *in the new* position.
     
-    // Если движем ВВЕРХ (e.g., 5 -> 2)
-    // 'соседи' - это [index 1] и [index 2]
+    // If moving UP (e.g., 5 -> 2).
+    // 'neighbors' are [index 1] and [index 2].
     if (newVirtualIndex < oldVirtualIndex) {
       const orderBefore = materials.value[newVirtualIndex - 1].order_index;
       const orderAfter = materials.value[newVirtualIndex].order_index;
       newOrderIndex = (orderBefore + orderAfter) / 2;
     } 
-    // Если движем ВНИЗ (e.g., 2 -> 5)
-    // 'соседи' - это [index 5] и [index 6]
+    // If moving DOWN (e.g., 2 -> 5).
     else {
       const orderBefore = materials.value[newVirtualIndex].order_index;
-      const orderAfter = materials.value[newVirtualIndex + 1]?.order_index; // '?' на случай, если это был баг, но newVirtualIndex === length - 1 обработан выше
+      const orderAfter = materials.value[newVirtualIndex + 1]?.order_index;
       
       if (orderAfter) {
          newOrderIndex = (orderBefore + orderAfter) / 2;
       } else {
-         // Фолбэк, если что-то пошло не так (попали в конец, но не через newVirtualIndex === length - 1)
+         // Fallback if something went wrong (e.g., reached the end, but not via newVirtualIndex === length - 1).
          newOrderIndex = orderBefore + 1.0;
       }
     }
   }
 
-  // 3. Оптимистичное обновление
+  // 3. Optimistic update.
   materialToMove.order_index = newOrderIndex;
-  // Пересортируем локальный массив. 'displayedMaterials' (computed) подхватит
+  // Resort the local array. 'displayedMaterials' (computed) will pick it up.
   materials.value.sort((a, b) => a.order_index - b.order_index);
 
-  // 4. Асинхронный вызов RPC
+  // 4. Asynchronous RPC call.
   try {
     const { error: rpcError } = await supabase.rpc('update_material_order', {
       p_lesson_id: selectedLesson.value.id,
       p_material_id: materialId,
-      p_new_order_index: newOrderIndex // <-- Отправляем float!
+      p_new_order_index: newOrderIndex // Send float!
     });
 
     if (rpcError) throw rpcError;
@@ -249,7 +248,7 @@ const handlePositionUpdate = async ({ materialId, newPosition }) => {
   } catch (e) {
     console.error('Failed to reorder material:', e);
     alert(t('hub.errors.reorderMaterialFailed'));
-    // Откат
+    // Rollback.
     materials.value = originalMaterials;
   }
 };

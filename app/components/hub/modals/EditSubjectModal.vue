@@ -74,7 +74,6 @@ const isSaving = ref(false);
 const availableShapes = ['Box', 'Sphere', 'Circle', 'Icon_Mathematics', 'Icon_Geography', 'Icon_History', 'Icon_Chemistry', 'Icon_Astronomy', 'Icon_Physics', 'Icon_Biology', 'Icon_Logic', 'Icon_Psychology', 'Icon_CompSci', 'Icon_Civics', 'Icon_Economics'];
 
 const editableSubject = ref({ name_translations: { en: '' }, prefix: '' });
-// 1. Добавляем scale_multiplier в начальное состояние
 const editableStyle = ref({ shape: 'Circle', base_color: '#ffffff', scale_multiplier: 1.0 });
 
 onMounted(async () => {
@@ -85,7 +84,7 @@ onMounted(async () => {
         name_translations,
         prefix,
         skin_subject_styles ( id, shape, base_color, scale_multiplier )
-      `) // 2. Запрашиваем scale_multiplier
+      `)
       .eq('id', props.subjectId)
       .eq('skin_subject_styles.skin_id', props.skinId)
       .single();
@@ -123,7 +122,7 @@ const handleSave = async () => {
         skin_id: props.skinId,
         shape: editableStyle.value.shape,
         base_color: editableStyle.value.base_color,
-        scale_multiplier: editableStyle.value.scale_multiplier // 3. Сохраняем scale_multiplier
+        scale_multiplier: editableStyle.value.scale_multiplier
       }, { onConflict: 'subject_id, skin_id' });
       
     if (styleError) throw styleError;

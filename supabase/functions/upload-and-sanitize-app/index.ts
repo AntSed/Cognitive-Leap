@@ -33,7 +33,7 @@ serve(async (req) => {
     const coreData = JSON.parse(coreDataString);
     const zip = await JSZip.loadAsync(file.arrayBuffer());
     
-    // ... (весь код для работы с ZIP-архивом остается без изменений) ...
+    // All code for working with ZIP archive remains unchanged.
     let mainHtmlFile: { relativePath: string; zipEntry: JSZip.JSZipObject } | null = null;
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
       if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.html') && !relativePath.includes('/')) {
@@ -103,7 +103,7 @@ serve(async (req) => {
       material_type: coreData.material_type,
       title_translations: coreData.title_translations,
       description_translations: coreData.description_translations,
-      // This formats ['en', 'es'] into '{en,es}' for Postgres
+      // This formats ['en', 'es'] into '{en,es}' for Postgres.
       languages: `{${coreData.languages.join(',')}}`,
       recommended_age_min: coreData.recommended_age_min,
       recommended_age_max: coreData.recommended_age_max,
@@ -130,7 +130,7 @@ serve(async (req) => {
             .rpc('link_material_to_lessons', {
                 p_material_id: materialId,
                 p_lesson_ids: lessonIds,
-                p_material_purpose: coreData.material_purpose // 'purpose' уже есть в coreData
+                p_material_purpose: coreData.material_purpose // 'purpose' is already in coreData.
             });
             
         if (linkError) throw linkError;
@@ -152,7 +152,7 @@ serve(async (req) => {
 });
 
 function getMimeType(filename: string): string {
-    // ... (getMimeType function remains unchanged) ...
+    // getMimeType function remains unchanged.
     if (filename.endsWith('.js')) return 'application/javascript';
     if (filename.endsWith('.css')) return 'text/css';
     if (filename.endsWith('.png')) return 'image/png';

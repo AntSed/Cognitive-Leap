@@ -236,37 +236,40 @@ const emit = defineEmits(['update-position']);
 // --- COMPOSABLES ---
 const supabase = useSupabaseClient();
 const { t, locale } = useI18n();
+
+// --- LANGUAGE SWITCHER LOGIC ---
+
+// 1. Get available languages from translations that have a non-empty title.
 const availableLangs = computed(() => {
   const translations = props.material.title_translations || {};
-  // Возвращаем только те языки, у которых есть непустой заголовок
   return Object.keys(translations).filter(lang => translations[lang]);
 });
 
-// 2. Находим, какой язык показать по умолчанию
+// 2. Find the initial language to display.
 const getInitialLangIndex = () => {
-  if (!availableLangs.value.length) return 0; // На случай, если переводов нет
+  if (!availableLangs.value.length) return 0; // Fallback if no translations exist.
 
-  // Сначала ищем язык пользователя (locale)
+  // Priority 1: User's current locale.
   const localeIndex = availableLangs.value.indexOf(locale.value);
   if (localeIndex !== -1) return localeIndex;
 
-  // Если не нашли, ищем 'en'
+  // Priority 2: English ('en').
   const enIndex = availableLangs.value.indexOf('en');
   if (enIndex !== -1) return enIndex;
 
-  // Если нет ни 'en', ни языка пользователя, показываем первый доступный
+  // Priority 3: The first available language.
   return 0;
 };
 
-// 3. Локальное состояние: индекс текущего языка
+// 3. Local state for the index of the current language.
 const currentLangIndex = ref(getInitialLangIndex());
 
-// 4. Код текущего языка (e.g., 'en', 'ru')
+// 4. The code for the current language (e.g., 'en', 'ru').
 const currentLangCode = computed(() => {
-  return availableLangs.value[currentLangIndex.value] || 'en'; // Фоллбэк на 'en'
+  return availableLangs.value[currentLangIndex.value] || 'en'; // Fallback to 'en'.
 });
 
-// 5. Вычисляемые title и description, которые мы покажем в <template>
+// 5. Computed properties for the displayed title and description.
 const displayedTitle = computed(() => {
   return props.material.title_translations?.[currentLangCode.value] || t('hub.card.untitled');
 });
@@ -275,18 +278,18 @@ const displayedDescription = computed(() => {
   return props.material.description_translations?.[currentLangCode.value] || t('hub.card.noDescription');
 });
 
-// 6. Функция для стрелочек < >
+// 6. Function to cycle through languages using the arrow buttons.
 const cycleLang = (direction) => {
   const langCount = availableLangs.value.length;
   if (langCount <= 1) return;
 
   let newIndex = currentLangIndex.value + direction;
 
-  // "Закольцовываем" переключение
+  // Loop through languages.
   if (newIndex < 0) {
-    newIndex = langCount - 1; // с 0 на последний
+    newIndex = langCount - 1; // Go from first to last.
   } else if (newIndex >= langCount) {
-    newIndex = 0; // с последнего на 0
+    newIndex = 0; // Go from last to first.
   }
   
   currentLangIndex.value = newIndex;

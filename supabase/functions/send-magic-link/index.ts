@@ -2,14 +2,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Resend } from 'npm:resend';
 
-// Импортируем наши переводы
+// Import translations.
 import en from './en.json' assert { type: 'json' };
 import ru from './ru.json' assert { type: 'json' };
 import es from './es.json' assert { type: 'json' };
 
 const translations = { en, ru, es };
 
-// Инициализируем Resend (рекомендуемый Supabase сервис для email)
+// Initialize Resend (Supabase recommended email service).
 const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
 
 serve(async (req) => {
@@ -19,16 +19,16 @@ serve(async (req) => {
 
   try {
     const { email, locale } = await req.json();
-    const lang = translations[locale] ? locale : 'en'; // Фоллбэк на английский
+    const lang = translations[locale] ? locale : 'en'; // Fallback to English.
     const t = translations[lang];
 
-    // Создаем админский клиент Supabase, который умеет генерировать ссылки
+    // Create Supabase admin client capable of generating links.
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Генерируем "магическую ссылку", не отправляя письмо
+    // 1. Generate magic link without sending email.
     const { data, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
@@ -40,7 +40,7 @@ serve(async (req) => {
     if (linkError) throw linkError;
     const magicLink = data.properties.action_link;
 
-    // 2. Отправляем наше кастомное письмо через Resend
+    // 2. Send custom email via Resend.
     const { error: sendError } = await resend.emails.send({
       from: 'Cognitive Leap <no-reply@cognitiveleap.app>', 
       to: email,

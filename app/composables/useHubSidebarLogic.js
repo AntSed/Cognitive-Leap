@@ -33,8 +33,7 @@ export function useHubSidebarLogic(activeProgramRef) {
     }, {});
   });
 
-  // --- INTERNAL STATE MUTATIONS (ОБНОВЛЕНО) ---
-
+  // Internal state mutations (updated).
   /**
    * Increments the correct material counter for a lesson.
    * @param {string} lessonId - The ID of the lesson.
@@ -64,7 +63,7 @@ export function useHubSidebarLogic(activeProgramRef) {
       if (context === 'exam' && lesson.exam_count > 0) {
               lesson.exam_count -= 1;
          } else if (context === 'study' && lesson.study_count > 0) {
-              lesson.study_count -= 1; // Стало как exam_count
+              lesson.study_count -= 1; // Now consistent with exam_count.
          }
     }
   };
@@ -119,7 +118,7 @@ export function useHubSidebarLogic(activeProgramRef) {
     selectedLesson.value = lesson;
   };
 
-  // ... (handleAddSubject, handleEditSubject, handleDeleteSubject без изменений) ...
+  // Subject management methods (unchanged).
   const handleAddSubject = async () => {
     if (!newSubjectName.value.trim() || !activeProgramRef.value?.id) return;
     const skinId = activeProgramRef.value.skin_id;
@@ -175,7 +174,7 @@ export function useHubSidebarLogic(activeProgramRef) {
     });
   };
 
-  // ... (handleAddLesson, handleEditLesson, handleDeleteLesson без изменений) ...
+  // Lesson management methods (unchanged).
   const handleAddLesson = async (subject) => {
     const topic = newLessonTopics.value[subject.id]?.trim();
     if (!topic || !activeProgramRef.value?.id) return;
@@ -261,7 +260,7 @@ export function useHubSidebarLogic(activeProgramRef) {
    * @param {DragEvent} event - The event object from vuedraggable.
    * @param {'study' | 'exam'} hubContext - The current UI context.
    */
-  const onDrop = async (event, hubContext = 'study') => { // ИЗМЕНЕНО: Добавлен hubContext
+  const onDrop = async (event, hubContext = 'study') => { // CHANGED: hubContext added.
     const droppedMaterial = event.item.__draggable_context.element;
     const targetLesson = hoveredLesson.value;
 
@@ -280,7 +279,7 @@ export function useHubSidebarLogic(activeProgramRef) {
 
     if (droppedMaterial.material_purpose !== hubContext) {
         console.warn(`Mismatched drop context. UI: ${hubContext}, Material: ${droppedMaterial.material_purpose}`);
-        alert(t('hub.errors.mismatchedDrop')); // Ошибка: Попытка перетащить учебный материал в экзамены
+        alert(t('hub.errors.mismatchedDrop')); // Error: Attempt to drag study material into exams.
         hoveredLesson.value = null;
         return;
     }
@@ -303,7 +302,7 @@ export function useHubSidebarLogic(activeProgramRef) {
       const { data: newOrderIndex, error: indexError } = await supabase
         .rpc('get_next_material_order_index', {
           p_lesson_id: targetLesson.id,
-          p_material_purpose: hubContext // hubContext тут уже есть!
+          p_material_purpose: hubContext // hubContext is already available here.
         });
 
       if (indexError) throw indexError;
@@ -313,7 +312,7 @@ export function useHubSidebarLogic(activeProgramRef) {
         .insert({
           lesson_id: targetLesson.id,
           material_id: droppedMaterial.id,
-          order_index: newOrderIndex // <-- Используем order_index
+          order_index: newOrderIndex // Use order_index.
         });
 
       if (insertError) throw insertError;

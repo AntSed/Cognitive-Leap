@@ -36,25 +36,21 @@ const props = defineProps({
 const modalStore = useModalStore();
 
 const openAddFlow = () => {
-  // Если урок выбран (простой случай)
+  // Opens the 'add material' modal flow.
+  // If a lesson isn't selected, it first prompts the user to choose one.
   if (props.selectedLessonId) {
     modalStore.open('hub/modals/AddMaterialModal', { 
       lessonIds: [props.selectedLessonId],
       hubContext: props.hubContext, 
-      
-      // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-      // Оборачиваем в анонимную функцию и вызываем ОБА метода
       onSuccess: () => {
         props.updateTools.refreshMaterials();
-        props.updateTools.refreshTree(); // <- Эта строка была пропущена
+        props.updateTools.refreshTree();
       }
     });
   } else {
-    // Если урок не выбран (двухэтапный процесс) - этот блок уже верный
     modalStore.open('hub/modals/SelectLessonsModal', {
       programLessons: props.allProgramLessons,
       onComplete: (selectedIds) => {
-        // Открываем финальную модалку
         modalStore.open('hub/modals/AddMaterialModal', {
           lessonIds: selectedIds,
           hubContext: props.hubContext, 

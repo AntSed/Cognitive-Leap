@@ -2,20 +2,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Заголовки CORS (остаются, как были)
+// CORS headers (unchanged).
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*', 
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
 };
 
-// Admin-клиент
+// Admin client.
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 );
 
-// --- ИСПРАВЛЕННАЯ (Более безопасная) ВЕРСИЯ ---
+// CORRECTED (More secure) VERSION.
 async function getUserFromRequest(req) {
   console.log("Attempting to get user from request...");
   const authHeader = req.headers.get("Authorization");
@@ -42,7 +42,7 @@ async function getUserFromRequest(req) {
 }
 
 serve(async (req) => {
-  // Обработка preflight-запроса OPTIONS
+  // Handle OPTIONS preflight request.
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -61,26 +61,22 @@ serve(async (req) => {
     
     console.log(`User ${user.id} is processing material ${materialId}`);
 
-    // ---
-    // --- ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ (ПРАВИЛЬНЫЙ UPSERT) ---
-    // ---
+    // MAIN FIX (CORRECT UPSERT).
     const { error: dbError } = await supabaseAdmin
       .from("user_material_progress")
       .upsert(
-        { // 1. Данные, которые мы вставляем или обновляем
+        { // 1. Data to insert or update.
           user_id: user.id,
           material_id: materialId,
           status: "completed",
           score: score,
           completed_at: new Date().toISOString(),
         },
-        { // 2. Опция, которая говорит, как обрабатывать конфликт
-          onConflict: 'user_id, material_id' // Имена колонок твоего UNIQUE-ключа
+        { // 2. Option to handle conflict.
+          onConflict: 'user_id, material_id' // Names of your UNIQUE key columns.
         }
       );
-    // ---
-    // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
-    // ---
+    // END OF FIX.
 
     if (dbError) {
       console.error("Database upsert error:", dbError.message);
@@ -89,7 +85,7 @@ serve(async (req) => {
 
     console.log("Database upsert successful.");
 
-    // 2. Отправка Broadcast ("SMS")
+    // 2. Send Broadcast ("SMS").
     const channelName = `user-progress:${user.id}`;
     const channel = supabaseAdmin.channel(channelName);
     
@@ -105,7 +101,7 @@ serve(async (req) => {
 
     console.log("Broadcast sent, status:", broadcastStatus);
 
-    // Успешный ответ
+    // Successful response.
     return new Response(
       JSON.stringify({ status: "ok", broadcast: broadcastStatus }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -114,7 +110,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("--- Function CRASHED ---");
     console.error(err.message);
-    // Ответ с ошибкой
+    // Error response.
     return new Response(String(err?.message ?? err), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }

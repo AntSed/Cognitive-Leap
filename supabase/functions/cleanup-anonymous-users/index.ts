@@ -1,17 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Важно: Эта функция требует прав администратора (service_role_key)
-// для удаления пользователей.
+// Important: This function requires administrator rights (service_role_key)
+// to delete users.
 
 Deno.serve(async (req) => {
   try {
-    // Создаем админский клиент Supabase
+    // Create Supabase admin client.
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Находим всех анонимных пользователей для удаления
+    // 1. Find all anonymous users to delete.
     const { data: usersToDelete, error: selectError } = await supabaseAdmin.rpc('get_anonymous_users_to_delete');
 
     if (selectError) {
@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Удаляем каждого найденного пользователя
+    // 2. Delete each found user.
     const deletionPromises = usersToDelete.map(user => 
       supabaseAdmin.auth.admin.deleteUser(user.id)
     );
@@ -49,13 +49,12 @@ Deno.serve(async (req) => {
   }
 });
 
-// Для работы этой функции нужно создать хранимую процедуру в SQL Editor,
-// которая будет выполнять наш сложный запрос:
+// This function requires a stored procedure to be created in the SQL Editor.
 /*
   CREATE OR REPLACE FUNCTION get_anonymous_users_to_delete()
   RETURNS TABLE (id uuid)
   LANGUAGE sql
-  SECURITY DEFINER -- Важно!
+  SECURITY DEFINER
   AS $$
     SELECT u.id
     FROM auth.users u

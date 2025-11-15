@@ -40,12 +40,10 @@ onMounted(() => {
 });
 
 function submit() {
-  // ИЗМЕНЕНО: Вызываем новый метод `submit`
   modalStore.submit(inputValue.value);
 }
 
 function cancel() {
-  // ИЗМЕНЕНО: Вызываем новый метод `submit`
   modalStore.submit(null);
 }
 </script>
