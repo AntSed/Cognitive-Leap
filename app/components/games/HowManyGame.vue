@@ -1,5 +1,11 @@
 <template>
-  <div class="how-many-game" @click="focusInput">
+  <div class="how-many-game">
+    <div v-if="gameState === 'intro'" class="intro-screen">
+      <button class="start-button" @click="startGame">
+        {{ t('common.start') }}
+      </button>
+    </div>
+
     <div class="game-world" ref="worldEl">
       <div
         class="ball"
@@ -34,7 +40,6 @@
         </div>
       </div>
       
-      <!-- New Notification System -->
       <div class="notification-container">
         <div
           v-for="n in notifications"
@@ -56,8 +61,6 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const emit = defineEmits(['completed']);
-
-// --- 1. Типы (для TypeScript) ---
 
 type GameState =
   | 'intro'
@@ -81,8 +84,6 @@ interface Notification {
   type: 'correct' | 'incorrect' | 'neutral' | 'milestone'
 }
 
-// --- 2. Реактивное состояние ---
-
 const gameState = ref<GameState>('intro')
 const balls = ref<Ball[]>([])
 const targetCount = ref(0)
@@ -94,7 +95,7 @@ const attempts = ref(0);
 const isTimeUp = ref(false);
 
 const timerProgress = ref(0);
-const roundTimer = ref<number | null>(null);
+const roundTimer = ref<number | undefined>(undefined);
 
 const notifications = ref<Notification[]>([]);
 let notificationIdCounter = 0;
@@ -105,35 +106,33 @@ const speedMultiplier = computed(() => {
   const scoreForMaxSpeed = 1000;
   const currentScore = Math.min(score.value, scoreForMaxSpeed);
   const speed = baseSpeed + (maxSpeed - baseSpeed) * (currentScore / scoreForMaxSpeed);
-  return speed * 1.2; // Speed increased by 20%
+  return speed * 1.2;
 });
 
-// Ссылки на DOM-элементы
 const worldEl = ref<HTMLElement | null>(null)
 const inputEl = ref<HTMLInputElement | null>(null)
 const inputAreaEl = ref<HTMLElement | null>(null)
 
-watch(gameState, (newState) => {
-  if (newState === 'awaitingInput') {
-    nextTick(() => {
-      // A small delay to ensure focus is set after other UI events.
-      setTimeout(() => {
-        inputEl.value?.focus();
-      }, 100);
-    });
+watch(inputEl, (newInputEl) => {
+  if (newInputEl) {
+    let attempts = 5;
+    const intervalId = setInterval(() => {
+      if (attempts <= 0) {
+        clearInterval(intervalId);
+        return;
+      }
+      
+      if (gameState.value === 'awaitingInput' && document.activeElement !== newInputEl) {
+        newInputEl.focus();
+      }
+      
+      attempts--;
+    }, 300);
   }
 });
 
-// --- 3. Игровой цикл ---
-
-onMounted(() => {
+const startGame = () => {
   setupRound();
-});
-
-const focusInput = () => {
-  if (gameState.value === 'awaitingInput') {
-    inputEl.value?.focus();
-  }
 }
 
 const setupRound = () => {
@@ -146,12 +145,12 @@ const setupRound = () => {
 
   if (score.value < 300) {
     if (roundsPlayed.value <= 5) {
-      targetCount.value = Math.floor(Math.random() * 8) + 3; // 3 to 10
+      targetCount.value = Math.floor(Math.random() * 4) + 7;
     } else {
-      targetCount.value = Math.floor(Math.random() * 11) + 5; // 5 to 15
+      targetCount.value = Math.floor(Math.random() * 9) + 7;
     }
   } else {
-    targetCount.value = Math.floor(Math.random() * 10) + 11; // 11 to 20
+    targetCount.value = Math.floor(Math.random() * 10) + 11;
   }
 
   balls.value = []
@@ -217,7 +216,6 @@ const animateGrouping = () => {
 
   setTimeout(() => {
     gameState.value = 'awaitingInput';
-    // ===== ГЛАВНОЕ ИСПРАВЛЕНИЕ: ЗАПУСКАЕМ ТАЙМЕР ЗДЕСЬ =====
     startRoundTimer(); 
   }, 1000 / speedMultiplier.value);
 }
@@ -240,16 +238,16 @@ const checkAnswer = () => {
       spawnNotification(`+${points}`, 'correct');
       scoreColor.value = '#2ecc71';
     } else {
-      spawnNotification(t('howMany.feedback.correct'), 'neutral');
+      spawnNotification(t('howMany.feedback.correct') as string, 'neutral');
       scoreColor.value = 'white';
     }
 
     if (score.value > oldScore && Math.floor(oldScore / 100) < Math.floor(score.value / 100)) {
       if (score.value >= 1000) {
-        spawnNotification(t('howMany.feedback.win'), 'milestone');
+        spawnNotification(t('howMany.feedback.win') as string, 'milestone');
         emit('completed');
       } else {
-        spawnNotification(t('howMany.feedback.milestone', { remaining: 1000 - score.value }), 'milestone');
+        spawnNotification(t('howMany.feedback.milestone', { remaining: 1000 - score.value }) as string, 'milestone');
       }
     }
     
@@ -266,14 +264,12 @@ const checkAnswer = () => {
       setTimeout(() => {
         gameState.value = 'awaitingInput';
         userGuess.value = null;
-        startRoundTimer(); // Таймер для второй попытки остается на месте
+        startRoundTimer();
       }, 1500);
     }
   }
   setTimeout(() => { scoreColor.value = 'white'; }, 1500);
 };
-
-// --- 5. Вспомогательные функции ---
 
 const spawnNotification = (message: string, type: Notification['type']) => {
   const id = notificationIdCounter++;
@@ -286,9 +282,9 @@ const spawnNotification = (message: string, type: Notification['type']) => {
 const TIME_LIMIT = 10000;
 
 const stopRoundTimer = () => {
-  if (roundTimer.value) {
+  if (roundTimer.value !== undefined) {
     clearInterval(roundTimer.value);
-    roundTimer.value = null;
+    roundTimer.value = undefined;
   }
 };
 
@@ -313,7 +309,7 @@ const handleTimeUp = () => {
   score.value -= 20;
   scoreColor.value = 'red';
   setTimeout(() => { scoreColor.value = 'white'; }, 1500);
-  spawnNotification(t('howMany.feedback.timeUp', { points: 20 }), 'incorrect');
+  spawnNotification(t('howMany.feedback.timeUp', { points: 20 }) as string, 'incorrect');
   
   balls.value.forEach(ball => {
     ball.style.background = '#333';
@@ -339,10 +335,10 @@ const generateLayoutPositions = (
 
   const groupSizes = decomposeNumber(count);
   const groupCenters = getGroupCenters(groupSizes.length, safeLeft, safeTop, safeWidth, safeHeight);
-  const allPositions: { x: number; y: number }[] = [];
+  let allPositions: { x: number; y: number }[] = [];
 
   groupSizes.forEach((size, groupIndex) => {
-    const center = groupCenters[groupIndex];
+    const center = groupCenters[groupIndex] || { x: safeLeft + safeWidth / 2, y: safeTop + safeHeight / 2 };
     const cols = Math.ceil(Math.sqrt(size));
     const rows = Math.ceil(size / cols);
     const groupWidth = cols * totalSize - padding;
@@ -452,6 +448,33 @@ const getRandomColor = (): string => {
   color: white;
 }
 
+.intro-screen {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  z-index: 200;
+}
+
+.start-button {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background-color: hsl(195, 80%, 70%);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.start-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+}
+
 .game-world {
   position: absolute;
   top: 0;
@@ -467,10 +490,9 @@ const getRandomColor = (): string => {
   position: absolute;
   top: 50%;
   left: 50%;
-  /* Упрощенная тень и рамка для производительности */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  /* Подсказка браузеру для аппаратного ускорения анимации */
+  /* The use of will-change is intentional for performance optimization of the animation. */
   will-change: transform;
 }
 
@@ -490,13 +512,14 @@ const getRandomColor = (): string => {
   position: absolute;
   top: 15px;
   left: 15px;
-  font-size: 2.5rem; /* Larger font */
-  font-weight: 900; /* Bolder */
+  font-size: 2.5rem;
+  font-weight: 900;
   transition: color 0.3s;
-  z-index: 20; /* Ensure score is above input area */
-  width: 200px; /* Wider area */
+  z-index: 20;
+  width: 200px;
   text-align: left;
-  -webkit-text-stroke: 1px rgba(0,0,0,0.3); /* Add a subtle outline */
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-text-stroke: 1px rgba(0,0,0,0.3);
 }
 
 .input-area {
@@ -514,8 +537,8 @@ const getRandomColor = (): string => {
   z-index: 10;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative; /* For timer positioning */
-  width: 130px; /* More square-like */
+  position: relative;
+  width: 130px;
 }
 
 .input-area h2 {
@@ -533,7 +556,8 @@ const getRandomColor = (): string => {
   border: none;
   border-radius: 8px;
   padding: 5px;
-  -moz-appearance: textfield; /* Firefox */
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -moz-appearance: textfield;
 }
 .input-area input::-webkit-outer-spin-button,
 .input-area input::-webkit-inner-spin-button {
@@ -542,7 +566,7 @@ const getRandomColor = (): string => {
 }
 
 .input-area button {
-  display: none; /* Button is removed */
+  display: none;
 }
 
 .timer-bar-container {
@@ -562,7 +586,6 @@ const getRandomColor = (): string => {
   transition: width 0.1s linear;
 }
 
-/* --- Notification System Styles --- */
 .notification-container {
   position: absolute;
   top: 0;
@@ -598,7 +621,7 @@ const getRandomColor = (): string => {
 .floating-text.milestone {
   color: #f1c40f;
   font-size: 2rem;
-  animation-duration: 4s; /* Longer animation for milestones */
+  animation-duration: 4s;
 }
 
 @keyframes shoot-out {

@@ -51,5 +51,8 @@
       "incorrect": "¡Incorrecto! -{points}",
       "timeUp": "¡Se acabó el tiempo! -{points}"
     }
+  },
+  "common": {
+    "start": "Empezar"
   }
 }
