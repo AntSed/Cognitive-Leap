@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -99,11 +99,30 @@ const roundTimer = ref<number | null>(null);
 const notifications = ref<Notification[]>([]);
 let notificationIdCounter = 0;
 
+const speedMultiplier = computed(() => {
+  const baseSpeed = 1.0;
+  const maxSpeed = 2.5;
+  const scoreForMaxSpeed = 1000;
+  const currentScore = Math.min(score.value, scoreForMaxSpeed);
+  const speed = baseSpeed + (maxSpeed - baseSpeed) * (currentScore / scoreForMaxSpeed);
+  return speed * 1.2; // Speed increased by 20%
+});
 
 // Ссылки на DOM-элементы
 const worldEl = ref<HTMLElement | null>(null)
 const inputEl = ref<HTMLInputElement | null>(null)
 const inputAreaEl = ref<HTMLElement | null>(null)
+
+watch(gameState, (newState) => {
+  if (newState === 'awaitingInput') {
+    nextTick(() => {
+      // A small delay to ensure focus is set after other UI events.
+      setTimeout(() => {
+        inputEl.value?.focus();
+      }, 100);
+    });
+  }
+});
 
 // --- 3. Игровой цикл ---
 
@@ -117,9 +136,6 @@ const focusInput = () => {
   }
 }
 
-/**
- * 1. Настраивает новый раунд
- */
 const setupRound = () => {
   stopRoundTimer();
   gameState.value = 'flying'
@@ -128,33 +144,28 @@ const setupRound = () => {
   attempts.value = 0;
   isTimeUp.value = false;
 
-  // Генерируем новое число (с кривой сложности)
   if (score.value < 300) {
     if (roundsPlayed.value <= 5) {
       targetCount.value = Math.floor(Math.random() * 8) + 3; // 3 to 10
     } else {
-      targetCount.value = Math.floor(Math.random() * 11) + 5; // 5 to 15 (was 5 to 20)
+      targetCount.value = Math.floor(Math.random() * 11) + 5; // 5 to 15
     }
   } else {
-    // After 300 points, only hard examples
     targetCount.value = Math.floor(Math.random() * 10) + 11; // 11 to 20
   }
 
-
-  // Создаем шары
   balls.value = []
   for (let i = 0; i < targetCount.value; i++) {
     balls.value.push({
       id: i,
       style: {
-        transform: 'translate(-50%, -50%)', // Начальная позиция (скрыты)
+        transform: 'translate(-50%, -50%)',
         transition: 'all 1.5s ease-in-out',
         background: getRandomColor(),
       },
     })
   }
 
-  // Даем Vue один тик на рендер шаров, прежде чем запустить анимацию
   nextTick(() => {
     animateFlying()
   })
@@ -175,15 +186,13 @@ const animateFlying = () => {
     const translateY = y - centerY;
 
     ball.style.transform = `translate(${translateX}px, ${translateY}px) rotate(360deg)`;
-    ball.style.transition = 'all 1.5s ease-in-out';
+    const duration = 1 / speedMultiplier.value;
+    ball.style.transition = `all ${duration.toFixed(2)}s ease-in-out`;
   });
 
-  setTimeout(animateGrouping, 2000);
+  setTimeout(animateGrouping, 1300 / speedMultiplier.value);
 }
 
-/**
- * 3. Анимация группировки (самая важная логика)
- */
 const animateGrouping = () => {
   gameState.value = 'grouping'
   if (!worldEl.value) return
@@ -192,38 +201,27 @@ const animateGrouping = () => {
   const height = worldEl.value.clientHeight;
   const centerX = width / 2;
   const centerY = height / 2;
+  const topOffset = (inputAreaEl.value?.offsetHeight || 150) + 20;
 
-  // Dynamically get the height of the input area to use as a top offset
-  const topOffset = (inputAreaEl.value?.offsetHeight || 150) + 20; // Add some padding
-
-  const ballPositions = generateLayoutPositions(
-    targetCount.value,
-    width,
-    height,
-    topOffset
-  )
+  const ballPositions = generateLayoutPositions(targetCount.value, width, height, topOffset);
 
   balls.value.forEach((ball, index) => {
-    const pos = ballPositions[index] || { x: 50, y: 50 }
+    const pos = ballPositions[index] || { x: 50, y: 50 };
     const translateX = pos.x - centerX;
     const translateY = pos.y - centerY;
 
-    ball.style.transform = `translate(${translateX}px, ${translateY}px) rotate(0deg)`
-    ball.style.transition = 'all 1s ease-in-out'
-  })
+    ball.style.transform = `translate(${translateX}px, ${translateY}px) rotate(0deg)`;
+    const duration = 0.7 / speedMultiplier.value;
+    ball.style.transition = `all ${duration.toFixed(2)}s ease-in-out`;
+  });
 
   setTimeout(() => {
-    gameState.value = 'awaitingInput'
-    startRoundTimer();
-    nextTick(() => {
-      inputEl.value?.focus()
-    })
-  }, 1500)
+    gameState.value = 'awaitingInput';
+    // ===== ГЛАВНОЕ ИСПРАВЛЕНИЕ: ЗАПУСКАЕМ ТАЙМЕР ЗДЕСЬ =====
+    startRoundTimer(); 
+  }, 1000 / speedMultiplier.value);
 }
 
-/**
- * 4. Проверка ответа пользователя
- */
 const checkAnswer = () => {
   if (userGuess.value === null || gameState.value === 'feedback') return
   
@@ -234,49 +232,44 @@ const checkAnswer = () => {
 
   const isCorrect = userGuess.value === targetCount.value;
 
-      if (isCorrect) {
-        const oldScore = score.value;
-        if (wasOnTime && attempts.value === 1) {
-          const points = score.value >= 300 && targetCount.value > 15 ? 30 : (targetCount.value > 10 ? 20 : 10);
-          score.value += points;
-          spawnNotification(`+${points}`, 'correct');
-          scoreColor.value = '#2ecc71';
-        } else {
-          spawnNotification(t('howMany.feedback.correct'), 'neutral');
-          scoreColor.value = 'white';
-        }
-  
-        // Milestone check
-        if (score.value > oldScore && Math.floor(oldScore / 100) < Math.floor(score.value / 100)) {
-          if (score.value >= 1000) {
-            spawnNotification(t('howMany.feedback.win'), 'milestone');
-            emit('completed');
-          } else {
-            spawnNotification(t('howMany.feedback.milestone', { remaining: 1000 - score.value }), 'milestone');
-          }
-        }
-        
-        setTimeout(setupRound, 2000);
-  
+  if (isCorrect) {
+    const oldScore = score.value;
+    if (wasOnTime && attempts.value === 1) {
+      const points = score.value >= 300 && targetCount.value > 15 ? 30 : (targetCount.value > 10 ? 20 : 10);
+      score.value += points;
+      spawnNotification(`+${points}`, 'correct');
+      scoreColor.value = '#2ecc71';
+    } else {
+      spawnNotification(t('howMany.feedback.correct'), 'neutral');
+      scoreColor.value = 'white';
+    }
+
+    if (score.value > oldScore && Math.floor(oldScore / 100) < Math.floor(score.value / 100)) {
+      if (score.value >= 1000) {
+        spawnNotification(t('howMany.feedback.win'), 'milestone');
+        emit('completed');
       } else {
-        // Incorrect answer
-        score.value -= 20;
-        spawnNotification('-20', 'incorrect');
-        scoreColor.value = '#e74c3c';
-        
-        if (isTimeUp.value) { // If time was already up, move to next round after feedback
-          setTimeout(setupRound, 2000);
-        } else { // Otherwise, let user try again
-          setTimeout(() => {
-            gameState.value = 'awaitingInput';
-            userGuess.value = null;
-            startRoundTimer(); // Restart timer for another try
-            nextTick(() => {
-              inputEl.value?.focus();
-            });
-          }, 1500);
-        }
+        spawnNotification(t('howMany.feedback.milestone', { remaining: 1000 - score.value }), 'milestone');
       }
+    }
+    
+    setTimeout(setupRound, 2000);
+
+  } else {
+    score.value -= 20;
+    spawnNotification('-20', 'incorrect');
+    scoreColor.value = '#e74c3c';
+    
+    if (isTimeUp.value) {
+      setTimeout(setupRound, 2000);
+    } else {
+      setTimeout(() => {
+        gameState.value = 'awaitingInput';
+        userGuess.value = null;
+        startRoundTimer(); // Таймер для второй попытки остается на месте
+      }, 1500);
+    }
+  }
   setTimeout(() => { scoreColor.value = 'white'; }, 1500);
 };
 
@@ -287,10 +280,10 @@ const spawnNotification = (message: string, type: Notification['type']) => {
   notifications.value.push({ id, message, type });
   setTimeout(() => {
     notifications.value = notifications.value.filter(n => n.id !== id);
-  }, 1900); // Should be slightly less than animation duration
+  }, 3900);
 };
 
-const TIME_LIMIT = 10000; // 10 seconds
+const TIME_LIMIT = 10000;
 
 const stopRoundTimer = () => {
   if (roundTimer.value) {
@@ -303,7 +296,7 @@ const startRoundTimer = () => {
   stopRoundTimer();
   timerProgress.value = 0;
   isTimeUp.value = false;
-  const interval = 100; // ms
+  const interval = 100;
 
   roundTimer.value = window.setInterval(() => {
     timerProgress.value += (interval / TIME_LIMIT) * 100;
@@ -317,30 +310,35 @@ const handleTimeUp = () => {
   stopRoundTimer();
   isTimeUp.value = true;
   
-  // Penalty for time up
   score.value -= 20;
   scoreColor.value = 'red';
   setTimeout(() => { scoreColor.value = 'white'; }, 1500);
   spawnNotification(t('howMany.feedback.timeUp', { points: 20 }), 'incorrect');
   
-  // Make balls black
   balls.value.forEach(ball => {
     ball.style.background = '#333';
     ball.style.transition = 'background 0.5s';
   });
 };
 
-function generateLayoutPositions(
+const generateLayoutPositions = (
   count: number,
   worldWidth: number,
   worldHeight: number,
   topOffset: number
-): { x: number; y: number }[] {
+): { x: number; y: number }[] => {
   const ballSize = 40;
-  const padding = 10;
+  const padding = 15;
   const totalSize = ballSize + padding;
+  const edgePadding = 30;
+  const safeTop = topOffset + 20;
+  const safeLeft = edgePadding;
+  const safeWidth = worldWidth - (edgePadding * 2);
+  const bottomBoundary = worldHeight / 2;
+  const safeHeight = bottomBoundary - safeTop;
+
   const groupSizes = decomposeNumber(count);
-  const groupCenters = getGroupCenters(groupSizes.length, worldWidth, worldHeight, topOffset);
+  const groupCenters = getGroupCenters(groupSizes.length, safeLeft, safeTop, safeWidth, safeHeight);
   const allPositions: { x: number; y: number }[] = [];
 
   groupSizes.forEach((size, groupIndex) => {
@@ -368,23 +366,18 @@ function generateLayoutPositions(
   }
 
   return allPositions;
-}
+};
 
-function decomposeNumber(n: number): number[] {
+const decomposeNumber = (n: number): number[] => {
   const maxGroups = Math.min(5, n);
   const numGroups = Math.floor(Math.random() * maxGroups) + 1;
-
-  if (numGroups === 1) {
-    return [n];
-  }
+  if (numGroups === 1) return [n];
 
   const splitPoints = new Set<number>();
   while (splitPoints.size < numGroups - 1) {
     splitPoints.add(Math.floor(Math.random() * (n - 1)) + 1);
   }
-
   const sortedSplits = Array.from(splitPoints).sort((a, b) => a - b);
-
   const parts: number[] = [];
   let lastSplit = 0;
   for (const split of sortedSplits) {
@@ -392,41 +385,32 @@ function decomposeNumber(n: number): number[] {
     lastSplit = split;
   }
   parts.push(n - lastSplit);
-
   return parts;
 }
 
-function getGroupCenters(numGroups: number, worldWidth: number, worldHeight: number, topOffset: number): { x: number; y: number }[] {
+const getGroupCenters = (
+  numGroups: number, 
+  safeX: number, 
+  safeY: number, 
+  safeWidth: number, 
+  safeHeight: number
+): { x: number; y: number }[] => {
   const centers: { x: number; y: number }[] = [];
-  const centerX = worldWidth / 2;
-
-  // The top boundary is the bottom of the input area UI.
-  const topBoundary = topOffset; 
-  // The bottom boundary is the vertical midpoint of the screen.
-  const bottomBoundary = worldHeight / 2;
-
-  // The available space is between these two boundaries.
-  const availableHeight = bottomBoundary - topBoundary;
-
-  // The vertical center for patterns is the middle of that available space.
-  const centerY = topBoundary + (availableHeight / 2); 
-  
-  const offsetX = worldWidth / 4;
-  // Make offsetY relative to the new available height to prevent overlap
-  const offsetY = availableHeight / 3;
+  const centerX = safeX + safeWidth / 2;
+  const centerY = safeY + safeHeight / 2;
+  const offsetX = safeWidth / 3.5;
+  const offsetY = safeHeight / 3 > 50 ? safeHeight / 3 : 50;
 
   switch (numGroups) {
-    case 1:
-      centers.push({ x: centerX, y: centerY });
-      break;
+    case 1: centers.push({ x: centerX, y: centerY }); break;
     case 2:
-      centers.push({ x: centerX - offsetX, y: centerY });
-      centers.push({ x: centerX + offsetX, y: centerY });
+      centers.push({ x: centerX - offsetX * 0.9, y: centerY });
+      centers.push({ x: centerX + offsetX * 0.9, y: centerY });
       break;
     case 3:
-      centers.push({ x: centerX, y: centerY - offsetY * 0.75 });
-      centers.push({ x: centerX - offsetX, y: centerY + offsetY * 0.75 });
-      centers.push({ x: centerX + offsetX, y: centerY + offsetY * 0.75 });
+      centers.push({ x: centerX, y: centerY - offsetY * 0.8 });
+      centers.push({ x: centerX - offsetX, y: centerY + offsetY * 0.8 });
+      centers.push({ x: centerX + offsetX, y: centerY + offsetY * 0.8 });
       break;
     case 4:
       centers.push({ x: centerX - offsetX, y: centerY - offsetY });
@@ -436,19 +420,24 @@ function getGroupCenters(numGroups: number, worldWidth: number, worldHeight: num
       break;
     case 5:
       centers.push({ x: centerX, y: centerY });
-      centers.push({ x: centerX - offsetX * 1.2, y: centerY - offsetY });
-      centers.push({ x: centerX + offsetX * 1.2, y: centerY - offsetY });
-      centers.push({ x: centerX - offsetX * 1.2, y: centerY + offsetY });
-      centers.push({ x: centerX + offsetX * 1.2, y: centerY + offsetY });
+      centers.push({ x: centerX - offsetX, y: centerY - offsetY });
+      centers.push({ x: centerX + offsetX, y: centerY - offsetY });
+      centers.push({ x: centerX - offsetX, y: centerY + offsetY });
+      centers.push({ x: centerX + offsetX, y: centerY + offsetY });
       break;
   }
-  return centers;
-}
+  
+  return centers.map(c => ({
+      x: c.x + (Math.random() - 0.5) * 20,
+      y: c.y + (Math.random() - 0.5) * 20
+  }));
+};
 
-function getRandomColor(): string {
+const getRandomColor = (): string => {
   const hue = Math.floor(Math.random() * 360)
   return `hsl(${hue}, 80%, 70%)`
 }
+
 </script>
 
 <style scoped>
@@ -478,8 +467,11 @@ function getRandomColor(): string {
   position: absolute;
   top: 50%;
   left: 50%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  /* Упрощенная тень и рамка для производительности */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  /* Подсказка браузеру для аппаратного ускорения анимации */
+  will-change: transform;
 }
 
 .game-ui {
@@ -590,7 +582,7 @@ function getRandomColor(): string {
   font-weight: 900;
   -webkit-text-stroke: 2px black;
   text-shadow: 0 0 15px black;
-  animation: shoot-out 2s forwards ease-out;
+  animation: shoot-out 3s forwards ease-out;
 }
 
 .floating-text.correct {
@@ -606,7 +598,7 @@ function getRandomColor(): string {
 .floating-text.milestone {
   color: #f1c40f;
   font-size: 2rem;
-  animation-duration: 3s; /* Longer animation for milestones */
+  animation-duration: 4s; /* Longer animation for milestones */
 }
 
 @keyframes shoot-out {
