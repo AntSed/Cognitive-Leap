@@ -54,5 +54,13 @@
   },
   "common": {
     "start": "Начать"
+  },
+  "mathTanks": {
+    "health": "ЗДОРОВЬЕ",
+    "score": "СЧЕТ",
+    "gameOver": "ИГРА ОКОНЧЕНА",
+    "finalScore": "ИТОГОВЫЙ СЧЕТ",
+    "survivedFor": "ВЫ ПРОДЕРЖАЛИСЬ",
+    "restart": "ЗАНОВО"
   }
 }

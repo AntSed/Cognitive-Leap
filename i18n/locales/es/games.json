@@ -54,5 +54,13 @@
   },
   "common": {
     "start": "Empezar"
+  },
+  "mathTanks": {
+    "health": "SALUD",
+    "score": "PUNTOS",
+    "gameOver": "FIN DEL JUEGO",
+    "finalScore": "PUNTUACIÓN FINAL",
+    "survivedFor": "SOBREVIVISTE DURANTE",
+    "restart": "REINICIAR"
   }
 }

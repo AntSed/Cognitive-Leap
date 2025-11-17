@@ -52,6 +52,14 @@
       "timeUp": "Time's up! -{points}"
     }
   },
+  "mathTanks": {
+    "health": "HEALTH",
+    "score": "SCORE",
+    "gameOver": "GAME OVER",
+    "finalScore": "FINAL SCORE",
+    "survivedFor": "SURVIVED FOR",
+    "restart": "RESTART"
+  },
   "common": {
     "start": "Start"
   }
