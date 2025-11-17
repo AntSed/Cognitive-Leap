@@ -16,14 +16,14 @@
 
       <div
         v-if="isLocked"
-        class="absolute top-3 right-3 z-20 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
+        class="absolute top-3 right-3 z-12 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
         :title="t('locked')"
         v-html="svgIcons.lock"
       ></div>
 
       <div
         v-else-if="isCompleted"
-        class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
+        class="absolute top-3 right-3 z-12 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white/40"
         :class="isStale ? 'bg-yellow-400' : 'bg-green-500'"
         :title="completionDateTooltip"
         v-html="svgIcons.check"
