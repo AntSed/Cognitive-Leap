@@ -43,7 +43,7 @@
       </h3>
       <p
         v-if="material.description"
-        class="text-sm text-gray-600 mt-1 line-clamp-5"
+        class="text-sm text-gray-600 mt-1 line-clamp-9"
       >
         {{ material.description }}
       </p>
