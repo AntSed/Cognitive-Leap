@@ -82,6 +82,7 @@ let turretAutoRotateDelay = 0;
 let hasCompletedEmit = false;
 let bestSurvivalTime = 0;
 const isNewBestTime = ref(false);
+let globalGameSpeedFactor = 1; // Declare global game speed factor
 
 // Adaptive Controls State
 const showJoystick = ref(false);
@@ -109,7 +110,7 @@ class Player {
         this.y = y;
         this.radius = radius;
         this.color = color;
-        this.baseSpeed = 4;
+        this.baseSpeed = 4 * globalGameSpeedFactor; // Use globalGameSpeedFactor
         this.health = 100;
         this.maxHealth = 100;
         this.angle = 0;
@@ -175,7 +176,7 @@ class Player {
 
         // Clamp to screen edges
         const canvas = gameCanvasRef.value;
-        const joystickExclusionHeight = showJoystick.value ? 150 : 0;
+        const joystickExclusionHeight = 0; // Always 0, tank can move everywhere
         const bottomBoundary = canvas.height - joystickExclusionHeight;
 
         this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
@@ -254,6 +255,14 @@ class Bullet {
 
 function initGame() {
     resizeCanvas();
+    
+    // Determine global game speed factor based on screen width
+    if (window.innerWidth < 768) {
+        globalGameSpeedFactor = 0.5; // 50% speed
+    } else {
+        globalGameSpeedFactor = 1; // Normal speed
+    }
+
     nextTick(() => {
         const canvas = gameCanvasRef.value;
         if (!canvas) return;
@@ -352,7 +361,7 @@ function spawnProblemWave() {
             x = Math.random() * canvas.width;
             y = Math.random() < 0.5 ? 0 - radius : canvas.height + radius;
         }
-        const speed = (Math.random() * 1.5 + 0.5) * enemySpeedMultiplier;
+        const speed = (Math.random() * 1.5 + 0.5) * enemySpeedMultiplier * globalGameSpeedFactor; // Use globalGameSpeedFactor
         enemies.push(new Enemy(x, y, radius, '#8B0000', speed, value, isCorrect));
     }
 }
