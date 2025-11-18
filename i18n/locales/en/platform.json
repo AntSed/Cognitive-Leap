@@ -346,7 +346,14 @@
       "title": "Confirmation Required"
     },
     "prompt": {
-      "title": "Input Required"
-    }
-  }
-}
+          "title": "Input Required"
+          }
+        },
+        "mathBubbles": {
+          "score": "Score",
+          "round": "Round",
+              "prompt": "Combine the bubbles to get the number:",
+              "fail": "Too high!",
+              "noMoves": "No more moves!"
+            }
+          }      

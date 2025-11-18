@@ -346,7 +346,14 @@
       "title": "Se Requiere Confirmación"
     },
     "prompt": {
-      "title": "Se Requiere Entrada"
-    }
-  }
-}
+          "title": "Se Requiere Entrada"
+          }
+        },
+        "mathBubbles": {
+          "score": "Puntaje",
+          "round": "Ronda",
+              "prompt": "Combina las burbujas para obtener el número:",
+              "fail": "¡Demasiado alto!",
+              "noMoves": "¡No hay más movimientos!"
+            }
+          }      
