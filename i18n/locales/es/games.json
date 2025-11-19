@@ -62,5 +62,19 @@
     "finalScore": "PUNTUACIÓN FINAL",
     "survivedFor": "SOBREVIVISTE DURANTE",
     "restart": "REINICIAR"
+  },
+  "sumtris": {
+    "score": "PUNTOS",
+    "target": "OBJETIVO",
+    "level": "NIVEL",
+    "gridFull": "¡GRILLA LLENA!",
+    "finalScore": "Puntuación Final:",
+    "tryAgain": "INTÉNTALO DE NUEVO",
+    "title": "TEN CRUSH",
+    "description": "Conecta los números para obtener <br>una suma de <b>10</b>.",
+    "play": "JUGAR",
+    "speedUp": "¡MÁS RÁPIDO!",
+    "win": "¡TEN CRUSH! ¡GANASTE!",
+    "milestone": "¡Faltan {remaining} puntos!"
   }
 }

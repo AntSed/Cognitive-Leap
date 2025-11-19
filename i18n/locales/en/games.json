@@ -60,6 +60,20 @@
     "survivedFor": "SURVIVED FOR",
     "restart": "RESTART"
   },
+  "sumtris": {
+    "score": "SCORE",
+    "target": "TARGET",
+    "level": "LEVEL",
+    "gridFull": "GRID FULL!",
+    "finalScore": "Final Score:",
+    "tryAgain": "TRY AGAIN",
+    "title": "TEN CRUSH",
+    "description": "Connect the numbers to get <br>a sum of <b>10</b>.",
+    "play": "PLAY",
+    "speedUp": "SPEED UP!",
+    "win": "TEN CRUSH! You WIN!",
+    "milestone": "{remaining} points to go!"
+  },
   "common": {
     "start": "Start"
   }

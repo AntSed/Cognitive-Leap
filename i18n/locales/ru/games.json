@@ -62,5 +62,19 @@
     "finalScore": "ИТОГОВЫЙ СЧЕТ",
     "survivedFor": "ВЫ ПРОДЕРЖАЛИСЬ",
     "restart": "ЗАНОВО"
+  },
+  "sumtris": {
+    "score": "СЧЕТ",
+    "target": "ЦЕЛЬ",
+    "level": "УРОВЕНЬ",
+    "gridFull": "ПОЛЕ ЗАПОЛНЕНО!",
+    "finalScore": "Итоговый счет:",
+    "tryAgain": "ПОПРОБОВАТЬ СНОВА",
+    "title": "TEN CRUSH",
+    "description": "Соедини цифры, чтобы получить <br>сумму <b>10</b>.",
+    "play": "ИГРАТЬ",
+    "speedUp": "УСКОРЕНИЕ!",
+    "win": "TEN CRUSH! ТЫ ВЫИГРАЛ!",
+    "milestone": "Осталось {remaining} очков!"
   }
 }
