@@ -76,5 +76,19 @@
     "speedUp": "УСКОРЕНИЕ!",
     "win": "TEN CRUSH! ТЫ ВЫИГРАЛ!",
     "milestone": "Осталось {remaining} очков!"
+  },
+  "nebulaMathJumper": {
+    "title": "Космический прыгун",
+    "subtitle": "Дотянись до звезд!",
+    "start": "Начать полет",
+    "restart": "Прыгнуть еще раз",
+    "score": "ОЧКИ",
+    "height": "ВЫСОТА",
+    "finalScore": "Результат",
+    "win": "Космический прыгун! ТЫ ВЫИГРАЛ!",
+    "milestone": "Осталось {remaining} очков!"
+  },
+  "common": {
+    "start": "Начать"
   }
 }

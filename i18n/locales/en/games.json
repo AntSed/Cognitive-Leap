@@ -74,6 +74,17 @@
     "win": "TEN CRUSH! You WIN!",
     "milestone": "{remaining} points to go!"
   },
+  "nebulaMathJumper": {
+    "title": "Nebula Jumper",
+    "subtitle": "Reach for the stars!",
+    "start": "Start Flight",
+    "restart": "Jump Again",
+    "score": "SCORE",
+    "height": "HEIGHT",
+    "finalScore": "Final Score",
+    "win": "Nebula Jumper! You WIN!",
+    "milestone": "{remaining} points to go!"
+  },
   "common": {
     "start": "Start"
   }

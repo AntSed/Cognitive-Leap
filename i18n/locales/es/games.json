@@ -76,5 +76,19 @@
     "speedUp": "¡MÁS RÁPIDO!",
     "win": "¡TEN CRUSH! ¡GANASTE!",
     "milestone": "¡Faltan {remaining} puntos!"
+  },
+  "nebulaMathJumper": {
+    "title": "Saltador Nebular",
+    "subtitle": "¡Alcanza las estrellas!",
+    "start": "Iniciar Vuelo",
+    "restart": "Saltar de Nuevo",
+    "score": "PUNTOS",
+    "height": "ALTURA",
+    "finalScore": "Puntuación Final",
+    "win": "¡Saltador Nebular! ¡GANASTE!",
+    "milestone": "¡Faltan {remaining} puntos!"
+  },
+  "common": {
+    "start": "Empezar"
   }
 }
