@@ -87,5 +87,28 @@
   },
   "common": {
     "start": "Start"
+  },
+  "equalizer": {
+    "title": "EQUALIZER",
+    "level": "LEVEL",
+    "controls": "ARROWS to Move • R to Reset • Hold SHIFT to Grab",
+    "accessGranted": "ACCESS GRANTED",
+    "equationBalanced": "Equation Balanced.",
+    "nextLevel": "NEXT LEVEL",
+    "replayAll": "REPLAY ALL",
+    "completed": "MISSION COMPLETE",
+    "levels": {
+      "initiation": "INITIATION",
+      "theHall": "THE HALL",
+      "complexity": "COMPLEXITY",
+      "theGap": "THE GAP",
+      "symmetry": "SYMMETRY",
+      "theVault": "THE VAULT",
+      "theBridge": "THE BRIDGE",
+      "theMaze": "THE MAZE",
+      "theTwins": "THE TWINS",
+      "theCore": "THE CORE",
+      "theEnd": "THE END"
+    }
   }
 }

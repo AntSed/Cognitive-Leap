@@ -88,7 +88,27 @@
     "win": "¡Saltador Nebular! ¡GANASTE!",
     "milestone": "¡Faltan {remaining} puntos!"
   },
-  "common": {
-    "start": "Empezar"
+  "equalizer": {
+    "title": "ECUALIZADOR",
+    "level": "NIVEL",
+    "controls": "FLECHAS para Mover • R para Reiniciar • SHIFT para Agarrar",
+    "accessGranted": "ACCESO CONCEDIDO",
+    "equationBalanced": "Ecuación Equilibrada.",
+    "nextLevel": "SIGUIENTE NIVEL",
+    "replayAll": "REPETIR TODO",
+    "completed": "MISIÓN COMPLETA",
+    "levels": {
+      "initiation": "INICIACIÓN",
+      "theHall": "EL SALÓN",
+      "complexity": "COMPLEJIDAD",
+      "theGap": "EL VACÍO",
+      "symmetry": "SIMETRÍA",
+      "theVault": "LA BÓVEDA",
+      "theBridge": "EL PUENTE",
+      "theMaze": "EL LABERINTO",
+      "theTwins": "LOS GEMELOS",
+      "theCore": "EL NÚCLEO",
+      "theEnd": "EL FIN"
+    }
   }
 }

@@ -88,7 +88,27 @@
     "win": "Космический прыгун! ТЫ ВЫИГРАЛ!",
     "milestone": "Осталось {remaining} очков!"
   },
-  "common": {
-    "start": "Начать"
+  "equalizer": {
+    "title": "ЭКВАЛАЙЗЕР",
+    "level": "УРОВЕНЬ",
+    "controls": "СТРЕЛКИ - Движение • R - Сброс • SHIFT - Захват",
+    "accessGranted": "ДОСТУП РАЗРЕШЕН",
+    "equationBalanced": "Уравнение сбалансировано.",
+    "nextLevel": "СЛЕД. УРОВЕНЬ",
+    "replayAll": "ЗАНОВО",
+    "completed": "МИССИЯ ВЫПОЛНЕНА",
+    "levels": {
+      "initiation": "ИНИЦИАЦИЯ",
+      "theHall": "ЗАЛ",
+      "complexity": "СЛОЖНОСТЬ",
+      "theGap": "ПРОПАСТЬ",
+      "symmetry": "СИММЕТРИЯ",
+      "theVault": "ХРАНИЛИЩЕ",
+      "theBridge": "МОСТ",
+      "theMaze": "ЛАБИРИНТ",
+      "theTwins": "БЛИЗНЕЦЫ",
+      "theCore": "ЯДРО",
+      "theEnd": "КОНЕЦ"
+    }
   }
 }
