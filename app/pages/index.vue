@@ -1,94 +1,79 @@
-// app/pages/index.vue
 <template>
   <div class="page-wrapper">
     <main class="main-content">
       <div v-if="skins.head" class="view-container">
-<Transition name="fade">
-  <div v-show="activeComponent === 1" class="text-page-wrapper">
-    <TextPage />
-  </div>
-</Transition>
-        <Transition name="fade">
-          <div v-show="activeComponent === 2" class="scenekit-wrapper">
-            <ClientOnly>
-              <SceneKit
-                :skin-id="skins.head"
-                :is-active="activeComponent === 2"
-              />
-              <template #fallback>
-                <div class="component-placeholder"></div>
-              </template>
-            </ClientOnly>
+        <!-- Persistent SceneKit Layer (z-index: 0) -->
+        <div class="scenekit-wrapper">
+          <ClientOnly>
+            <SceneKit
+              :skin-id="skins.head"
+              :is-active="true"
+            />
+            <template #fallback>
+              <div class="component-placeholder"></div>
+            </template>
+          </ClientOnly>
+        </div>
+
+        <!-- Profile Drawer Layer (z-index: 20) -->
+        <Transition name="slide-right">
+          <div v-show="isProfileOpen" class="profile-drawer-overlay" @click.self="isProfileOpen = false">
+            <div class="profile-drawer">
+              <button class="close-drawer-btn" @click="isProfileOpen = false" aria-label="Close Profile">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>
+              </button>
+              <div class="profile-content hide-scrollbar">
+                <ClientOnly>
+                  <TheProfile />
+                  <template #fallback>
+                    <div class="component-placeholder"></div>
+                  </template>
+                </ClientOnly>
+              </div>
+            </div>
           </div>
         </Transition>
-<Transition name="fade">
-  <div v-show="activeComponent === 3" class="profile-wrapper hide-scrollbar">
-      <ClientOnly>
-        <TheProfile />
-        <template #fallback>
-          <div class="component-placeholder"></div>
-        </template>
-    </ClientOnly>
-  </div>
-</Transition>
+
+        <!-- UI Layer (z-index: 30) -->
+        <div class="ui-layer">
+          <div class="user-profile-widget" @click="isProfileOpen = !isProfileOpen" :title="$t('profile_title')">
+            <img v-if="avatarUrl" :src="avatarUrl" alt="User Avatar" class="user-avatar" />
+            <div v-else class="user-avatar placeholder-avatar">
+               <svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="#9ca3af"><path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 69 19.5 121t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Z"/></svg>
+            </div>
+            
+            <span v-if="isAnonymous" class="user-email register-text">{{ $t('signUp') }}</span>
+            <span v-else-if="user" class="user-email">{{ user.email }}</span>
+          </div>
+        </div>
+
       </div>
       <div v-else class="component-placeholder"></div>
     </main>
-    <nav v-if="skins.head" class="app-nav">
-      <div class="nav-main-actions">
-        <button @click="activeComponent = 1" :class="{ active: activeComponent === 1 }" :aria-label="$t('about_project')" :title="$t('about_project')">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm80-160h400v-80H280v80Zm0-160h400v-80H280v80Z"/></svg>
-        </button>
-        <button @click="activeComponent = 2" :class="{ active: activeComponent === 2 }" :aria-label="$t('head')" :title="$t('head')">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M323-160q-11 0-20.5-5.5T288-181l-78-139h58l40 80h92v-40h-68l-40-80H188l-57-100q-2-5-3.5-10t-1.5-10q0-4 5-20l57-100h104l40-80h68v-40h-92l-40 80h-58l78-139q5-10 14.5-15.5T323-800h97q17 0 28.5 11.5T460-760v160h-60l-40 40h100v120h-88l-40-80h-92l-40 40h108l40 80h112v200q0 17-11.5 28.5T420-160h-97Zm217 0q-17 0-28.5-11.5T500-200v-200h112l40-80h108l-40-40h-92l-40 80h-88v-120h100l-40-40h-60v-160q0-17 11.5-28.5T540-800h97q11 0 20.5 5.5T672-779l78 139h-58l-40-80h-92v40h68l40 80h104l57 100q2 5 3.5 10t1.5 10q0 4-5 20l-57 100H668l-40 80h-68v40h92l40-80h58l-78 139q-5 10-14.5-15.5T637-160h-97Z"/></svg>
-        </button>
-        <button @click="activeComponent = 3" :class="{ active: activeComponent === 3 }" :aria-label="$t('profile_title')" :title="$t('profile_title')">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor"><path d="M720-240q25 0 42.5-17.5T780-300q0-25-17.5-42.5T720-360q-25 0-42.5 17.5T660-300q0 25 17.5 42.5T720-240Zm0 120q32 0 57-14t42-39q-20-16-45.5-23.5T720-204q-28 0-53.5 7.5T621-173q17 25 42 39t57 14Zm-520 0q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v268q-19-9-39-15.5t-41-9.5v-243H200v560h242q3 22 9.5 42t15.5 38H200Zm0-120v40-560 243-3 280Zm80-40h163q3-21 9.5-41t14.5-39H280v80Zm0-160h244q32-30 71.5-50t84.5-27v-3H280v80Zm0-160h400v-80H280v80ZM720-40q-83 0-141.5-58.5T520-240q0-83 58.5-141.5T720-440q83 0 141.5 58.5T920-240q0 83-58.5 141.5T720-40Z"/></svg>
-        </button>
-      </div>
-      <div class="language-switcher">
-        <button @click="cycleLanguage" :title="$t('changeLanguage')">
-          {{ locale.toUpperCase() }}
-        </button>
-      </div>
-    </nav>
+
     <ModalWrapper />
     <ClientOnly>
-      <QuickTip :is-play-active="activeComponent === 2" />
+      <QuickTip :is-play-active="true" />
     </ClientOnly>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useSupabaseUser } from '#imports'; // Import useSupabaseUser
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18nService } from '~/composables/useI18nService';
+import { useProfile } from '~/composables/useProfile';
 
-const router = useRouter();
-const route = useRoute();
-const { locale, setLocale } = useI18nService();
 const supabase = useSupabaseClient();
+const user = useSupabaseUser(); // Get user object
 const modalStore = useModalStore();
+const { avatarUrl, isAnonymous, init: initProfile } = useProfile();
 
-const activeComponent = ref(2); 
+const isProfileOpen = ref(false);
 const skins = ref({ head: null });
-const viewMap = { collaborate: 1, play: 2, profile: 3 };
-
-watch(activeComponent, (newVal) => {
-  const viewName = Object.keys(viewMap).find(key => viewMap[key] === newVal);
-  if (viewName && route.query.view !== viewName) {
-    router.push({ query: { view: viewName } });
-  }
-});
 
 const setVh = () => { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); };
-const languages = ['en', 'ru', 'es'];
-const cycleLanguage = () => {
-  const currentIndex = languages.indexOf(locale.value);
-  const nextIndex = (currentIndex + 1) % languages.length;
-  setLocale(languages[nextIndex]);
-};
 
 onMounted(async () => {
   setVh();
@@ -99,11 +84,7 @@ onMounted(async () => {
     if (data) { skins.value.head = data.id; }
   } catch (error) { console.error("Could not fetch 'head' skin:", error); }
   
-  const viewFromUrl = route.query.view;
-  if (viewFromUrl && viewMap[viewFromUrl]) {
-    activeComponent.value = viewMap[viewFromUrl];
-  } else {
-  }
+  await initProfile();
 });
 
 onUnmounted(() => { window.removeEventListener('resize', setVh); });
@@ -113,14 +94,14 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
 .page-wrapper {
   display: flex;
   flex-direction: column;
-  /* Uses --vh, which is set in setVh(). */
   height: calc(var(--vh, 1vh) * 100);
+  background: radial-gradient(circle at center, #1f2937 0%, #111827 100%); /* Restore beautiful dark blue background */
 }
 
 .main-content {
   flex-grow: 1;
   position: relative; 
-  overflow: hidden; /* Added to prevent accidental scrolling. */
+  overflow: hidden;
 }
 
 .view-container {
@@ -130,104 +111,179 @@ onUnmounted(() => { window.removeEventListener('resize', setVh); });
   width: 100%;
   height: 100%;
 }
-.view-container > :deep(*) {
+
+.scenekit-wrapper {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-}
-.view-container > :deep([style*="display: none;"]) {
-  display: block !important;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
+  z-index: 0;
 }
 
-.text-page-wrapper {
-  overflow-y: auto;
-  box-sizing: border-box;
+/* UI Layer */
+.ui-layer {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 30;
 }
 
-.profile-wrapper {
-  overflow-y: auto;
-  padding-bottom: 50px; 
-  box-sizing: border-box;
+/* Hub-style Avatar Widget */
+.user-profile-widget {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 5vh;
-}
-
-.app-nav {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  width: 100%;
-  padding: 8px 10px;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom));
-  border-top: 1px solid #333;
-  box-sizing: border-box;
+  gap: 0.25rem;
+  cursor: pointer;
+  /* Auto width to fit "Register", but max-width for email will be handled on the text element */
+  width: auto;
+  background: transparent;
+  padding: 10px;
+  border-radius: 12px;
+  transition: transform 0.3s;
 }
 
-.nav-main-actions {
+.user-profile-widget:hover {
+  transform: translateY(-2px);
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  /* Lighter semi-transparent border and background */
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  object-fit: cover;
+  /* Lighter background (more visible than 0.1, but not full white) */
+  background-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.placeholder-avatar {
   display: flex;
-  justify-content: space-around;
-  flex-grow: 1;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.app-nav button {
+.user-profile-widget:hover .user-avatar {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.user-email {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #e5e7eb;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  
+  /* Truncate email only */
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.register-text {
+  color: #60a5fa;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  /* Allow full width for "Register" */
+  max-width: none;
+  white-space: nowrap;
+}
+
+.register-text:hover {
+  text-decoration: underline;
+  color: #93c5fd;
+}
+
+/* Profile Drawer */
+.profile-drawer-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 40; /* Ensure it covers the UI layer (z-index: 30) */
+  background: rgba(0, 0, 0, 0.5); /* Dim background */
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-drawer {
+  width: 100%;
+  max-width: 500px; /* Adjust as needed */
+  height: 100%;
+  background: #111827; /* Dark background matching app theme */
+  border-left: 1px solid #374151;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.close-drawer-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
   background: none;
   border: none;
-  color: #a0a0a0;
-  padding: 8px;
+  color: #9ca3af;
   cursor: pointer;
+  z-index: 25;
+  padding: 5px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s, color 0.2s;
+  transition: color 0.2s;
 }
 
-.app-nav button:hover {
+.close-drawer-btn:hover {
   color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.app-nav button.active {
-  color: #fff;
-  background-color: #333;
+.profile-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 20px;
+  padding-top: 60px; /* Space for close button */
 }
 
-.app-nav button svg {
-  width: 28px;
-  height: 28px;
-}
-
-.language-switcher button {
-  font-weight: bold;
-  font-size: 14px;
-  min-width: 44px;
-}
-.hide-scrollbar {
-  /* For Firefox. */
-  scrollbar-width: none;
-  
-  /* For Internet Explorer and older versions of Edge. */
-  -ms-overflow-style: none;
-}
-
-/* For Chrome, Safari, Opera, and other WebKit browsers. */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.fade-enter-active,
-.fade-leave-active {
+/* Transitions */
+.slide-right-enter-active,
+.slide-right-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.slide-right-enter-from,
+.slide-right-leave-to {
   opacity: 0;
+}
+
+.slide-right-enter-active .profile-drawer,
+.slide-right-leave-active .profile-drawer {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide-right-enter-from .profile-drawer,
+.slide-right-leave-to .profile-drawer {
+  transform: translateX(100%);
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 </style>

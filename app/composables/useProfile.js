@@ -10,17 +10,19 @@ export function useProfile() {
   const user = useSupabaseUser();
   const { $auth } = useNuxtApp();
 
-  const loading = ref(true);
-  const profile = ref(null);
-  const newPassword = ref('');
+  const loading = useState('profile-loading', () => true);
+  const profile = useState('profile-data', () => null);
+  const newPassword = ref(''); // Local state is fine for password input
   const passwordUpdateMessage = ref('');
-  const avatarConfig = ref({ style: 'adventurer', seed: 'cognitive-leap' });
+  const avatarConfig = useState('profile-avatar-config', () => ({ style: 'adventurer', seed: 'cognitive-leap' }));
   const isAnonymous = computed(() => user.value?.is_anonymous ?? true);
 
-  const avatarUrl = ref('');
+  const avatarUrl = useState('profile-avatar-url', () => '');
+
+  // Watcher to update avatarUrl when config or user changes
   watchEffect(() => {
     if (!user.value) {
-      avatarUrl.value = ''; 
+      avatarUrl.value = '';
       return;
     }
 
@@ -35,7 +37,7 @@ export function useProfile() {
       loading.value = false;
       return;
     }
-    
+
     try {
       loading.value = true;
       const { data: profileData, error: profileError } = await supabase
@@ -45,7 +47,7 @@ export function useProfile() {
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') throw profileError;
-      
+
       if (profileData) {
         profile.value = profileData;
         if (profileData.avatar_config) avatarConfig.value = profileData.avatar_config;
@@ -89,23 +91,23 @@ export function useProfile() {
     if (!avatarConfig.value) return;
     avatarConfig.value.seed = Math.random().toString(36).substring(7);
   };
-  
+
   const debouncedProfileUpdate = debounce(async (updates, userId) => {
     const { error } = await supabase.from('user_profiles').update(updates).eq('user_id', userId);
     if (error) console.error('Error auto-saving profile:', error);
-  }, 700); 
+  }, 700);
 
   const debouncedAvatarUpdate = debounce(async (newConfig, userId) => {
     const { error } = await supabase.from('user_profiles').update({ avatar_config: newConfig }).eq('user_id', userId);
     if (error) console.error('Error auto-saving avatar config:', error);
   }, 500);
-  
+
   watch(profile, (newProfile, oldProfile) => {
     if (!newProfile || !oldProfile || loading.value || isAnonymous.value) return;
     const { id, created_at, user_id, ...updates } = newProfile;
     debouncedProfileUpdate(updates, user.value.id);
   }, { deep: true });
-  
+
   watch(avatarConfig, (newConfig) => {
     if (loading.value || isAnonymous.value || !profile.value) return;
     debouncedAvatarUpdate(newConfig, user.value.id);
@@ -113,12 +115,12 @@ export function useProfile() {
 
   watch(locale, async (newLocale, oldLocale) => {
     if (newLocale && newLocale !== oldLocale && user.value && !isAnonymous.value) {
-      if(profile.value) profile.value.language = newLocale;
+      if (profile.value) profile.value.language = newLocale;
       await supabase.from('user_profiles').update({ language: newLocale }).eq('user_id', user.value.id);
     }
   });
 
-return {
+  return {
     loadingProfile: loading,
     profile,
     newPassword,

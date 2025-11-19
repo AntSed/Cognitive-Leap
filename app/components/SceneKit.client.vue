@@ -249,7 +249,7 @@ async init() {
     this.scene = new THREE.Scene();
     this.scene.add(this.mainGroup);
     this.camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-    const initialPos = this.skinData.camera_initial_position?.position || [0, 0, 50];
+    const initialPos = this.skinData.camera_initial_position?.position || [0, -12, 50];
     this.camera.position.set(...initialPos);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -263,6 +263,15 @@ async init() {
     const controlType = this.skinData.control_type || 'static';
     const initializer = this.controlFactory[controlType];
     this.controls = initializer ? initializer(this.camera, this.canvas) : this.controlFactory['static']();
+    
+    // Shift view to make head appear higher
+    const targetY = -12;
+    if (this.controls.target) {
+        this.controls.target.set(0, targetY, 0);
+        this.controls.update();
+    } else {
+        this.camera.lookAt(0, targetY, 0);
+    }
   }
 
   async initSharedAssets() {
