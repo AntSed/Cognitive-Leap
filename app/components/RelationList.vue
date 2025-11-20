@@ -1,9 +1,9 @@
 <template>
   <div class="pt-6 space-y-4">
-    <div v-for="relation in relations" :key="relation.id" class="flex flex-wrap justify-between items-center bg-[#374151] p-4 rounded-lg">
+    <div v-for="relation in relations" :key="relation.id" class="relation-card">
       <div>
-        <p class="font-bold">{{ getOtherPartyName(relation) }}</p>
-        <p class="text-sm text-[#9ca3af]">{{ relation.relation_type }}</p>
+        <p class="relation-name">{{ getOtherPartyName(relation) }}</p>
+        <p class="relation-type">{{ relation.relation_type }}</p>
       </div>
       <div class="flex items-center gap-2">
         <template v-if="relation.status === 'pending'">
@@ -80,3 +80,31 @@ const getOtherPartyName = (relation) => {
   return t('unknown_user');
 };
 </script>
+
+<style scoped>
+.relation-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-tertiary);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.relation-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.relation-type {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+}
+
+:global(.light-theme) .relation-card {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+</style>

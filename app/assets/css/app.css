@@ -4,23 +4,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme CSS Variables */
+:root {
+  /* Dark theme (default) */
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color-emphasis: rgba(255, 255, 255, 0.2);
+  --overlay-bg: rgba(31, 41, 55, 0.95);
+}
+
+:root.light-theme {
+  /* Light theme */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f4f6;
+  --bg-tertiary: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --border-color: #e5e7eb;
+  --border-color-emphasis: #d1d5db;
+  --overlay-bg: rgba(255, 255, 255, 0.95);
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
   width: 100vw;
-  overflow: hidden; 
+  overflow: hidden;
   position: relative;
-  height: 100vh; 
- 
+  height: 100vh;
+
 }
 
-html, body, #__nuxt {
+html,
+body,
+#__nuxt {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #111827;
-  color: #f3f4f6;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .component-placeholder {
@@ -28,12 +58,13 @@ html, body, #__nuxt {
   justify-content: center;
   align-items: center;
   height: 100%;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
+
 .hide-scrollbar {
 
   scrollbar-width: none;
-  
+
 
   -ms-overflow-style: none;
 }

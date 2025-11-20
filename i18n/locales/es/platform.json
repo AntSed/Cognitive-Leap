@@ -14,9 +14,8 @@
   "profile_createAccountHint": "Crea una cuenta para guardar tus logros y acceder a todas las funciones de la plataforma.",
   "profile_emailExistsError": "Un usuario con este correo electrónico ya está registrado. Por favor, inicia sesión.",
   "profile_avatar": "Avatar",
-  "profile_style": "Estilo",
-  "profile_seed": "Palabra secreta",
-  "profile_seedHint": "¡Escribe algo y mira cómo cambia el avatar!",
+  "profile_style": "Estilo de Avatar",
+  "profile_seed": "Seed",
   "profile_randomAvatar": "Avatar Aleatorio",
   "profile_personalData": "Datos Personales",
   "cannot_change": "no se puede cambiar",
@@ -263,7 +262,7 @@
       "invalidImageType": "Tipo de archivo de imagen inválido. Solo se permiten PNG y JPEG.",
       "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo permitido es 8 MB.",
       "thumbnailUploadFailed": "Error al subir la miniatura. Por favor, inténtalo de nuevo.",
-      "bucketNotFound": "Storage error: Bucket not found."      
+      "bucketNotFound": "Storage error: Bucket not found."
     }
   },
   "statuses": {
@@ -346,14 +345,14 @@
       "title": "Se Requiere Confirmación"
     },
     "prompt": {
-          "title": "Se Requiere Entrada"
-          }
-        },
-        "mathBubbles": {
-          "score": "Puntaje",
-          "round": "Ronda",
-              "prompt": "Combina las burbujas para obtener el número:",
-              "fail": "¡Demasiado alto!",
-              "noMoves": "¡No hay más movimientos!"
-            }
-          }      
+      "title": "Se Requiere Entrada"
+    }
+  },
+  "mathBubbles": {
+    "score": "Puntaje",
+    "round": "Ronda",
+    "prompt": "Combina las burbujas para obtener el número:",
+    "fail": "¡Demasiado alto!",
+    "noMoves": "¡No hay más movimientos!"
+  }
+}

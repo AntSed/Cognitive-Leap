@@ -14,9 +14,8 @@
   "profile_createAccountHint": "Create an account to save your achievements and access all platform features.",
   "profile_emailExistsError": "A user with this email is already registered. Please sign in.",
   "profile_avatar": "Avatar",
-  "profile_style": "Style",
-  "profile_seed": "Secret word",
-  "profile_seedHint": "Write something and watch the avatar change!",
+  "profile_style": "Avatar Style",
+  "profile_seed": "Seed",
   "profile_randomAvatar": "Random Avatar",
   "profile_personalData": "Personal Data",
   "cannot_change": "cannot be changed",
@@ -145,7 +144,7 @@
       "study": "Study",
       "exam": "Exam"
     },
-      "editProgram": {
+    "editProgram": {
       "title": "Edit Program",
       "form": {
         "titleLabel": "Title",
@@ -346,14 +345,14 @@
       "title": "Confirmation Required"
     },
     "prompt": {
-          "title": "Input Required"
-          }
-        },
-        "mathBubbles": {
-          "score": "Score",
-          "round": "Round",
-              "prompt": "Combine the bubbles to get the number:",
-              "fail": "Too high!",
-              "noMoves": "No more moves!"
-            }
-          }      
+      "title": "Input Required"
+    }
+  },
+  "mathBubbles": {
+    "score": "Score",
+    "round": "Round",
+    "prompt": "Combine the bubbles to get the number:",
+    "fail": "Too high!",
+    "noMoves": "No more moves!"
+  }
+}

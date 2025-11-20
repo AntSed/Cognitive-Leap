@@ -18,11 +18,13 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useModalStore } from '~/composables/useModalStore';
 import { useI18nService } from '~/composables/useI18nService';
+import { useTheme } from '~/composables/useTheme';
 import ModalWrapper from '~/components/ModalWrapper.vue';
 import PlayerModal from '~/components/modals/PlayerModal.vue';
 
 const modalStore = useModalStore();
 const nuxtApp = useNuxtApp();
+const { initTheme } = useTheme();
 
 // HYDRATION FIX:
 // 1. Always start with 'false' (both server and client) to ensure loader is rendered consistently.
@@ -31,6 +33,9 @@ const isAuthReady = ref(false);
 
 // 2. All browser and plugin-dependent logic remains in onMounted.
 onMounted(() => {
+  // Initialize theme system
+  initTheme();
+  
   // 3. Once the client is hydrated, immediately synchronize local isAuthReady with the actual plugin state.
   watch(nuxtApp.$auth.isAuthReady, (newValue) => {
     isAuthReady.value = newValue;

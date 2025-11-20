@@ -16,6 +16,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import { useModalStore } from '~/composables/useModalStore';
+import { useTheme } from '~/composables/useTheme';
 
 // --- PROPS ---
 const props = defineProps({
@@ -29,6 +30,7 @@ const canvasRef = ref(null);
 const wrapperRef = ref(null);
 const modalStore = useModalStore();
 const supabase = useSupabaseClient();
+const { theme } = useTheme();
 let sceneKitApp = null;
 const uiComponent = shallowRef(null);
 const hasInitialized = ref(false);
@@ -53,6 +55,9 @@ const initializeScene = async () => {
   if (props.isActive) {
     sceneKitApp.resume();
   }
+  
+  // Apply current theme immediately after initialization
+  sceneKitApp.applyTheme(theme.value);
 };
 
 
@@ -81,6 +86,13 @@ watch(() => modalStore.isOpen.value, (isOpen) => {
   if (!sceneKitApp) return;
   if (props.isActive) {
     isOpen ? sceneKitApp.pause() : sceneKitApp.resume();
+  }
+});
+
+// Watch theme changes and update materials
+watch(theme, (newTheme) => {
+  if (sceneKitApp) {
+    sceneKitApp.applyTheme(newTheme);
   }
 });
 // =================================================================================================
@@ -116,6 +128,8 @@ class SceneKitApp {
         this.attentionEffectUpdater = null;
         this.globalEffectUpdater = null;
         this.billboardGroups = [];
+        this.assetMeshes = []; // Store meshes for theme switching
+        this.assetParameters = []; // Store DB parameters for each mesh
         this.needsRender = true; this.animationFrameId = null; this.isPaused = true;
         this.isEditMode = false; this.isProcessingClick = false;
         this.draggedObject = null; this.dragPlane = new THREE.Plane(); this.dragOffset = new THREE.Vector3();
@@ -378,6 +392,10 @@ async init() {
     const model = gltf.scene;
     model.traverse(child => {
         if (child.isMesh) {
+            // Store mesh and parameters for theme switching
+            this.assetMeshes.push(child);
+            this.assetParameters.push(params);
+            
             // --- Улучшенная логика применения параметров ---
             const originalMaterial = child.material;
             // Всегда создаем новый MeshStandardMaterial, чтобы точно применить все параметры из БД
@@ -483,6 +501,7 @@ async init() {
         const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const textMesh = new THREE.Mesh(textGeometry, textMaterial);
         textMesh.position.y = -2.5; // Position text below the icon
+        textMesh.userData.isLabel = true; // Tag for theme updates
         nodeGroup.add(textMesh);
 
         const hitboxSize = 5;
@@ -671,6 +690,57 @@ animate() {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+  }
+  
+  applyTheme(theme) {
+    // Apply theme-based materials to stored meshes
+    this.assetMeshes.forEach((mesh, index) => {
+      const params = this.assetParameters[index];
+      const oldMaterial = mesh.material;
+      
+      let newMaterial;
+      if (theme === 'light') {
+        // Blueprint style for light mode
+        newMaterial = new THREE.MeshBasicMaterial({
+          color: 0xcccccc, // Light gray
+          wireframe: true,
+          transparent: true,
+          opacity: 0.15
+        });
+      } else {
+        // Dark mode: use DB parameters
+        newMaterial = new THREE.MeshStandardMaterial();
+        
+        // Copy textures if they exist
+        if (oldMaterial.map) newMaterial.map = oldMaterial.map;
+        if (oldMaterial.normalMap) newMaterial.normalMap = oldMaterial.normalMap;
+        
+        // Apply DB params
+        newMaterial.color.set(params.color ?? '#ffffff');
+        newMaterial.metalness = params.metalness ?? 0.1;
+        newMaterial.roughness = params.roughness ?? 0.5;
+        newMaterial.envMapIntensity = params.envMapIntensity ?? 1.0;
+        newMaterial.transparent = params.transparent ?? false;
+        newMaterial.opacity = params.opacity ?? 1.0;
+        newMaterial.depthWrite = params.depthWrite ?? !newMaterial.transparent;
+        newMaterial.side = THREE.DoubleSide;
+      }
+      
+      mesh.material = newMaterial;
+      if (oldMaterial.dispose) oldMaterial.dispose();
+    });
+
+    // Update label colors
+    this.allNodeGroups.forEach(group => {
+      const labelMesh = group.children.find(child => child.userData.isLabel);
+      if (labelMesh) {
+        // Light theme: Dark Grey (#374151), Dark theme: White (#ffffff)
+        const labelColor = theme === 'light' ? 0x374151 : 0xffffff;
+        labelMesh.material.color.setHex(labelColor);
+      }
+    });
+    
+    this.needsRender = true;
   }
  
   resume() {

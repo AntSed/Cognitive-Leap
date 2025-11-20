@@ -42,7 +42,7 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/?view=profile',
       callback: '/',
-      exclude: ['/confirm-invitation'],
+      exclude: ['/confirm-invitation', '/proto/*'],
     }
   },
 
