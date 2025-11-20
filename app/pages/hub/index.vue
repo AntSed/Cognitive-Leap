@@ -100,10 +100,10 @@
             </button>
           </div>
 
-          <div class="user-profile-widget" @click="goToProfile" :title="t('hub.goToProfile')">
+          <a href="/" class="user-profile-widget" :title="t('hub.goToProfile')">
             <img v-if="avatarUrl" :src="avatarUrl" alt="User Avatar" class="user-avatar" />
             <span v-if="user" class="user-email">{{ user.email }}</span>
-          </div>
+          </a>
         </div>
         <p v-if="selectedLesson">
           {{ t('hub.showingMaterialsFor') }} <strong>{{ selectedLesson.topic_translations?.en }}</strong>
@@ -380,9 +380,7 @@ const fetchAllHubData = async () => {
 provide('setInlineEditingState', (isEditing) => {
   isInlineEditing.value = isEditing;
 });
-const goToProfile = () => {
-  router.push('/?view=profile');
-};
+// goToProfile removed as we use href="/" now
 
 const languages = ['en', 'ru', 'es']; // Тот же список, что и в TheProfile
 const cycleLanguage = () => {
@@ -861,6 +859,7 @@ onMounted(async () => {
   gap: 0.25rem;
   cursor: pointer;
   width: 140px; /* Даем фиксированную ширину для email */
+  text-decoration: none; /* Ensure no underline for anchor */
 }
 .user-avatar {
   width: 64px; /* ИЗМЕНЕНИЕ: 32px -> 64px */
