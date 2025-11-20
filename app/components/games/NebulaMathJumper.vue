@@ -11,7 +11,7 @@
         </div>
         <div class="height-pill">
           <span class="label">{{ t('nebulaMathJumper.height') }}</span>
-          <span class="value">{{ Math.floor(maxHeight / 100) }}m</span>
+          <span class="value">{{ maxHeight }}m</span>
         </div>
       </div>
       
@@ -31,7 +31,7 @@
           <p>{{ t('nebulaMathJumper.finalScore') }}: {{ score }}</p>
         </div>
 
-        <button @click="startGame" class="play-button">
+        <button @click="startGame" @touchstart.stop.prevent="startGame" class="play-button">
           {{ gameState === 'initial' ? t('nebulaMathJumper.start') : t('nebulaMathJumper.restart') }}
         </button>
       </div>
@@ -331,7 +331,8 @@ function triggerJump(targetPlatform) {
       player.state = 'idle';
       
       // Update Stats
-      const heightInMeters = Math.abs(Math.floor((player.y - (gameCanvasRef.value.height - 150)) / 10));
+      // 220 is the distance between platforms, so 1 jump = 1 meter
+      const heightInMeters = Math.abs(Math.floor((player.y - (gameCanvasRef.value.height - 150)) / 220));
       if (heightInMeters > maxHeight.value) maxHeight.value = heightInMeters;
 
       // Calculate new Camera Target
