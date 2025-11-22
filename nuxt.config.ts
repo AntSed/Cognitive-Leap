@@ -60,7 +60,8 @@ export default defineNuxtConfig({
         name: 'English',
         files: [
           { path: 'en/platform.json' },
-          { path: 'en/games.json' }
+          { path: 'en/games.json' },
+          { path: 'en/presentations.json' }
         ]
       },
       {
@@ -69,7 +70,8 @@ export default defineNuxtConfig({
         name: 'Русский',
         files: [
           { path: 'ru/platform.json' },
-          { path: 'ru/games.json' }
+          { path: 'ru/games.json' },
+          { path: 'ru/presentations.json' }
         ]
       },
       {
@@ -78,7 +80,8 @@ export default defineNuxtConfig({
         name: 'Español',
         files: [
           { path: 'es/platform.json' },
-          { path: 'es/games.json' }
+          { path: 'es/games.json' },
+          { path: 'es/presentations.json' }
         ]
       }
     ],

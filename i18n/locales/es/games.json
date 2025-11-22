@@ -110,5 +110,15 @@
       "theCore": "EL NÚCLEO",
       "theEnd": "EL FIN"
     }
+  },
+  "neonNumberRacer": {
+    "score": "Puntuación",
+    "speed": "Velocidad",
+    "title": "CORREDOR DE NEÓN",
+    "startEngine": "ENCENDER MOTOR",
+    "instructions": "Usa las flechas izquierda/derecha o toca las zonas de la pantalla",
+    "systemCrash": "FALLO DEL SISTEMA",
+    "finalScore": "Puntuación final: {score}",
+    "rebootSystem": "REINICIAR SISTEMA"
   }
 }

@@ -110,5 +110,15 @@
       "theCore": "THE CORE",
       "theEnd": "THE END"
     }
+  },
+  "neonNumberRacer": {
+    "score": "Score",
+    "speed": "Speed",
+    "title": "NEON RACER",
+    "startEngine": "START ENGINE",
+    "instructions": "Use Left/Right Arrows or Tap Screen Zones",
+    "systemCrash": "SYSTEM CRASH",
+    "finalScore": "Final Score: {score}",
+    "rebootSystem": "REBOOT SYSTEM"
   }
 }

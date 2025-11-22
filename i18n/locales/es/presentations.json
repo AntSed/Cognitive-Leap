@@ -1,0 +1,23 @@
+{
+    "multiplication_galaxy": {
+        "title": "MULTIPLICADOR GALÁCTICO",
+        "mission_intro": "¡Comandante! Las estrellas están dispersas por el sector. ¡Necesitamos tu ayuda para agruparlas y encender el hiperimpulsor!",
+        "start_mission": "Iniciar Misión",
+        "mission_fueling": "Misión: Carga de Hiperimpulsor",
+        "fueling_instruction": "¡Carga las cápsulas de combustible! Necesitamos {pods} cápsulas con {stars} estrellas cada una.",
+        "mission_matrix": "Misión: Núcleo del Reactor",
+        "matrix_instruction": "¡Construye un núcleo con {target} unidades de energía!",
+        "drag_instruction": "Arrastra para seleccionar un área rectangular",
+        "mission_warp": "Misión: Salto Warp",
+        "warp_target": "Objetivo de la Puerta: {target}",
+        "warp_instruction": "¡Selecciona TODAS las parejas que sean iguales a {target} para abrir la puerta!",
+        "engage": "ACTIVAR WARP",
+        "mission_accomplished": "¡MISIÓN CUMPLIDA!",
+        "victory_text": "¡Has dominado la galaxia!",
+        "play_again": "Jugar de nuevo",
+        "mission_header": "Misión: Aprender a Multiplicar",
+        "dimensions": "Dimensiones",
+        "total_power": "Poder Total",
+        "pod_label": "Vaina {n}"
+    }
+}

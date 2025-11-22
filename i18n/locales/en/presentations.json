@@ -1,0 +1,23 @@
+{
+    "multiplication_galaxy": {
+        "title": "GALAXY MULTIPLIER",
+        "mission_intro": "Commander! The stars are scattered across the sector. We need your help to group them and power up the hyperdrive!",
+        "start_mission": "Start Mission",
+        "mission_fueling": "Mission: Hyperdrive Fueling",
+        "fueling_instruction": "Load the fuel pods! We need {pods} pods with {stars} stars each.",
+        "mission_matrix": "Mission: Reactor Core",
+        "matrix_instruction": "Build a core with {target} power units!",
+        "drag_instruction": "Drag to select a rectangular area",
+        "mission_warp": "Mission: Warp Jump",
+        "warp_target": "Gate Target: {target}",
+        "warp_instruction": "Select ALL pairs that equal {target} to open the gate!",
+        "engage": "ENGAGE WARP",
+        "mission_accomplished": "MISSION ACCOMPLISHED!",
+        "victory_text": "You've mastered the galaxy!",
+        "play_again": "Play Again",
+        "mission_header": "Mission: Learn to Multiply",
+        "dimensions": "Dimensions",
+        "total_power": "Total Power",
+        "pod_label": "Pod {n}"
+    }
+}
